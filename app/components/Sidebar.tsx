@@ -4,11 +4,8 @@ import {
   Compass, 
   MessageCircle, 
   Heart, 
-  User, 
   Settings,
   Crown,
-  DollarSign,
-  Camera,
   Sparkles,
   TrendingUp
 } from "lucide-react";
@@ -25,8 +22,7 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
     { id: "messages", label: "Messages", icon: MessageCircle, color: "blue" },
     { id: "favorites", label: "Favorites", icon: Heart, color: "red" },
     { id: "subscriptions", label: "Subscriptions", icon: Crown, color: "yellow" },
-    { id: "earnings", label: "Earnings", icon: DollarSign, color: "green" },
-    { id: "create", label: "Create Content", icon: Camera, color: "cyan" },
+    { id: "settings", label: "Settings", icon: Settings, color: "green" },
   ];
 
   const getButtonStyles = (isActive: boolean, color: string) => {

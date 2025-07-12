@@ -5,9 +5,10 @@ import { Header } from "./components/Header";
 import { CreatorCard } from "@/app/components/CreatorCard";
 import { Sidebar } from "./components/Sidebar";
 import { Button } from "./components/ui/button";
-import { Heart, MessageCircle, Share2, Lock, Sparkles } from "lucide-react";
+import { Heart, MessageCircle, Share2, Lock, Sparkles} from "lucide-react";
 import { UserProvider } from "./context/UserContext";
-
+import { Settings } from "./components/Settings";
+import { useSession } from "next-auth/react";
 export default function Page() {
   return (
     <UserProvider>
@@ -18,13 +19,13 @@ export default function Page() {
 function App() {
   const [activeTab, setActiveTab] = useState("feed");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
+  const { data: session } = useSession();
   const featuredCreators = [
     {
       id: 1,
       name: "Emma Rose",
       username: "@emmarose",
-      subscribers: 12500,
+      subscribers: 125  00,
       isSubscribed: false,
       price: 19.99,
       category: "Lifestyle"
@@ -200,6 +201,9 @@ function App() {
                 <p className="text-gray-400 text-lg max-w-md mx-auto">Connect with your favorite creators through private messages and build meaningful relationships.</p>
               </div>
             </div>
+          )}
+          {activeTab === "settings" && (
+            <Settings />
           )}
         </main>
       </div>

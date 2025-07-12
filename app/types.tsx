@@ -1,5 +1,6 @@
 export type User = {
     id: string,
+    avatar: string;
     username: string
     password: string
     email: string,
@@ -13,7 +14,7 @@ export type User = {
   }
   
   export interface Creator {
-    id: number;
+    id: string;
     name: string;
     username: string;
     avatar: string;
