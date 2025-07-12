@@ -13,7 +13,7 @@ export type User = {
     accessToken?: string
   }
   
-  export interface Creator {
+export type Creator = {
     id: string;
     name: string;
     username: string;

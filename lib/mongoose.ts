@@ -1,7 +1,6 @@
 // lib/mongoose.ts
 import mongoose from "mongoose";
 
-// Global cache to persist connection across hot reloads in dev
 let isConnected: boolean = false;
 
 export const connectDB = async () => {
@@ -13,10 +12,8 @@ export const connectDB = async () => {
     return;
   }
 
-  // Read MONGO_URI at runtime
   let MONGO_URI = process.env.MONGO_URI;
   
-  // Fallback: try different ways to get the URI
   if (!MONGO_URI) {
     console.log("⚠️ MONGO_URI not found in process.env, trying alternatives...");
     MONGO_URI = process.env.MONGODB_URI || process.env.MONGODB_URL || process.env.DATABASE_URL;

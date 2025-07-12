@@ -6,8 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
 import { 
   Search, 
   Bell, 
-  MessageCircle, 
-  User, 
+  MessageCircle,
   Settings, 
   LogOut,
   Crown,
@@ -21,15 +20,26 @@ import {
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu";
 import { LoginModal } from "@/app/components/LoginModal";
-
-interface HeaderProps {
-  isLoggedIn: boolean;
-  setIsLoggedIn: (value: boolean) => void;
-}
-
-export const Header = ({ isLoggedIn, setIsLoggedIn }: HeaderProps) => {
+import { signOut, useSession } from "next-auth/react";
+import { usePathname, useRouter } from 'next/navigation';
+import { User } from '@/app/types'
+import { toast } from 'react-hot-toast';
+export const Header = ({
+  setUser,
+}: {
+  user: User | null;
+  setUser: (user: User | null) => void;
+}) => {
   const [showLoginModal, setShowLoginModal] = useState(false);
-
+  const { data: session } = useSession();
+  const router = useRouter();
+  const handleSignOut = async () => {
+    await signOut({ redirect: false });
+    setUser(null);
+    localStorage.removeItem('user');
+    router.push('/');
+    toast.success('Signed out successfully');
+  };
   return (
     <>
       <header className="bg-black/20 backdrop-blur-xl border-b border-white/10 sticky top-0 z-50 shadow-2xl">
@@ -64,7 +74,7 @@ export const Header = ({ isLoggedIn, setIsLoggedIn }: HeaderProps) => {
 
             {/* Navigation */}
             <div className="flex items-center gap-3">
-              {isLoggedIn ? (
+              {session?.user ? (
                 <>
                   <Button 
                     variant="ghost" 
@@ -110,7 +120,7 @@ export const Header = ({ isLoggedIn, setIsLoggedIn }: HeaderProps) => {
                       <DropdownMenuSeparator className="bg-slate-700/50 my-2" />
                       <DropdownMenuItem 
                         className="text-red-400 hover:bg-red-900/20 rounded-lg px-3 py-2 cursor-pointer"
-                        onClick={() => setIsLoggedIn(false)}
+                        onClick={handleSignOut}
                       >
                         <LogOut className="mr-3 h-4 w-4" />
                         Sign out

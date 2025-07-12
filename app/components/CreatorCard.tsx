@@ -18,7 +18,6 @@ export const CreatorCard = ({ creator }: CreatorCardProps) => {
         <div className="relative mb-6">
           <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full p-1 animate-pulse">
             <div className="bg-slate-950 rounded-full p-1">
-              <Image src={creator.avatar} alt={creator.name} className="w-20 h-20 rounded-full object-cover" />
             </div>
           </div>
           <div className="w-24 h-24"></div>

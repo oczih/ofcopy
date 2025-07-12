@@ -9,23 +9,22 @@ import {
   Sparkles,
   TrendingUp
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-interface SidebarProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
-}
-
-export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
+export const Sidebar = () => {
+  const pathname = usePathname();
+  
   const menuItems = [
-    { id: "feed", label: "Home Feed", icon: Home, color: "pink" },
-    { id: "discover", label: "Discover", icon: Compass, color: "purple" },
-    { id: "messages", label: "Messages", icon: MessageCircle, color: "blue" },
-    { id: "favorites", label: "Favorites", icon: Heart, color: "red" },
-    { id: "subscriptions", label: "Subscriptions", icon: Crown, color: "yellow" },
-    { id: "settings", label: "Settings", icon: Settings, color: "green" },
+    { id: "feed", label: "Home Feed", icon: Home, color: "pink", href: "/" },
+    { id: "discover", label: "Discover", icon: Compass, color: "purple", href: "/discover" },
+    { id: "messages", label: "Messages", icon: MessageCircle, color: "blue", href: "/messages" },
+    { id: "favorites", label: "Favorites", icon: Heart, color: "red", href: "/favorites" },
+    { id: "subscriptions", label: "Subscriptions", icon: Crown, color: "yellow", href: "/subscriptions" },
+    { id: "settings", label: "Settings", icon: Settings, color: "green", href: "/settings" },
   ];
 
-  const getButtonStyles = (isActive: boolean, color: string) => {
+  const getButtonStyles = (isActive: boolean) => {
     if (isActive) {
       return `bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg hover:shadow-xl`;
     }
@@ -45,21 +44,21 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
       <nav className="space-y-2 mb-8">
         {menuItems.map((item) => {
           const Icon = item.icon;
-          const isActive = activeTab === item.id;
+          const isActive = pathname === item.href;
           
           return (
-            <Button
-              key={item.id}
-              variant="ghost"
-              className={`w-full justify-start py-3 px-4 rounded-2xl transition-all duration-300 ${getButtonStyles(isActive, item.color)}`}
-              onClick={() => setActiveTab(item.id)}
-            >
-              <Icon className="w-5 h-5 mr-3" />
-              <span className="font-medium">{item.label}</span>
-              {isActive && (
-                <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
-              )}
-            </Button>
+            <Link key={item.id} href={item.href}>
+              <Button
+                variant="ghost"
+                className={`w-full justify-start py-3 px-4 rounded-2xl transition-all duration-300 ${getButtonStyles(isActive)}`}
+              >
+                <Icon className="w-5 h-5 mr-3" />
+                <span className="font-medium">{item.label}</span>
+                {isActive && (
+                  <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                )}
+              </Button>
+            </Link>
           );
         })}
       </nav>
