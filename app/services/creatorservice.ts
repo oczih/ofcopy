@@ -1,13 +1,23 @@
 import axios from 'axios';
 import { Creator } from '@/app/types';
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/users`;
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/creators`;
 
-const get = async (id: string): Promise<{ creator: Creator }> => {
+const get = async () => {
+    try {
+        const response = await axios.get(API_URL)
+        return response.data
+    }catch(error){
+        console.error('Error fetching creators:', error);
+        throw error;
+    }
+}
+
+const getById = async (id: string): Promise<{ creator: Creator }> => {
     try {
         const response = await axios.get(`${API_URL}/${id}`);
         return response.data;
     } catch (error) {
-        console.error('Error fetching user:', error);
+        console.error('Error fetching creator:', error);
         throw error;
     }
 }
@@ -27,4 +37,5 @@ const update = async (id: string, newData: Partial<Creator>): Promise<{ creator:
 export default {
     update,
     get,
+    getById
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "../components/Header";
 import { CreatorCard } from "@/app/components/CreatorCard";
 import { Sidebar } from "../components/Sidebar";
@@ -9,6 +9,9 @@ import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { Search, Filter, Sparkles, TrendingUp, Star, Compass } from "lucide-react";
 import { SessionProvider } from "next-auth/react";
+import creatorservice from "../services/creatorservice";
+import toast from "react-hot-toast";
+import { Creator, User } from "../types";
 
 export default function DiscoverPage() {
   return (
@@ -21,95 +24,28 @@ export default function DiscoverPage() {
 function DiscoverApp() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [creators, setCreators] = useState<Creator[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const fetchCreators = async () => {
+      try {
+        const fetchedCreators = await creatorservice.get()
+        setCreators(fetchedCreators)
+      }
+      catch (error){
+        console.error("Couldn't fetch creators: ", error)
+        toast.error("Error fetching creators")
+      }
+    }
+    fetchCreators()
+  }, []); // Added dependency array
 
   const categories = [
     "all", "lifestyle", "fitness", "art", "music", "cooking", "travel", "tech", "fashion"
   ];
 
-  const allCreators = [
-    {
-      id: "1",
-      name: "Emma Rose",
-      username: "@emmarose",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-      subscribers: 12500,
-      isSubscribed: false,
-      price: 19.99,
-      category: "Lifestyle"
-    },
-    {
-      id: "2",
-      name: "Alex Turner",
-      username: "@alexturner",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-      subscribers: 8700,
-      isSubscribed: true,
-      price: 14.99,
-      category: "Fitness"
-    },
-    {
-      id: "3",
-      name: "Sophia Chen",
-      username: "@sophiachen",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-      subscribers: 15200,
-      isSubscribed: false,
-      price: 24.99,
-      category: "Art"
-    },
-    {
-      id: "4",
-      name: "Marcus Johnson",
-      username: "@marcusj",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-      subscribers: 9800,
-      isSubscribed: false,
-      price: 12.99,
-      category: "Music"
-    },
-    {
-      id: "5",
-      name: "Isabella Rodriguez",
-      username: "@isabellar",
-      avatar: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150&h=150&fit=crop&crop=face",
-      subscribers: 11200,
-      isSubscribed: false,
-      price: 16.99,
-      category: "Cooking"
-    },
-    {
-      id: "6",
-      name: "David Kim",
-      username: "@davidkim",
-      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
-      subscribers: 7600,
-      isSubscribed: true,
-      price: 18.99,
-      category: "Tech"
-    },
-    {
-      id: "7",
-      name: "Olivia Parker",
-      username: "@oliviap",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face",
-      subscribers: 13400,
-      isSubscribed: false,
-      price: 22.99,
-      category: "Fashion"
-    },
-    {
-      id: "8",
-      name: "James Wilson",
-      username: "@jamesw",
-      avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face",
-      subscribers: 8900,
-      isSubscribed: false,
-      price: 15.99,
-      category: "Travel"
-    }
-  ];
-
-  const filteredCreators = allCreators.filter(creator => {
+  const filteredCreators = creators.filter(creator => {
     const matchesSearch = creator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          creator.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          creator.category.toLowerCase().includes(searchQuery.toLowerCase());
@@ -126,7 +62,7 @@ function DiscoverApp() {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
       </div>
 
-      <Header />
+      <Header user={user} setUser={setUser} />
       
       <div className="flex max-w-7xl mx-auto px-4 py-8 gap-8 relative z-10">
         <Sidebar />
@@ -197,7 +133,7 @@ function DiscoverApp() {
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {allCreators.slice(0, 4).map((creator, index) => (
+                {creators.slice(0, 4).map((creator, index) => (
                   <div key={creator.id} className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
                     <div className="flex items-center gap-3">
                       <img src={creator.avatar} alt={creator.name} className="w-12 h-12 rounded-full object-cover" />

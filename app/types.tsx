@@ -36,3 +36,27 @@ export type Subscription = {
   nextBillingDate?: Date;
   autoRenew: boolean;
 }
+declare module "next-auth" {
+  interface User {
+    id?: string;
+    username?: string;
+    age?: number;
+    googleId?: string;
+    membership?: boolean;
+    hasAccess?: boolean;
+    email?: string;
+    lastUsernameChange?: Date;
+    isUsernameChangeBlocked?: boolean;
+    accessToken?: string;
+    subscriptions?: Subscription[] 
+  }
+
+  interface Session {
+    user: User & {
+      name?: string;
+      email?: string;
+      image?: string;
+    };
+    accessToken?: string;
+  }
+}

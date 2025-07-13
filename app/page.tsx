@@ -6,10 +6,12 @@ import { Sidebar } from "./components/Sidebar";
 import { Button } from "./components/ui/button";
 import { Heart, MessageCircle, Share2, Lock, Sparkles, TrendingUp, Users, Star, Bookmark } from "lucide-react";
 import { SessionProvider, useSession } from "next-auth/react";
-import { useState } from "react";
-import { User } from "./types";
+import { useEffect, useState } from "react";
+import { Creator, User } from "./types";
 import { Badge } from "./components/ui/badge";
-
+import creatorservice from "./services/creatorservice";
+import toast from "react-hot-toast";
+import Link from "next/link";
 export default function Page() {
   return (
     <SessionProvider>
@@ -21,39 +23,24 @@ export default function Page() {
 function App() {
   const { data: session } = useSession();
   const [user, setUser] = useState<User | null>(null);
+  const [creators, setCreators] = useState<Creator[] | null>(null)
 
-  const featuredCreators = [
-    {
-      id: "1",
-      name: "Emma Rose",
-      username: "@emmarose",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-      subscribers: 12500,
-      isSubscribed: false,
-      price: 19.99,
-      category: "Lifestyle"
-    },
-    {
-      id: "2",
-      name: "Alex Turner",
-      username: "@alexturner",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-      subscribers: 8700,
-      isSubscribed: true,
-      price: 14.99,
-      category: "Fitness"
-    },
-    {
-      id: "3",
-      name: "Sophia Chen",
-      username: "@sophiachen",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-      subscribers: 15200,
-      isSubscribed: false,
-      price: 24.99,
-      category: "Art"
+  useEffect(() => {
+    const fetchCreators = async () => {
+      try {
+        const fetchedCreators = await creatorservice.get()
+        if(!fetchCreators){
+          setCreators([])
+        }
+        setCreators(fetchedCreators)
+      }
+      catch (error){
+        console.error("Couldn't fetch creators: ", error)
+        toast.error("Error fetching creators")
+      }
     }
-  ];
+    fetchCreators()
+  },)
 
   const posts = [
     {
@@ -168,12 +155,12 @@ function App() {
                   <p className="text-gray-400 mt-1">Discover amazing content creators</p>
                 </div>
               </div>
-              <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 rounded-full px-6">
+              <Link href="/discover" className="border-white/20 outline text-white hover:bg-white/10 rounded-full px-6">
                 View All
-              </Button>
+              </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {featuredCreators.map((creator) => (
+              {creators && creators.map((creator) => (
                 <CreatorCard key={creator.id} creator={creator} />
               ))}
             </div>

@@ -8,12 +8,13 @@ import { auth } from '@/lib/auth-client';
 export async function GET() {
   await connectDB();
   
-  const session = await auth();
+  /* const session = await auth();
   if (!session) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
-  }
+  } */
   try {
-    const users = await OFUser.find({}).populate('walkingroutes');
+    // tee tähän populate
+    const users = await OFUser.find({})
     return NextResponse.json({ users });
   } catch (error) {
     console.error('Error fetching users:', error);

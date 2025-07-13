@@ -10,7 +10,8 @@ import {
   Settings, 
   LogOut,
   Crown,
-  Sparkles
+  Sparkles,
+  User as UserIcon
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -21,7 +22,7 @@ import {
 } from "@/app/components/ui/dropdown-menu";
 import { LoginModal } from "@/app/components/LoginModal";
 import { signOut, useSession } from "next-auth/react";
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { User } from '@/app/types'
 import { toast } from 'react-hot-toast';
 export const Header = ({
@@ -110,7 +111,7 @@ export const Header = ({
                         <p className="text-gray-400 text-sm">@johndoe</p>
                       </div>
                       <DropdownMenuItem className="text-white hover:bg-slate-700/50 rounded-lg px-3 py-2 cursor-pointer">
-                        <User className="mr-3 h-4 w-4 text-pink-400" />
+                        <UserIcon className="mr-3 h-4 w-4 text-pink-400" />
                         Profile
                       </DropdownMenuItem>
                       <DropdownMenuItem className="text-white hover:bg-slate-700/50 rounded-lg px-3 py-2 cursor-pointer">
@@ -154,7 +155,6 @@ export const Header = ({
         isOpen={showLoginModal} 
         onClose={() => setShowLoginModal(false)}
         onLogin={() => {
-          setIsLoggedIn(true);
           setShowLoginModal(false);
         }}
       />

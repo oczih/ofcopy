@@ -9,12 +9,13 @@ import {
   Sparkles,
   TrendingUp
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export const Sidebar = () => {
   const pathname = usePathname();
-  
+  const { data: session } = useSession();
   const menuItems = [
     { id: "feed", label: "Home Feed", icon: Home, color: "pink", href: "/" },
     { id: "discover", label: "Discover", icon: Compass, color: "purple", href: "/discover" },
@@ -91,7 +92,7 @@ export const Sidebar = () => {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between text-gray-400">
             <span>Subscriptions</span>
-            <span className="text-pink-400 font-medium">12</span>
+            <span className="text-pink-400 font-medium">{session?.user?.subscriptions?.length}</span>
           </div>
           <div className="flex justify-between text-gray-400">
             <span>Favorites</span>
