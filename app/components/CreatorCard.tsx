@@ -70,7 +70,9 @@ export const CreatorCard = ({ creator }: CreatorCardProps) => {
           </div>
           <div className="flex items-center gap-1">
             <Star className="w-4 h-4 text-yellow-400 fill-current" />
-            <span className="text-gray-300 font-medium group-hover:text-yellow-300 transition-colors duration-300">4.9</span>
+            <span className="text-gray-300 font-medium group-hover:text-yellow-300 transition-colors duration-300">
+              ${creator.price}
+            </span>
           </div>
         </div>
         

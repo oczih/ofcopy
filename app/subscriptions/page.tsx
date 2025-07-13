@@ -13,7 +13,7 @@ import {
   Play,
   MessageCircle
 } from "lucide-react";
-import { SessionProvider } from "next-auth/react";
+import { SessionProvider, useSession } from "next-auth/react";
 import { Subscription } from "../types";
 
 export default function SubscriptionsPage() {
@@ -25,54 +25,20 @@ export default function SubscriptionsPage() {
 }
 
 function Subscriptions() {
+  const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState("active");
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Mock subscription data for demonstration
-  const mockSubscriptions: Subscription[] = [
-    {
-      creatorId: "1",
-      creatorName: "Emma Rose",
-      creatorUsername: "@emmarose",
-      creatorImage: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-      subscriptionDate: new Date("2024-01-15"),
-      price: 19.99,
-      status: "active",
-      nextBillingDate: new Date("2024-02-15"),
-      autoRenew: true
-    },
-    {
-      creatorId: "2",
-      creatorName: "Alex Turner",
-      creatorUsername: "@alexturner",
-      creatorImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-      subscriptionDate: new Date("2024-01-10"),
-      price: 14.99,
-      status: "active",
-      nextBillingDate: new Date("2024-02-10"),
-      autoRenew: false
-    },
-    {
-      creatorId: "3",
-      creatorName: "Sophia Chen",
-      creatorUsername: "@sophiachen",
-      creatorImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-      subscriptionDate: new Date("2023-12-20"),
-      price: 24.99,
-      status: "cancelled",
-      nextBillingDate: new Date("2024-01-20"),
-      autoRenew: false
-    }
-  ];
-
   useEffect(() => {
-    // Simulate loading
-    setTimeout(() => {
-      setSubscriptions(mockSubscriptions);
+    if (session?.user?.subscriptions) {
+      setSubscriptions(session.user.subscriptions);
       setLoading(false);
-    }, 1000);
-  }, []);
+    } else {
+      setSubscriptions([]);
+      setLoading(false);
+    }
+  }, [session]);
 
   const subscriptionTabs = [
     { id: "active", label: "Active", icon: Heart, count: subscriptions.filter(s => s.status === 'active').length },
@@ -100,7 +66,7 @@ function Subscriptions() {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
       </div>
 
-      <Header />
+      <Header user={null} setUser={() => {}} />
       
       <div className="flex max-w-7xl mx-auto px-4 py-8 gap-8 relative z-10">
         <Sidebar />

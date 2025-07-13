@@ -95,12 +95,14 @@ export const Sidebar = () => {
             <span className="text-pink-400 font-medium">{session?.user?.subscriptions?.length}</span>
           </div>
           <div className="flex justify-between text-gray-400">
-            <span>Favorites</span>
-            <span className="text-purple-400 font-medium">47</span>
+            <span>Total Creators</span>
+            <span className="text-purple-400 font-medium">{session?.user?.subscriptions?.length || 0}</span>
           </div>
           <div className="flex justify-between text-gray-400">
-            <span>Messages</span>
-            <span className="text-blue-400 font-medium">8</span>
+            <span>Active Subscriptions</span>
+            <span className="text-blue-400 font-medium">
+              {session?.user?.subscriptions?.filter(sub => sub.status === 'active').length || 0}
+            </span>
           </div>
         </div>
       </div>

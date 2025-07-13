@@ -8,7 +8,8 @@ import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { MessageCircle, Send, Search, MoreVertical, Phone, Video, Image as ImageIcon, Smile } from "lucide-react";
 import { SessionProvider } from "next-auth/react";
-
+import { useSession } from "next-auth/react";
+import Image from "next/image";
 export default function MessagesPage() {
   return (
     <SessionProvider>
@@ -20,65 +21,62 @@ export default function MessagesPage() {
 function MessagesApp() {
   const [selectedConversation, setSelectedConversation] = useState(0);
   const [messageText, setMessageText] = useState("");
-
-  const conversations = [
-    {
-      id: 0,
+  const {data: session} = useSession()
+  const conversations = session?.user?.subscriptions?.map((subscription, index) => {
+    const messages = [
+      "Thanks for subscribing! 💕",
+      "Check out my latest exclusive content!",
+      "I'm working on something special for subscribers",
+      "Your support means everything to me!",
+      "New content dropping soon!",
+      "Hope you're enjoying the exclusive posts",
+      "Can't wait to share more with you",
+      "Thanks for being part of my community"
+    ];
+    
+    const timestamps = [
+      "2 min ago",
+      "5 min ago", 
+      "1 hour ago",
+      "2 hours ago",
+      "1 day ago",
+      "2 days ago"
+    ];
+    
+    return {
+      id: index,
       creator: {
-        name: "Emma Rose",
-        username: "@emmarose",
-        avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-        isOnline: true
+        name: subscription.creatorName,
+        username: subscription.creatorUsername,
+        avatar: subscription.creatorImage || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+        isOnline: Math.random() > 0.5 // Random online status for demo
       },
-      lastMessage: "Thanks for the support! 💕",
-      timestamp: "2 min ago",
-      unreadCount: 2
-    },
+      lastMessage: messages[Math.floor(Math.random() * messages.length)],
+      timestamp: timestamps[Math.floor(Math.random() * timestamps.length)],
+      unreadCount: Math.floor(Math.random() * 3)
+    };
+  }) || [];
+
+  // Generate messages based on selected conversation
+  const messages = selectedConversation >= 0 && conversations[selectedConversation] ? [
     {
       id: 1,
-      creator: {
-        name: "Alex Turner",
-        username: "@alexturner",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-        isOnline: false
-      },
-      lastMessage: "Check out my new workout routine!",
-      timestamp: "1 hour ago",
-      unreadCount: 0
-    },
-    {
-      id: 2,
-      creator: {
-        name: "Sophia Chen",
-        username: "@sophiachen",
-        avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-        isOnline: true
-      },
-      lastMessage: "I loved your latest artwork!",
-      timestamp: "3 hours ago",
-      unreadCount: 1
-    }
-  ];
-
-  const messages = [
-    {
-      id: 1,
-      sender: "emma",
-      content: "Hey! Thanks for subscribing to my content 💕",
+      sender: conversations[selectedConversation].creator.username.replace('@', ''),
+      content: `Hey! Thanks for subscribing to my content 💕 I'm ${conversations[selectedConversation].creator.name}`,
       timestamp: "10:30 AM",
       isRead: true
     },
     {
       id: 2,
       sender: "user",
-      content: "Hi Emma! I love your lifestyle content, especially the morning routine videos",
+      content: `Hi ${conversations[selectedConversation].creator.name}! I love your content, especially your latest posts`,
       timestamp: "10:32 AM",
       isRead: true
     },
     {
       id: 3,
-      sender: "emma",
-      content: "Aww thank you so much! I'm so glad you enjoy them. I'm actually working on a new series about healthy habits",
+      sender: conversations[selectedConversation].creator.username.replace('@', ''),
+      content: "Aww thank you so much! I'm so glad you enjoy them. I'm actually working on some new exclusive content for subscribers",
       timestamp: "10:35 AM",
       isRead: true
     },
@@ -91,12 +89,12 @@ function MessagesApp() {
     },
     {
       id: 5,
-      sender: "emma",
-      content: "Thanks for the support! 💕",
+      sender: conversations[selectedConversation].creator.username.replace('@', ''),
+      content: "Thanks for the support! 💕 I'll make sure to send you early access to my new content",
       timestamp: "10:40 AM",
       isRead: false
     }
-  ];
+  ] : [];
 
   const handleSendMessage = () => {
     if (messageText.trim()) {
@@ -115,7 +113,7 @@ function MessagesApp() {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
       </div>
 
-      <Header />
+      <Header user={null} setUser={() => {}} />
       
       <div className="flex max-w-7xl mx-auto px-4 py-8 gap-8 relative z-10">
         <Sidebar />
@@ -146,7 +144,7 @@ function MessagesApp() {
                 </div>
 
                 <div className="overflow-y-auto h-[500px]">
-                  {conversations.map((conversation) => (
+                  {conversations.length > 0 ? conversations.map((conversation) => (
                     <div
                       key={conversation.id}
                       className={`p-4 cursor-pointer transition-all duration-300 hover:bg-white/10 ${
@@ -156,7 +154,7 @@ function MessagesApp() {
                     >
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <img
+                          <Image
                             src={conversation.creator.avatar}
                             alt={conversation.creator.name}
                             className="w-12 h-12 rounded-full object-cover"
@@ -181,7 +179,15 @@ function MessagesApp() {
                         )}
                       </div>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-white font-semibold mb-2">No Conversations</h3>
+                        <p className="text-gray-400 text-sm">Subscribe to creators to start messaging them</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -194,21 +200,21 @@ function MessagesApp() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="relative">
-                            <img
-                              src={conversations[selectedConversation].creator.avatar}
-                              alt={conversations[selectedConversation].creator.name}
+                            <Image
+                              src={conversations[selectedConversation]?.creator?.avatar}
+                              alt={conversations[selectedConversation]?.creator?.name}
                               className="w-10 h-10 rounded-full object-cover"
                             />
-                            {conversations[selectedConversation].creator.isOnline && (
+                            {conversations[selectedConversation]?.creator?.isOnline && (
                               <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-950"></div>
                             )}
                           </div>
                           <div>
                             <h3 className="text-white font-semibold">
-                              {conversations[selectedConversation].creator.name}
+                              {conversations[selectedConversation]?.creator?.name}
                             </h3>
                             <p className="text-gray-400 text-sm">
-                              {conversations[selectedConversation].creator.isOnline ? "Online" : "Offline"}
+                              {conversations[selectedConversation]?.creator?.isOnline ? "Online" : "Offline"}
                             </p>
                           </div>
                         </div>
@@ -228,7 +234,7 @@ function MessagesApp() {
 
                     {/* Messages */}
                     <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                      {messages.map((message) => (
+                      {messages.length > 0 ? messages.map((message) => (
                         <div
                           key={message.id}
                           className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
@@ -248,7 +254,15 @@ function MessagesApp() {
                             </p>
                           </div>
                         </div>
-                      ))}
+                      )) : (
+                        <div className="flex items-center justify-center h-full">
+                          <div className="text-center">
+                            <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                            <h3 className="text-white font-semibold mb-2">Select a Conversation</h3>
+                            <p className="text-gray-400 text-sm">Choose a creator to start messaging</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Message Input */}

@@ -29,6 +29,7 @@ export interface UserDocument {
   membership?: boolean;
   lastUsernameChange?: Date;
   subscriptions: Subscription[];
+  messages: Messages[];
 }
 
 
