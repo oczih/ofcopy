@@ -11,6 +11,7 @@ export type User = {
     lastUsernameChange: Date
     isUsernameChangeBlocked: boolean
     accessToken?: string
+    subscriptions?: Subscription[]
   }
   
 export type Creator = {
@@ -23,3 +24,15 @@ export type Creator = {
     price: number;
     category: string;
   }
+
+export type Subscription = {
+  creatorId: string;
+  creatorName: string;
+  creatorUsername: string;
+  creatorImage?: string;
+  subscriptionDate: Date;
+  price: number;
+  status: 'active' | 'cancelled' | 'expired';
+  nextBillingDate?: Date;
+  autoRenew: boolean;
+}

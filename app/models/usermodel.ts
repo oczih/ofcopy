@@ -1,5 +1,18 @@
 import mongoose, { Schema, model } from "mongoose";
 
+// Subscription interface for better type safety
+export interface Subscription {
+  creatorId: mongoose.Types.ObjectId;
+  creatorName: string;
+  creatorUsername: string;
+  creatorImage?: string;
+  subscriptionDate: Date;
+  price: number;
+  status: 'active' | 'cancelled' | 'expired';
+  nextBillingDate?: Date;
+  autoRenew: boolean;
+}
+
 export interface UserDocument {
     _id: string;
   username: string;
@@ -15,6 +28,7 @@ export interface UserDocument {
   priceId?: string;
   membership?: boolean;
   lastUsernameChange?: Date;
+  subscriptions: Subscription[];
 }
 
 
@@ -69,14 +83,52 @@ const userSchema = new Schema<UserDocument>({
     type: Date,
     default: '',
   },
+  subscriptions: [{
+    creatorId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Creator',
+      required: true
+    },
+    creatorName: {
+      type: String,
+      required: true
+    },
+    creatorUsername: {
+      type: String,
+      required: true
+    },
+    creatorImage: {
+      type: String
+    },
+    subscriptionDate: {
+      type: Date,
+      default: Date.now
+    },
+    price: {
+      type: Number,
+      required: true
+    },
+    status: {
+      type: String,
+      enum: ['active', 'cancelled', 'expired'],
+      default: 'active'
+    },
+    nextBillingDate: {
+      type: Date
+    },
+    autoRenew: {
+      type: Boolean,
+      default: true
+    }
+  }]
 }, { timestamps: true });
 
 userSchema.set('toJSON', {
-    transform: (_doc, ret: Record<string, any>) => {
+    transform: (_doc, ret: any) => {
       ret.id = ret._id?.toString();
-      if ('_id' in ret) delete ret._id;
-      if ('__v' in ret) delete ret.__v;
-      if ('password' in ret) delete ret.password;
+      delete ret._id;
+      delete ret.__v;
+      delete ret.password;
     },
   });
 const OFUser = mongoose.models?.OFUser || model<UserDocument>('OFUser', userSchema);

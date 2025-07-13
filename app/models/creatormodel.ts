@@ -11,6 +11,9 @@ export interface CreatorDocument {
     oauthProvider?: string;
     oauthId?: string;
     lastUsernameChange?: Date;
+    subscribers?: number;
+    price?: number;
+    category?: string;
 }
 
 const creatorSchema = new Schema<CreatorDocument>({
@@ -43,6 +46,18 @@ const creatorSchema = new Schema<CreatorDocument>({
     lastUsernameChange: {
         type: Date,
         default: '',
+    },
+    subscribers: {
+        type: Number,
+        default: 0,
+    },
+    price: {
+        type: Number,
+        default: 9.99,
+    },
+    category: {
+        type: String,
+        default: 'General',
     },
 }, { timestamps: true })
 
