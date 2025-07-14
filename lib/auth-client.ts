@@ -1,10 +1,10 @@
-import NextAuth from "next-auth";
+import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import TwitterProvider from "next-auth/providers/twitter";
-import WalkUser from "@/app/models/usermodel";
+import OFUser from "@/app/models/usermodel";
 import { connectDB } from "@/lib/mongoose";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -44,10 +44,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       let existingUser;
 
       if (provider === "google") {
-        existingUser = await WalkUser.findOne({ email: user.email });
+        existingUser = await OFUser.findOne({ email: user.email });
 
         if (!existingUser) {
-          existingUser = await WalkUser.create({
+          existingUser = await OFUser.create({
             email: user.email,
             username: user.name?.replace(/\s+/g, "_").toLowerCase() || `google_user_${providerId}`,
             name: user.name,
@@ -66,10 +66,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const twitterId = providerId;
         const fallbackEmail = "";
 
-        existingUser = await WalkUser.findOne({ oauthId: twitterId });
+        existingUser = await OFUser.findOne({ oauthId: twitterId });
 
         if (!existingUser) {
-          existingUser = await WalkUser.create({
+          existingUser = await OFUser.create({
             email: fallbackEmail,
             username: user.name || `twitter_user_${twitterId}`,
             name: user.name,
@@ -136,7 +136,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       console.log("[Session] Looking for user with token.email:", token.email, "token.sub:", token.sub, "token.id:", token.id);
 
-      const user = await WalkUser.findOne({
+      const user = await OFUser.findOne({
         $or: [{ email: token.email }, { oauthId: token.sub }],
       });
 
@@ -169,4 +169,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return `${baseUrl}/subscribe`;
     },
   },
-});
+};
+
+export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);

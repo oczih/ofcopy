@@ -25,6 +25,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useRouter } from 'next/navigation';
 import { User } from '@/app/types'
 import { toast } from 'react-hot-toast';
+import Link from "next/link";
 export const Header = ({
   setUser,
 }: {
@@ -99,7 +100,7 @@ export const Header = ({
                       <Button variant="ghost" size="icon" className="rounded-full p-0 hover:scale-110 transition-all duration-300">
                         <div className="relative">
                           <Avatar className="w-10 h-10 border-2 border-pink-500/50 hover:border-pink-500 transition-all duration-300">
-                            <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face" />
+                            <AvatarImage src={`${session.user?.image}`} />
                             <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">JD</AvatarFallback>
                           </Avatar>
                         </div>
@@ -107,16 +108,17 @@ export const Header = ({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-64 bg-slate-900/95 backdrop-blur-xl border-slate-700/50 shadow-2xl rounded-2xl p-2" align="end">
                       <div className="px-3 py-2 border-b border-slate-700/50 mb-2">
-                        <p className="text-white font-semibold">John Doe</p>
-                        <p className="text-gray-400 text-sm">@johndoe</p>
+                        <p className="text-white font-semibold">{session.user?.name}</p>
+                        <p className="text-gray-400 text-sm">{session.user?.username}</p>
                       </div>
                       <DropdownMenuItem className="text-white hover:bg-slate-700/50 rounded-lg px-3 py-2 cursor-pointer">
                         <UserIcon className="mr-3 h-4 w-4 text-pink-400" />
                         Profile
                       </DropdownMenuItem>
                       <DropdownMenuItem className="text-white hover:bg-slate-700/50 rounded-lg px-3 py-2 cursor-pointer">
-                        <Settings className="mr-3 h-4 w-4 text-gray-400" />
+                        <Link href="/settings"><Settings className="mr-3 h-4 w-4 text-gray-400" />
                         Settings
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-slate-700/50 my-2" />
                       <DropdownMenuItem 
