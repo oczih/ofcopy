@@ -1,4 +1,4 @@
-
+'use client'
 import { useState } from "react";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
@@ -23,21 +23,14 @@ import {
 import { LoginModal } from "@/app/components/LoginModal";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from 'next/navigation';
-import { User } from '@/app/types'
 import { toast } from 'react-hot-toast';
 import Link from "next/link";
-export const Header = ({
-  setUser,
-}: {
-  user: User | null;
-  setUser: (user: User | null) => void;
-}) => {
+export const Header = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { data: session } = useSession();
   const router = useRouter();
   const handleSignOut = async () => {
     await signOut({ redirect: false });
-    setUser(null);
     localStorage.removeItem('user');
     router.push('/');
     toast.success('Signed out successfully');
@@ -86,14 +79,13 @@ export const Header = ({
                     <Bell className="w-5 h-5" />
                     <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Link 
+                    href={"/messages"}
                     className="text-white hover:bg-white/10 hover:text-blue-400 rounded-full w-12 h-12 transition-all duration-300 hover:scale-110 relative"
                   >
                     <MessageCircle className="w-5 h-5" />
                     <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                  </Button>
+                  </Link>
                   
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

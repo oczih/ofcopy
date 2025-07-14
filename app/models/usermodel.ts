@@ -1,4 +1,5 @@
 import mongoose, { Schema, model } from "mongoose";
+import { Message } from "./messagemodel";
 
 // Subscription interface for better type safety
 export interface Subscription {
@@ -12,7 +13,20 @@ export interface Subscription {
   nextBillingDate?: Date;
   autoRenew: boolean;
 }
+export type NotificationType =
+  | 'newsub'
+  | 'resub'
+  | 'tip'
+  | 'subcancel'
+  | 'comment'
+  | 'like'
+  | 'newfollower';
 
+export interface Notification {
+  type: NotificationType;
+  date: Date;
+  seen: boolean
+}
 export interface UserDocument {
     _id: string;
   username: string;
@@ -29,7 +43,8 @@ export interface UserDocument {
   membership?: boolean;
   lastUsernameChange?: Date;
   subscriptions: Subscription[];
-  messages: Messages[];
+  messages: Message[];
+  notifications: Notification[];
 }
 
 
@@ -121,15 +136,27 @@ const userSchema = new Schema<UserDocument>({
       type: Boolean,
       default: true
     }
+  }],
+  notifications: [{
+    type: {
+      type: String,
+      enum: ['newsub', 'resub', 'tip', 'subcancel', 'comment', 'like', 'newfollower'],
+      required: true
+    },
+    date: {
+      type: Date,
+      required: true
+    }
   }]
 }, { timestamps: true });
 
 userSchema.set('toJSON', {
-    transform: (_doc, ret: any) => {
-      ret.id = ret._id?.toString();
-      delete ret._id;
-      delete ret.__v;
-      delete ret.password;
+    transform: (_doc, ret: UserDocument & { _id?: string; __v?: number; password?: string }) => {
+      const r = ret as unknown as Record<string, unknown>;
+      r.id = ret._id?.toString();
+      delete r._id;
+      delete r.__v;
+      delete r.password;
     },
   });
 const OFUser = mongoose.models?.OFUser || model<UserDocument>('OFUser', userSchema);

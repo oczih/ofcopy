@@ -90,47 +90,6 @@ function App() {
               </div>
             </div>
           </div>
-
-          {/* Stats Section */}
-          <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-white mb-2">Platform Statistics</h2>
-              <p className="text-gray-400">Real-time data from our community</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-300 text-center">
-                <div className="flex items-center justify-center gap-3 mb-3">
-                  <div className="p-2 bg-pink-500/20 rounded-lg">
-                    <div className="w-5 h-5 bg-pink-400 rounded-full"></div>
-                  </div>
-                  <span className="text-white font-semibold">Active Creators</span>
-                </div>
-                <p className="text-3xl font-bold text-pink-400">{stats.activeCreators.toLocaleString()}</p>
-                <p className="text-gray-400 text-sm">Active creators</p>
-              </div>
-              <div className="bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-300 text-center">
-                <div className="flex items-center justify-center gap-3 mb-3">
-                  <div className="p-2 bg-purple-500/20 rounded-lg">
-                    <div className="w-5 h-5 bg-purple-400 rounded-full"></div>
-                  </div>
-                  <span className="text-white font-semibold">Total Subscriptions</span>
-                </div>
-                <p className="text-3xl font-bold text-purple-400">{stats.totalSubscriptions.toLocaleString()}</p>
-                <p className="text-gray-400 text-sm">Active subscriptions</p>
-              </div>
-              <div className="bg-white/10 rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-300 text-center">
-                <div className="flex items-center justify-center gap-3 mb-3">
-                  <div className="p-2 bg-cyan-500/20 rounded-lg">
-                    <div className="w-5 h-5 bg-cyan-400 rounded-full"></div>
-                  </div>
-                  <span className="text-white font-semibold">Total Revenue</span>
-                </div>
-                <p className="text-3xl font-bold text-cyan-400">${stats.totalRevenue.toLocaleString()}</p>
-                <p className="text-gray-400 text-sm">Monthly revenue</p>
-              </div>
-            </div>
-          </div>
-
           {/* Featured Creators Section */}
           <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl hover:bg-white/10 transition-all">
             <div className="flex items-center justify-between mb-8">
@@ -150,9 +109,14 @@ function App() {
               </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {creators && creators.map((creator) => (
-                <CreatorCard key={creator.id} creator={creator} />
-              ))}
+            {creators &&
+                  creators
+                    .slice()
+                    .sort((a, b) => b.subscribers - a.subscribers)
+                    .map((creator) => (
+                      <CreatorCard key={creator.id} creator={creator} />
+                    ))
+                }
             </div>
           </div>
 

@@ -12,6 +12,7 @@ export type User = {
     isUsernameChangeBlocked: boolean
     accessToken?: string
     subscriptions?: Subscription[]
+    notifications?: Notification[]
   }
   
 export type Creator = {
@@ -24,7 +25,11 @@ export type Creator = {
     price: number;
     category: string;
   }
-
+export type Notification = {
+  type: 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comment' | 'like' | 'newfollower',
+  date: Date,
+  seen: boolean
+}
 export type Subscription = {
   creatorId: string;
   creatorName: string;

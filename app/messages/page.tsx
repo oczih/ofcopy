@@ -21,6 +21,7 @@ export default function MessagesPage() {
 function MessagesApp() {
   const [selectedConversation, setSelectedConversation] = useState(0);
   const [messageText, setMessageText] = useState("");
+  const [selected, setSelected] = useState(false)
   const {data: session} = useSession()
   const conversations = session?.user?.subscriptions?.map((subscription, index) => {
     const messages = [
@@ -56,7 +57,10 @@ function MessagesApp() {
       unreadCount: Math.floor(Math.random() * 3)
     };
   }) || [];
-
+  const handleConversationClick = (conversation) => {
+    setSelectedConversation(conversation.id)
+    setSelected(true)
+  }
   // Generate messages based on selected conversation
   const messages = selectedConversation >= 0 && conversations[selectedConversation] ? [
     {
@@ -113,7 +117,7 @@ function MessagesApp() {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
       </div>
 
-      <Header user={null} setUser={() => {}} />
+      <Header />
       
       <div className="flex max-w-7xl mx-auto px-4 py-8 gap-8 relative z-10">
         <Sidebar />
@@ -150,7 +154,8 @@ function MessagesApp() {
                       className={`p-4 cursor-pointer transition-all duration-300 hover:bg-white/10 ${
                         selectedConversation === conversation.id ? "bg-white/10 border-r-2 border-blue-500" : ""
                       }`}
-                      onClick={() => setSelectedConversation(conversation.id)}
+                      onClick={() => handleConversationClick(conversation)
+                      }
                     >
                       <div className="flex items-center gap-3">
                         <div className="relative">
@@ -196,7 +201,7 @@ function MessagesApp() {
                 {selectedConversation !== null ? (
                   <>
                     {/* Chat Header */}
-                    <div className="p-6 border-b border-white/10 bg-white/5">
+                    { selected && <div className="p-6 border-b border-white/10 bg-white/5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="relative">
@@ -231,7 +236,7 @@ function MessagesApp() {
                         </div>
                       </div>
                     </div>
-
+                      }
                     {/* Messages */}
                     <div className="flex-1 overflow-y-auto p-6 space-y-4">
                       {messages.length > 0 ? messages.map((message) => (

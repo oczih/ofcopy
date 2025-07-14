@@ -153,6 +153,8 @@ export const authOptions: NextAuthOptions = {
         session.user.hasAccess = user.hasAccess;
         session.user.lastUsernameChange = user.lastUsernameChange;
         session.user.isUsernameChangeBlocked = user.isUsernameChangeBlocked;
+        session.user.subscriptions = user.subscriptions;
+        session.user.notifications = user.notifications;
       } else {
         console.log("[Session] No user found in database");
       }

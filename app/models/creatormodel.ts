@@ -13,7 +13,7 @@ export interface CreatorDocument {
     lastUsernameChange?: Date;
     subscribers?: number;
     price?: number;
-    category?: string;
+    category?: string;  
 }
 
 const creatorSchema = new Schema<CreatorDocument>({

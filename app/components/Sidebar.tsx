@@ -1,3 +1,5 @@
+'use client'
+
 import { Button } from "./ui/button";
 import { 
   Home, 
@@ -7,7 +9,8 @@ import {
   Settings,
   Crown,
   Sparkles,
-  TrendingUp
+  TrendingUp,
+  Bell
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -16,11 +19,12 @@ import { usePathname } from "next/navigation";
 export const Sidebar = () => {
   const pathname = usePathname();
   const { data: session } = useSession();
+  console.log(session?.user)
   const menuItems = [
     { id: "feed", label: "Home Feed", icon: Home, color: "pink", href: "/" },
     { id: "discover", label: "Discover", icon: Compass, color: "purple", href: "/discover" },
     { id: "messages", label: "Messages", icon: MessageCircle, color: "blue", href: "/messages" },
-    { id: "favorites", label: "Favorites", icon: Heart, color: "red", href: "/favorites" },
+    { id: "notifications", label: "Notifications", icon: Bell, color: "red", href: "/notifications" },
     { id: "subscriptions", label: "Subscriptions", icon: Crown, color: "yellow", href: "/subscriptions" },
     { id: "settings", label: "Settings", icon: Settings, color: "green", href: "/settings" },
   ];
@@ -101,7 +105,7 @@ export const Sidebar = () => {
           <div className="flex justify-between text-gray-400">
             <span>Active Subscriptions</span>
             <span className="text-blue-400 font-medium">
-              {session?.user?.subscriptions?.filter(sub => sub.status === 'active').length || 0}
+              {session?.user?.subscriptions?.length || 0}
             </span>
           </div>
         </div>
