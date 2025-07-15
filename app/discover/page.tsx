@@ -11,7 +11,7 @@ import { Search, Filter, Sparkles, TrendingUp, Star, Compass } from "lucide-reac
 import { SessionProvider } from "next-auth/react";
 import creatorservice from "../services/creatorservice";
 import toast from "react-hot-toast";
-import { Creator, User } from "../types";
+import { Creator } from "../types";
 
 export default function DiscoverPage() {
   return (
@@ -25,7 +25,6 @@ function DiscoverApp() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [creators, setCreators] = useState<Creator[]>([]);
-  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const fetchCreators = async () => {
@@ -62,7 +61,7 @@ function DiscoverApp() {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
       </div>
 
-      <Header user={user} setUser={setUser} />
+      <Header />
       
       <div className="flex max-w-7xl mx-auto px-4 py-8 gap-8 relative z-10">
         <Sidebar />

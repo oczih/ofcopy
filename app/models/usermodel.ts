@@ -45,6 +45,7 @@ export interface UserDocument {
   subscriptions: Subscription[];
   messages: Message[];
   notifications: Notification[];
+  creator?: boolean;
 }
 
 
@@ -76,6 +77,10 @@ const userSchema = new Schema<UserDocument>({
   oauthProvider: { type: String },
   oauthId: { type: String },
   hasAccess: {
+    type: Boolean,
+    default: false,
+  },
+  creator: {
     type: Boolean,
     default: false,
   },

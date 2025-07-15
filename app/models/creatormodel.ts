@@ -63,4 +63,17 @@ const creatorSchema = new Schema<CreatorDocument>({
 
 const Creator = mongoose.models.Creator || model<CreatorDocument>("Creator", creatorSchema);
 
+// Creator Application Model
+const CreatorApplicationSchema = new Schema({
+  username: { type: String, required: true },
+  displayName: { type: String, required: true },
+  bio: { type: String, required: true },
+  socialLinks: { type: [String], default: [] },
+  email: { type: String, required: true },
+  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  createdAt: { type: Date, default: Date.now },
+});
+
+export const CreatorApplication = mongoose.models.CreatorApplication || model('CreatorApplication', CreatorApplicationSchema);
+
 export default Creator;

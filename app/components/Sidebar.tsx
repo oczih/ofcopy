@@ -66,6 +66,7 @@ export const Sidebar = () => {
         })}
         {/* Only show Settings if user is logged in */}
         {session?.user && (
+          <div>
           <Link key="settings" href="/settings">
             <Button
               variant="ghost"
@@ -78,6 +79,19 @@ export const Sidebar = () => {
               )}
             </Button>
           </Link>
+          <Link href="/apply-creator">
+          <Button
+              variant="ghost"
+              className={`w-full justify-start py-3 px-4 rounded-2xl transition-all duration-300 ${getButtonStyles(pathname === "/apply-creator")}`}
+            >
+              <Settings className="w-5 h-5 mr-3" />
+              <span className="font-medium">Apply Creator</span>
+              {pathname === "/apply-creator" && (
+                <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
+              )}
+            </Button>
+          </Link>
+          </div>
         )}
       </nav>
       {session?.user?.creator && 
