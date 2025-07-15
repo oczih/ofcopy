@@ -5,10 +5,8 @@ import {
   Home, 
   Compass, 
   MessageCircle, 
-  Heart, 
   Settings,
   Crown,
-  Sparkles,
   TrendingUp,
   Bell
 } from "lucide-react";
@@ -26,7 +24,7 @@ export const Sidebar = () => {
     { id: "messages", label: "Messages", icon: MessageCircle, color: "blue", href: "/messages" },
     { id: "notifications", label: "Notifications", icon: Bell, color: "red", href: "/notifications" },
     { id: "subscriptions", label: "Subscriptions", icon: Crown, color: "yellow", href: "/subscriptions" },
-    { id: "settings", label: "Settings", icon: Settings, color: "green", href: "/settings" },
+    // Settings will be conditionally rendered below
   ];
 
   const getButtonStyles = (isActive: boolean) => {
@@ -66,37 +64,39 @@ export const Sidebar = () => {
             </Link>
           );
         })}
+        {/* Only show Settings if user is logged in */}
+        {session?.user && (
+          <Link key="settings" href="/settings">
+            <Button
+              variant="ghost"
+              className={`w-full justify-start py-3 px-4 rounded-2xl transition-all duration-300 ${getButtonStyles(pathname === "/settings")}`}
+            >
+              <Settings className="w-5 h-5 mr-3" />
+              <span className="font-medium">Settings</span>
+              {pathname === "/settings" && (
+                <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
+              )}
+            </Button>
+          </Link>
+        )}
       </nav>
-
+      {session?.user?.creator && 
       <div className="relative overflow-hidden bg-gradient-to-br from-yellow-500/20 via-orange-500/20 to-pink-500/20 rounded-2xl border border-yellow-500/30 p-6 group hover:scale-105 transition-all duration-300 cursor-pointer">
         {/* Animated background */}
         <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-        
-        <div className="relative z-10 text-center">
-          <div className="flex justify-center items-center mb-4">
-            <div className="relative">
-              <Crown className="w-10 h-10 text-yellow-400" />
-              <Sparkles className="absolute -top-1 -right-1 w-4 h-4 text-yellow-300 animate-pulse" />
-            </div>
-          </div>
-          <h3 className="text-white font-bold text-lg mb-2">Go Premium</h3>
-          <p className="text-gray-300 text-sm mb-4 leading-relaxed">
-            Unlock exclusive features, premium content, and advanced creator tools
-          </p>
-          <Button className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-black font-bold py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <Crown className="w-4 h-4 mr-2" />
-            Upgrade Now
-          </Button>
-        </div>
+        <Link href="/upload" className="text-center">
+          Upload Content
+        </Link>
+          
       </div>
-
+    }
       {/* Stats section */}
       <div className="mt-6 p-4 bg-white/5 rounded-2xl border border-white/10">
         <h4 className="text-white font-semibold mb-3 text-sm">Your Activity</h4>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between text-gray-400">
             <span>Subscriptions</span>
-            <span className="text-pink-400 font-medium">{session?.user?.subscriptions?.length}</span>
+            <span className="text-pink-400 font-medium">{session?.user?.subscriptions?.length || 0}</span>
           </div>
           <div className="flex justify-between text-gray-400">
             <span>Total Creators</span>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import { Button } from "../components/ui/button";
@@ -8,7 +8,8 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Badge } from "../components/ui/badge";
 import { Settings, User, Shield, Bell, Palette, CreditCard, LogOut, Save } from "lucide-react";
-import { SessionProvider } from "next-auth/react";
+import { SessionProvider, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function SettingsPage() {
   return (
@@ -19,12 +20,17 @@ export default function SettingsPage() {
 }
 
 function SettingsApp() {
+  const { data: session, status } = useSession();
   const [activeSettingsTab, setActiveSettingsTab] = useState("profile");
-  const [name, setName] = useState('John Doe');
-  const [email, setEmail] = useState('john@example.com');
-  const [username, setUsername] = useState('@johndoe');
-  const [bio, setBio] = useState('Passionate content creator and fitness enthusiast');
-
+  const [name, setName] = useState(session?.user.name);
+  const [email, setEmail] = useState(session?.user.email);
+  const [username, setUsername] = useState(session?.user.username);
+  const router = useRouter();
+  if (status === "loading") return null;
+  if (!session?.user) {
+    if (typeof window !== "undefined") router.replace("/");
+    return null;
+  }
   const settingsTabs = [
     { id: "profile", label: "Profile", icon: User },
     { id: "security", label: "Security", icon: Shield },
@@ -133,17 +139,6 @@ function SettingsApp() {
                           value={username}
                           onChange={(e) => setUsername(e.target.value)}
                           className="mt-2 bg-white/10 border-white/20 text-white focus:border-green-500"
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="bio" className="text-white">Bio</Label>
-                        <textarea
-                          id="bio"
-                          value={bio}
-                          onChange={(e) => setBio(e.target.value)}
-                          rows={3}
-                          className="mt-2 w-full bg-white/10 border border-white/20 text-white rounded-lg px-3 py-2 focus:border-green-500 focus:outline-none resize-none"
                         />
                       </div>
 

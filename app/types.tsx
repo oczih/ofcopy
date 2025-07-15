@@ -13,6 +13,7 @@ export type User = {
     accessToken?: string
     subscriptions?: Subscription[]
     notifications?: Notification[]
+    creator?: boolean
   }
   
 export type Creator = {
@@ -54,6 +55,8 @@ declare module "next-auth" {
     isUsernameChangeBlocked?: boolean;
     accessToken?: string;
     subscriptions?: Subscription[] 
+    notifications?: Notification[]
+    creator?: boolean
   }
 
   interface Session {

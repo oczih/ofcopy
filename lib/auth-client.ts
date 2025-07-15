@@ -140,6 +140,13 @@ export const authOptions: NextAuthOptions = {
         $or: [{ email: token.email }, { oauthId: token.sub }],
       });
 
+      // Check if user is a creator
+      let isCreator = false;
+      if (user) {
+        const creator = await (await import("@/app/models/creatormodel")).default.findOne({ email: user.email });
+        isCreator = !!creator;
+      }
+
       if (user) {
         console.log("[Session] Found user:", user._id.toString(), "Token ID:", token.id);
         session.user.id = user._id.toString();
@@ -155,10 +162,10 @@ export const authOptions: NextAuthOptions = {
         session.user.isUsernameChangeBlocked = user.isUsernameChangeBlocked;
         session.user.subscriptions = user.subscriptions;
         session.user.notifications = user.notifications;
+        session.user.creator = isCreator;
       } else {
         console.log("[Session] No user found in database");
       }
-      
       
       session.accessToken = token.accessToken as string;
       
