@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Header } from "../components/Header";
@@ -12,12 +12,30 @@ export default function ApplyCreator() {
 }
 
 function ApplyCreatorPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const [form, setForm] = useState({ displayName: "", bio: "", socialLinks: "" });
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (success && session?.user && !session.user.creator) {
+      interval = setInterval(async () => {
+        // Fetch user from backend
+        const res = await fetch(`/api/users/${session.user.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user?.creator) {
+            await update();
+            window.location.reload();
+          }
+        }
+      }, 10000); // poll every 10 seconds
+    }
+    return () => clearInterval(interval);
+  }, [success, session, update]);
 
   if (status === "loading") return null;
   if (!session?.user) {

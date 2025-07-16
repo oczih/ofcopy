@@ -2,7 +2,7 @@ import { Button } from "./ui/button";
 import { Badge } from "@/app/components/ui/badge";
 import { Users, Heart, Star, Verified, Crown, Sparkles } from "lucide-react";
 import { Creator } from "../types";
-
+import Link from "next/link";
 interface CreatorCardProps {
   creator: Creator;
 }
@@ -89,12 +89,14 @@ export const CreatorCard = ({ creator }: CreatorCardProps) => {
               Subscribe ${creator.price}/month
             </Button>
           )}
+          <Link href={`/${creator.username}`}>
           <Button 
             variant="outline" 
             className="w-full border-2 border-white/20 text-white hover:bg-white/10 hover:border-pink-500/50 rounded-full py-3 font-medium transition-all duration-300 hover:scale-105"
           >
             View Profile
           </Button>
+          </Link>
         </div>
       </div>
     </div>

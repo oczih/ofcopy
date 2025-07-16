@@ -10,10 +10,13 @@ export interface CreatorDocument {
     image?: string;
     oauthProvider?: string;
     oauthId?: string;
+    bio?: string
     lastUsernameChange?: Date;
     subscribers?: number;
     price?: number;
-    category?: string;  
+    category?: string;
+    banner?: string  
+    posts?: mongoose.Types.ObjectId[];
 }
 
 const creatorSchema = new Schema<CreatorDocument>({
@@ -41,6 +44,8 @@ const creatorSchema = new Schema<CreatorDocument>({
         default: null,
     },
     image: { type: String },
+    banner: {type: String},
+    bio: {type: String},
     oauthProvider: { type: String },
     oauthId: { type: String },
     lastUsernameChange: {
@@ -59,6 +64,7 @@ const creatorSchema = new Schema<CreatorDocument>({
         type: String,
         default: 'General',
     },
+    posts: [{ type: Schema.Types.ObjectId, ref: 'Post' }],
 }, { timestamps: true })
 
 const Creator = mongoose.models.Creator || model<CreatorDocument>("Creator", creatorSchema);

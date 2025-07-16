@@ -12,6 +12,8 @@ const s3 = new S3Client({
     secretAccessKey: process.env.AWS_SECRET_KEY!,
   },
 });
+console.log("Creators:", await creatorservice.get())
+
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -25,11 +27,13 @@ export async function GET(req: NextRequest) {
   }
 
   const creators = await creatorservice.get();
-  const userIsCreator = creators.find((c: Creator) => c.id === session.user.id);
 
-  if (!userIsCreator) {
+  const userIsCreator = creators.find((c: Creator) => c.id === session.user.id);
+  console.log("Creators:",creators)
+  console.log("UserIsCreator", userIsCreator)
+  /* if (!userIsCreator) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  } */
 
   const command = new GetObjectCommand({
     Bucket: process.env.AWS_BUCKET_NAME!,

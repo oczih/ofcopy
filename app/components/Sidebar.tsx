@@ -95,15 +95,16 @@ export const Sidebar = () => {
         )}
       </nav>
       {session?.user?.creator && 
-      <div className="relative overflow-hidden bg-gradient-to-br from-yellow-500/20 via-orange-500/20 to-pink-500/20 rounded-2xl border border-yellow-500/30 p-6 group hover:scale-105 transition-all duration-300 cursor-pointer">
-        {/* Animated background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-        <Link href="/upload" className="text-center">
-          Upload Content
+        <Link href="/upload">
+          <Button
+            variant="default"
+            className="w-full justify-center py-4 px-4 rounded-2xl transition-all duration-300 bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500 text-white font-semibold text-lg shadow-lg hover:scale-105 flex items-center gap-3 mt-4 mb-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" /></svg>
+            Upload Content
+          </Button>
         </Link>
-          
-      </div>
-    }
+      }
       {/* Stats section */}
       <div className="mt-6 p-4 bg-white/5 rounded-2xl border border-white/10">
         <h4 className="text-white font-semibold mb-3 text-sm">Your Activity</h4>

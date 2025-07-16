@@ -1,16 +1,58 @@
 import axios from "axios";
-
+import Post from "../models/postmodel";
+import Creator from "../models/creatormodel";
 interface SignedUrlResponse {
   url: string;
   key: string;
 }
 
+interface CreatePostParams {
+  creatorId: string;
+  file: File;
+  type: string;
+  caption: string;
+  viewableFor?: 'followers' | 'subscribers';
+}
+
+export async function getDownloadUrl(key: string): Promise<string> {
+  const response = await axios.get<SignedUrlResponse>("/api/media/get-media", {
+    params: { key },
+  });
+  return response.data.url;
+}
+
 async function getSignedUrl(fileName: string, fileType: string): Promise<SignedUrlResponse> {
-  const response = await axios.post<SignedUrlResponse>("/api/s3/upload-url", {
+  const response = await axios.post<SignedUrlResponse>("/api/media/upload-url", {
     fileName,
     fileType,
   });
   return response.data;
+}
+export async function createPostWithUpload({
+  creatorId,
+  file,
+  type,
+  caption,
+  viewableFor = 'followers',
+}: CreatePostParams) {
+  // Step 1: Upload the file to S3
+  const s3Key = await uploadContent(file);  // <== your existing function
+
+  // Step 2: Create the Post
+  const newPost = await Post.create({
+    creator: creatorId,
+    s3Key,
+    type,
+    caption,
+    viewableFor,
+  });
+
+  // Step 3: Add the post to the creator
+  await Creator.findByIdAndUpdate(creatorId, {
+    $push: { posts: newPost._id },
+  });
+
+  return newPost;
 }
 
 async function uploadFileToS3(file: File, signedUrl: string): Promise<void> {

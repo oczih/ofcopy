@@ -7,7 +7,7 @@ import { Button } from "./components/ui/button";
 import { MessageCircle, Sparkles } from "lucide-react";
 import { SessionProvider, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { Creator, User } from "./types";
+import { Creator } from "./types";
 import { Badge } from "./components/ui/badge";
 import creatorservice from "./services/creatorservice";
 import statsservice from "./services/statsservice";
@@ -23,7 +23,6 @@ export default function Page() {
 
 function App() {
   const { data: session } = useSession();
-  const [user, setUser] = useState<User | null>(null);
   const [creators, setCreators] = useState<Creator[] | null>(null);
   const [stats, setStats] = useState({
     totalCreators: 0,
@@ -69,7 +68,7 @@ function App() {
         <div className="absolute top-3/4 left-1/3 w-64 h-64 bg-yellow-500/15 rounded-full blur-3xl animate-pulse delay-1500"></div>
       </div>
 
-      <Header user={user} setUser={setUser} />
+      <Header />
       
       <div className="flex max-w-7xl mx-auto px-6 py-8 gap-8 relative z-10">
         <Sidebar />
