@@ -3,6 +3,7 @@ import { Badge } from "@/app/components/ui/badge";
 import { Users, Heart, Star, Verified, Crown, Sparkles } from "lucide-react";
 import { Creator } from "../types";
 import Link from "next/link";
+import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 interface CreatorCardProps {
   creator: Creator;
 }
@@ -23,22 +24,17 @@ export const CreatorCard = ({ creator }: CreatorCardProps) => {
       <div className="relative z-10 flex flex-col items-center text-center">
         {/* Avatar with enhanced styling */}
         <div className="relative mb-6">
-          <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 rounded-full p-1 animate-pulse">
-            <div className="bg-slate-950 rounded-full p-1">
-              <img 
-                src={creator.avatar} 
-                alt={creator.name}
-                className="w-20 h-20 rounded-full object-cover"
-              />
-            </div>
-          </div>
-          
+          {/* Avatar gradient border */}
+          <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 rounded-full p-1 animate-pulse" />
+          <Avatar className="w-24 h-24 border-4 border-white/20 shadow-lg relative z-10">
+            <AvatarImage src={creator.avatar} alt={creator.name || creator.username} />
+            <AvatarFallback>{creator.name?.[0] || creator.username?.[0] || "C"}</AvatarFallback>
+          </Avatar>
           {/* Status indicator */}
           <div className="absolute -bottom-2 -right-2 flex items-center gap-1">
-            <div className="w-6 h-6 bg-green-500 rounded-full border-3 border-slate-950 animate-pulse"></div>
+            <div className="w-6 h-6 z-10 bg-green-500 rounded-full border-3 border-slate-950 animate-pulse"></div>
             <Verified className="w-5 h-5 text-blue-500" />
           </div>
-          
           {/* Premium badge */}
           {creator.isSubscribed && (
             <div className="absolute -top-2 -left-2 bg-gradient-to-r from-yellow-500 to-orange-500 p-2 rounded-full animate-glow">

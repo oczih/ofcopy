@@ -13,6 +13,7 @@ import {
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 
 export const Sidebar = () => {
   const pathname = usePathname();
@@ -35,13 +36,26 @@ export const Sidebar = () => {
   };
 
   return (
-    <aside className="w-72 bg-white/5 backdrop-blur-xl rounded-3xl p-6 border border-white/10 h-fit sticky top-28 shadow-2xl">
+    <aside className="w-72 h-screen fixed left-0 top-0 z-30 bg-gradient-to-b from-slate-900/80 via-purple-900/70 to-slate-900/90 backdrop-blur-xl border-r border-white/10 shadow-2xl p-6 flex flex-col">
+      {/* User Profile Section */}
+      {session?.user && (
+        <div className="flex flex-col items-center mb-10 mt-2">
+          <Avatar className="w-20 h-20 border-4 border-pink-500/40 shadow-lg mb-3">
+            <AvatarImage src={session.user.image} alt={session.user.name || session.user.username} />
+            <AvatarFallback>{session.user.name?.[0] || session.user.username?.[0] || "U"}</AvatarFallback>
+          </Avatar>
+          <div className="text-center">
+            <div className="text-lg font-semibold text-white truncate max-w-[12rem]">{session.user.name}</div>
+            <div className="text-sm text-pink-400 truncate max-w-[12rem]">@{session.user.username}</div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <TrendingUp className="w-5 h-5 text-pink-400" />
-          <h2 className="text-lg font-semibold text-white">Navigation</h2>
+          {/* Removed TrendingUp and Navigation title */}
         </div>
-        <p className="text-gray-400 text-sm">Explore and create amazing content</p>
+        {/* Removed subtitle */}
       </div>
 
       <nav className="space-y-2 mb-8">
@@ -65,7 +79,7 @@ export const Sidebar = () => {
           );
         })}
         {/* Only show Settings if user is logged in */}
-        {session?.user && (
+        {session?.user && !session.user.creator && (
           <div>
           <Link key="settings" href="/settings">
             <Button

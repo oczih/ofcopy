@@ -37,7 +37,6 @@ export default async function UserProfilePage({ params }: { params: { username: 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-hidden">
-      <Header />
       <div className="flex max-w-7xl mx-auto px-6 py-8 gap-8 relative z-10">
         <Sidebar />
         <main className="flex-1">

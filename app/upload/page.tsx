@@ -103,7 +103,6 @@ function UploadPage() {
             aria-label="Dim overlay"
           />
         )}
-        <Header />
         <div className="flex max-w-5xl mx-auto px-4 py-12 gap-8">
           <Sidebar />
           <main className="flex-1 flex flex-col items-center">

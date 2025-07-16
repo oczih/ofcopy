@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { Header } from "../components/Header";
 import { CreatorCard } from "@/app/components/CreatorCard";
 import { Sidebar } from "../components/Sidebar";
 import { Button } from "../components/ui/button";
@@ -16,7 +15,9 @@ import { Creator } from "../types";
 export default function DiscoverPage() {
   return (
     <SessionProvider>
-      <DiscoverApp />
+
+          <DiscoverApp />
+        
     </SessionProvider>
   );
 }
@@ -61,13 +62,10 @@ function DiscoverApp() {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
       </div>
 
-      <Header />
-      
-      <div className="flex max-w-7xl mx-auto px-4 py-8 gap-8 relative z-10">
-        <Sidebar />
+      <Sidebar />
+      <main className="flex-1 max-w-7xl mx-auto px-4 py-8 gap-8 relative z-10">
         
-        <main className="flex-1">
-          <div className="space-y-8 animate-fade-in">
+        <div className="space-y-8 animate-fade-in">
             {/* Header Section */}
             <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl">
               <div className="flex items-center gap-4 mb-6">
@@ -180,7 +178,6 @@ function DiscoverApp() {
             </div>
           </div>
         </main>
-      </div>
     </div>
   );
 }

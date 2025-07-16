@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from "react";
-import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -14,7 +13,12 @@ import { useRouter } from "next/navigation";
 export default function SettingsPage() {
   return (
     <SessionProvider>
-      <SettingsApp />
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <div className="flex-1">
+          <SettingsApp />
+        </div>
+      </div>
     </SessionProvider>
   );
 }
@@ -48,13 +52,10 @@ function SettingsApp() {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
       </div>
 
-      <Header />
       
-      <div className="flex max-w-7xl mx-auto px-4 py-8 gap-8 relative z-10">
-        <Sidebar />
+      <main className="flex-1 max-w-7xl mx-auto px-4 py-8 gap-8 relative z-10">
         
-        <main className="flex-1">
-          <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
+        <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
             <div className="flex h-[600px]">
               {/* Settings Sidebar */}
               <div className="w-80 border-r border-white/10 bg-white/5">
@@ -309,9 +310,7 @@ function SettingsApp() {
                 )}
               </div>
             </div>
-          </div>
-        </main>
-      </div>
+          </main>
     </div>
   );
 }
