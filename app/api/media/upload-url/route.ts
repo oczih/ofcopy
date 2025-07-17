@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
       Key: `uploads/${fileName}`,
       ContentType: fileType,
     });
-
+    console.log(fileName)
     const url = await getSignedUrl(s3, command, { expiresIn: 60 });
 
     return NextResponse.json({ url, key: `uploads/${fileName}` });

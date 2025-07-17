@@ -1,7 +1,8 @@
 
 import Creator from "@/app/models/creatormodel";
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from '@/lib/auth-client';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-client';
 import { connectDB } from '../../../../lib/mongoose';
 import mongoose from 'mongoose';
 
@@ -16,8 +17,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ message: "Database connection failed" }, { status: 500 });
     }
     
-    // Use NextAuth v5 auth function
-    const session = await auth();
+    // Use NextAuth v5 getServerSession function
+    const session = await getServerSession(authOptions);
     console.log("[API] Session from auth():", !!session);
     console.log("[API] Session user ID:", session?.user?.id);
     
@@ -27,33 +28,35 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
   
     const { id } = await params;
-    console.log("[API] Requested user ID:", id);
-  
-    console.log("[API] Session user ID:", session?.user?.id, "Requested ID:", id);
-    if (session?.user?.id !== id) {
-      console.log("[API] Session user ID mismatch - Forbidden");
-      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
-    }
-  
-    if (!id || id === "undefined" || !mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json({ error: 'Valid MongoDB ObjectId is required' }, { status: 400 });
-    }
-  
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    let creator;
     try {
-      //populate
-      const user = await Creator.findById(id)
-      if (!user) {
-        return NextResponse.json({ error: 'Creator not found' }, { status: 404 });
+      if (userId) {
+        // Find creator by user field
+        creator = await Creator.findOne({ user: userId }).populate('posts');
+        if (!creator) {
+          return NextResponse.json({ error: 'Creator not found for user' }, { status: 404 });
+        }
+      } else {
+        // Find creator by creator id
+        if (!id || id === "undefined" || !mongoose.Types.ObjectId.isValid(id)) {
+          return NextResponse.json({ error: 'Valid MongoDB ObjectId is required' }, { status: 400 });
+        }
+        creator = await Creator.findById(id).populate('posts');
+        if (!creator) {
+          return NextResponse.json({ error: 'Creator not found' }, { status: 404 });
+        }
       }
-      return NextResponse.json({ user });
+      return NextResponse.json({ user: creator });
     } catch (error) {
       console.error('Error fetching user:', error);
       return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
     }
-  }
+}
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
@@ -147,7 +150,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }

@@ -5,11 +5,12 @@ import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import { Button } from "../components/ui/button";
 import { SessionProvider, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { uploadContent } from "@/app/services/uploadmediaservice";
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
+import { useEffect } from 'react';
 export default function UploadingPage() {
     return (
       <SessionProvider>
@@ -35,7 +36,7 @@ function UploadPage() {
       if (typeof window !== "undefined") router.replace("/");
       return null;
     }
-  
+
     function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
       const selectedFiles = Array.from(e.target.files ?? []);
       // Optionally filter out duplicates
@@ -63,32 +64,36 @@ function UploadPage() {
         setMessage("You must be logged in to upload.");
         return;
       }
-      try {
-        setUploading(true);
-        setMessage("Uploading...");
-        for (const file of files) {
-          const s3Key = await uploadContent(file);
-          await fetch("/api/media", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              s3Key,
-              caption,
-              creatorId: session.user.id,
-              type: file.type,
-            }),
-          });
-        }
-        setMessage(`Upload successful! Uploaded ${files.length} file(s).`);
-        setFiles([]);
-        setPreviews([]);
-        setCaption("");
-      } catch (err) {
-        console.error("Upload failed", err);
-        setMessage("Upload failed. Please try again.");
-      } finally {
-        setUploading(false);
-      }
+      setUploading(true);
+    setMessage("Uploading...");
+    try {
+      const uploadPromises = files.map(async (file) => {
+        const s3Key = await uploadContent(file);
+        return fetch("/api/media/upload-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            s3Key,
+            caption,
+            creatorId: session.user.id,
+            type: file.type,
+            viewable: viewable
+          }),
+        });
+      });
+      await Promise.all(uploadPromises);
+      setMessage(`Upload successful! Uploaded ${files.length} file(s).`);
+      // reset states
+      setFiles([]);
+      setPreviews([]);
+      setCaption("");
+      router.push("/");
+    } catch (err) {
+      console.error("Upload failed", err);
+      setMessage("Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+    }
     }
     console.log(previews)
     const handleChange = (event: SelectChangeEvent) => {

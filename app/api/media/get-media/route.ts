@@ -21,29 +21,41 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const key = req.nextUrl.searchParams.get("key");
-  if (!key) {
-    return NextResponse.json({ error: "Missing key parameter" }, { status: 400 });
-  }
+  const creators: Creator[] = await creatorservice.get();
 
-  const creators = await creatorservice.get();
+  const creatorsWithSignedPosts = await Promise.all(
+    creators.map(async (creator) => {
+      if (!creator.posts || creator.posts.length === 0) return creator;
 
-  const userIsCreator = creators.find((c: Creator) => c.id === session.user.id);
-  console.log("Creators:",creators)
-  console.log("UserIsCreator", userIsCreator)
-  /* if (!userIsCreator) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  } */
+      const postsWithSignedUrls = await Promise.all(
+        creator.posts.map(async (post) => {
+          if (!post.s3Key) return post;
 
-  const command = new GetObjectCommand({
-    Bucket: process.env.AWS_BUCKET_NAME!,
-    Key: key,
-  });
+          const command = new GetObjectCommand({
+            Bucket: process.env.AWS_BUCKET_NAME!,
+            Key: post.s3Key,
+          });
 
-  const signedUrl = await getSignedUrl(s3, command, { expiresIn: 60 });
+          const signedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
 
-  return NextResponse.json({ url: signedUrl });
+          return {
+            ...post,
+            signedUrl, // Add signed URL here
+          };
+        })
+      );
+
+      return {
+        ...creator,
+        posts: postsWithSignedUrls,
+      };
+    })
+  );
+
+  return NextResponse.json(creatorsWithSignedPosts);
 }
+
+
 export async function POST(req: NextRequest) {
   const { filename, fileType } = await req.json();
 

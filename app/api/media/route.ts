@@ -24,15 +24,24 @@ export async function POST(req: NextRequest) {
   if (!s3Key || !caption || !creatorId || !type) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
+  // Ensure creatorId is the Creator's _id
+  let creator = await Creator.findById(creatorId);
+  if (!creator) {
+    // Try to find by user field if not found by _id
+    creator = await Creator.findOne({ user: creatorId });
+    if (!creator) {
+      return NextResponse.json({ error: 'Creator not found for given id' }, { status: 404 });
+    }
+  }
   // Create the post
   const post = await Post.create({
-    creator: creatorId,
+    creator: creator._id,
     s3Key,
     type,
     caption,
     createdAt: new Date(),
   });
   // Add post to creator's posts array
-  await Creator.findByIdAndUpdate(creatorId, { $push: { posts: post._id } });
+  await Creator.findByIdAndUpdate(creator._id, { $push: { posts: post._id } });
   return NextResponse.json({ post });
 } 

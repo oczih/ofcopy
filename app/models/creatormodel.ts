@@ -17,6 +17,7 @@ export interface CreatorDocument {
     category?: string;
     banner?: string  
     posts?: mongoose.Types.ObjectId[];
+    user?: mongoose.Types.ObjectId; 
 }
 
 const creatorSchema = new Schema<CreatorDocument>({
@@ -64,10 +65,17 @@ const creatorSchema = new Schema<CreatorDocument>({
         type: String,
         default: 'General',
     },
-    posts: [{ type: Schema.Types.ObjectId, ref: 'Post' }],
+    user: { type: Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true })
-
-const Creator = mongoose.models.Creator || model<CreatorDocument>("Creator", creatorSchema);
+creatorSchema.virtual('posts', {
+    ref: 'Post',           // The model to use
+    localField: '_id',     // Find posts where `creator` equals `_id` of Creator
+    foreignField: 'creator',
+    justOne: false,
+  });
+  creatorSchema.set('toObject', { virtuals: true });
+creatorSchema.set('toJSON', { virtuals: true });
+const Creator = mongoose.models?.Creator || model<CreatorDocument>('Creator', creatorSchema);
 
 // Creator Application Model
 const CreatorApplicationSchema = new Schema({
@@ -75,11 +83,12 @@ const CreatorApplicationSchema = new Schema({
   displayName: { type: String, required: true },
   bio: { type: String, required: true },
   socialLinks: { type: [String], default: [] },
+  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   email: { type: String, required: true },
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
   createdAt: { type: Date, default: Date.now },
 });
 
-export const CreatorApplication = mongoose.models.CreatorApplication || model('CreatorApplication', CreatorApplicationSchema);
+export const CreatorApplication = mongoose.models?.CreatorApplication || model('CreatorApplication', CreatorApplicationSchema);
 
 export default Creator;

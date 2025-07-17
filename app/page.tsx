@@ -42,11 +42,19 @@ function App() {
           creatorservice.get(),
           statsservice.get()
         ]);
-        if (!fetchedCreators) {
-          setCreators([]);
+        console.log("fetchedcreators:", fetchedCreators)
+        if (fetchedCreators) {
+          const sortedCreators = fetchedCreators.creators.map((creator: Creator) => ({
+            ...creator,
+            posts: creator.posts.sort(
+              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            )
+          }));
+          setCreators(sortedCreators);
         } else {
-          setCreators(fetchedCreators);
+          setCreators([]);
         }
+  
         setStats(fetchedStats);
       } catch (error) {
         console.error("Couldn't fetch data: ", error);
@@ -55,7 +63,7 @@ function App() {
     };
     fetchData();
   }, []);
-
+  console.log(creators)
   return (
     <div className="min-h-screen w-full ml-72 bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-hidden">
       {/* Enhanced animated background elements */}
@@ -128,6 +136,34 @@ function App() {
                   <p className="text-gray-300 text-lg">Your personalized content feed</p>
                 </div>
               </div>
+            </div>
+            {/* Creators and their posts */}
+            <div className="space-y-10 mt-10">
+              {creators && creators.length > 0 && creators.map((creator) => (
+                <div key={creator.id} className="bg-white/5 rounded-3xl p-6 shadow-xl">
+                  {creator.posts && creator.posts.length > 0 ? (
+                    <div className="mt-4 gap-4">
+                      {creator.posts && creator.posts.length > 0 ? (
+                        <div className="mt-4 gap-4">
+                          {creator.posts.map((post) => (
+                            <div key={post._id} className="bg-slate-900/80 rounded-xl p-4 border border-white/10">
+                              {post.signedUrl && (
+                                <img src={post.signedUrl} alt={post.caption} className="rounded-md mb-2" />
+                              )}
+                              <div className="text-white font-semibold mb-2">{post.caption}</div>
+                              <div className="text-gray-500 text-xs">{new Date(post.createdAt).toLocaleString()}</div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-gray-400 italic mt-4">No posts yet.</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-gray-400 italic mt-4">No posts yet.</div>
+                  )}
+                </div>
+              ))}
             </div>
             {/* User Subscriptions Section (existing) */}
             {session?.user && (

@@ -36,15 +36,19 @@ export const connectDB = async () => {
     console.log("🌐 Connecting to:", MONGO_URI.substring(0, 50) + "...");
     const db = await mongoose.connect(MONGO_URI);
     isConnected = db.connections[0].readyState === 1;
-
+  
     if (isConnected) {
       console.log("✅ MongoDB connected successfully");
-      // Import models after connection to ensure they're registered
+  
+      // Always import models AFTER connection
       await import('@/app/models/usermodel');
       await import('@/app/models/creatormodel');
+      await import('@/app/models/postmodel');
+  
     } else {
       console.log("❌ MongoDB connection failed - readyState:", db.connections[0].readyState);
     }
+  
   } catch (error) {
     console.error("❌ MongoDB connection error:", error);
     throw error;

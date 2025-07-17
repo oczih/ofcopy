@@ -25,6 +25,7 @@ export type Creator = {
     isSubscribed: boolean;
     price: number;
     category: string;
+    posts: Post[];
   }
 export type Notification = {
   type: 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comment' | 'like' | 'newfollower',
@@ -42,6 +43,24 @@ export type Subscription = {
   nextBillingDate?: Date;
   autoRenew: boolean;
 }
+export type Comment = {
+  userId: string;
+  username: string;
+  text: string;
+  createdAt: Date;
+}
+
+export type Post = {
+  _id: string;
+  creator: string;            // Just the ID string, unless you populate the whole creator
+  s3Key: string;
+  type: string;
+  caption: string;
+  createdAt: string | Date;   // Depending on usage
+  viewableFor: string;
+  comments: Comment[];            // Replace with proper Comment type if you have it
+  signedUrl?: string;         // Optional signed URL added at runtime (not stored in DB)
+};
 declare module "next-auth" {
   interface User {
     id?: string;

@@ -46,7 +46,7 @@ export async function createPostWithUpload({
     caption,
     viewableFor,
   });
-
+  console.log("NewPost: ", newPost)
   // Step 3: Add the post to the creator
   await Creator.findByIdAndUpdate(creatorId, {
     $push: { posts: newPost._id },

@@ -16,16 +16,7 @@ const get = async () => {
     try {
         const response = await axios.get(API_URL);
         // Transform database data to match frontend Creator type
-        const creators = response.data.map((creator: CreatorDocument) => ({
-            id: creator._id,
-            name: creator.name,
-            username: creator.username || `@${creator.name.toLowerCase().replace(/\s+/g, '')}`,
-            avatar: creator.image || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-            subscribers: creator.subscribers || 0,
-            isSubscribed: false, // This would be determined by user's subscriptions
-            price: creator.price || 9.99,
-            category: creator.category || 'General'
-        }));
+        const creators = response.data
         return creators;
     } catch (error) {
         console.error('Error fetching creators:', error);
