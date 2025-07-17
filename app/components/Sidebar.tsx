@@ -25,6 +25,7 @@ export const Sidebar = () => {
     { id: "messages", label: "Messages", icon: MessageCircle, color: "blue", href: "/messages" },
     { id: "notifications", label: "Notifications", icon: Bell, color: "red", href: "/notifications" },
     { id: "subscriptions", label: "Subscriptions", icon: Crown, color: "yellow", href: "/subscriptions" },
+    { id: "settings", label: "Settings", icon: Settings, color: "green", href: "/settings" },
     // Settings will be conditionally rendered below
   ];
 
@@ -81,18 +82,6 @@ export const Sidebar = () => {
         {/* Only show Settings if user is logged in */}
         {session?.user && !session.user.creator && (
           <div>
-          <Link key="settings" href="/settings">
-            <Button
-              variant="ghost"
-              className={`w-full justify-start py-3 px-4 rounded-2xl transition-all duration-300 ${getButtonStyles(pathname === "/settings")}`}
-            >
-              <Settings className="w-5 h-5 mr-3" />
-              <span className="font-medium">Settings</span>
-              {pathname === "/settings" && (
-                <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
-              )}
-            </Button>
-          </Link>
           <Link href="/apply-creator">
           <Button
               variant="ghost"

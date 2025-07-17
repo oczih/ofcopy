@@ -139,32 +139,36 @@ function App() {
             </div>
             {/* Creators and their posts */}
             <div className="space-y-10 mt-10">
-              {creators && creators.length > 0 && creators.map((creator) => (
-                <div key={creator.id} className="bg-white/5 rounded-3xl p-6 shadow-xl">
-                  {creator.posts && creator.posts.length > 0 ? (
-                    <div className="mt-4 gap-4">
+                  {creators && creators.length > 0 && creators.map((creator) => (
+                    <div key={creator.id} className="bg-white/5 rounded-3xl p-6 shadow-xl">
                       {creator.posts && creator.posts.length > 0 ? (
                         <div className="mt-4 gap-4">
-                          {creator.posts.map((post) => (
-                            <div key={post._id} className="bg-slate-900/80 rounded-xl p-4 border border-white/10">
-                              {post.signedUrl && (
-                                <img src={post.signedUrl} alt={post.caption} className="rounded-md mb-2" />
-                              )}
-                              <div className="text-white font-semibold mb-2">{post.caption}</div>
-                              <div className="text-gray-500 text-xs">{new Date(post.createdAt).toLocaleString()}</div>
-                            </div>
-                          ))}
+                          {creator.posts
+                            .filter(post => {
+                              const isCreator = session?.user.id === creator.id;
+                              const isFollower = session?.user.following.includes(creator.id);
+                              const isSubscriber = session.user.subscriptions.includes(creator.id);
+
+                              return post.viewableFor !== 'followers' || isCreator || isFollower || isSubscriber;
+                            })
+                            .map((post) => (
+                              <div key={post._id} className="bg-slate-900/80 rounded-xl p-4 border border-white/10">
+                                {post.signedUrl && (
+                                  <img src={post.signedUrl} alt={post.caption} className="rounded-md mb-2" />
+                                )}
+                                <div className="text-white font-semibold mb-2">{post.caption}</div>
+                                <div className="text-gray-500 text-xs">{new Date(post.createdAt).toLocaleString()}</div>
+                              </div>
+                            ))
+                          }
                         </div>
                       ) : (
                         <div className="text-gray-400 italic mt-4">No posts yet.</div>
                       )}
                     </div>
-                  ) : (
-                    <div className="text-gray-400 italic mt-4">No posts yet.</div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
+
             {/* User Subscriptions Section (existing) */}
             {session?.user && (
               <div className="space-y-6">

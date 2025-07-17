@@ -14,6 +14,7 @@ export type User = {
     subscriptions?: Subscription[]
     notifications?: Notification[]
     creator?: boolean
+    following: Following[];
   }
   
 export type Creator = {
@@ -43,6 +44,13 @@ export type Subscription = {
   status: 'active' | 'cancelled' | 'expired';
   nextBillingDate?: Date;
   autoRenew: boolean;
+}
+export interface Following {
+  creatorId: string;
+  creatorName: string;
+  creatorUsername: string;
+  creatorImage?: string;
+  followingDate: Date;
 }
 export type Comment = {
   userId: string;

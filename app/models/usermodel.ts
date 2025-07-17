@@ -13,6 +13,13 @@ export interface Subscription {
   nextBillingDate?: Date;
   autoRenew: boolean;
 }
+export interface Following {
+  creatorId: mongoose.Types.ObjectId;
+  creatorName: string;
+  creatorUsername: string;
+  creatorImage?: string;
+  followingDate: Date;
+}
 export type NotificationType =
   | 'newsub'
   | 'resub'
@@ -46,11 +53,12 @@ export interface UserDocument {
   messages: Message[];
   notifications: Notification[];
   creator?: boolean;
+  following?: Following[];
 }
 
 
 const userSchema = new Schema<UserDocument>({
-    name: {
+  name: {
         type: String,
         required: [true, "Name is required"]
       },
@@ -104,6 +112,28 @@ const userSchema = new Schema<UserDocument>({
     type: Date,
     default: '',
   },
+  following: [{
+    creatorId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Creator',
+      required: true
+    },
+    creatorName: {
+      type: String,
+      required: true
+    },
+    creatorUsername: {
+      type: String,
+      required: true
+    },
+    creatorImage: {
+      type: String
+    },
+    followingDate: {
+      type: Date,
+      default: Date.now
+    },
+  }],
   subscriptions: [{
     creatorId: {
       type: Schema.Types.ObjectId,

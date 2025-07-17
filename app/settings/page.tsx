@@ -309,6 +309,7 @@ function SettingsApp() {
                   </div>
                 )}
               </div>
+              </div>
             </div>
           </main>
     </div>

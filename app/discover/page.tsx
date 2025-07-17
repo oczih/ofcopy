@@ -26,12 +26,11 @@ function DiscoverApp() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [creators, setCreators] = useState<Creator[]>([]);
-
   useEffect(() => {
     const fetchCreators = async () => {
       try {
         const fetchedCreators = await creatorservice.get()
-        setCreators(fetchedCreators)
+        setCreators(fetchedCreators.creators)
       }
       catch (error){
         console.error("Couldn't fetch creators: ", error)
@@ -40,12 +39,12 @@ function DiscoverApp() {
     }
     fetchCreators()
   }, []); // Added dependency array
-
+  console.log("Creators: ",creators)
   const categories = [
     "all", "lifestyle", "fitness", "art", "music", "cooking", "travel", "tech", "fashion"
   ];
 
-  const filteredCreators = creators.filter(creator => {
+  const filteredCreators = creators?.filter(creator => {
     const matchesSearch = creator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          creator.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          creator.category.toLowerCase().includes(searchQuery.toLowerCase());
