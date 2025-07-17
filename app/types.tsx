@@ -26,6 +26,7 @@ export type Creator = {
     price: number;
     category: string;
     posts: Post[];
+    user: string;
   }
 export type Notification = {
   type: 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comment' | 'like' | 'newfollower',

@@ -11,6 +11,8 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import { useEffect } from 'react';
+import creatorservice from '../services/creatorservice';
+import { Creator } from '../types';
 export default function UploadingPage() {
     return (
       <SessionProvider>
@@ -28,14 +30,40 @@ function UploadPage() {
     const [message, setMessage] = useState("");
     const [uploading, setUploading] = useState(false);
     const [viewable, setViewable] = useState("followers")
+    const [creator, setCreator] = useState<Creator>()
     const router = useRouter();
     const [showDim, setShowDim] = useState(false);
-  
+    useEffect(() => {
+      const fetchCreators = async () => {
+        const creators = await creatorservice.get();
+        const rightcreator = creators.creators.find(
+          (c: Creator) => c.user === session?.user.id
+        );
+        console.log("Creators", rightcreator)
+        console.log(session?.user.id)
+        console.log(creators.creators[0])
+        if (!rightcreator) {
+          // creator not found — redirect or show message
+          return (
+            <div>Creator not found</div>
+          )
+        } else {
+          setCreator(rightcreator);
+        }
+      };
+      fetchCreators();
+    }, [session?.user.id, router]);
     if (status === "loading") return null;
-    if (!session?.user.creator) {
-      if (typeof window !== "undefined") router.replace("/");
-      return null;
-    }
+
+      if (!session?.user.creator) {
+        if (typeof window !== "undefined") router.replace("/");
+        return null;
+      }
+
+      // Wait for creator to be loaded
+      if (!creator) {
+        return <div>Loading creator info...</div>;
+      }
 
     function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
       const selectedFiles = Array.from(e.target.files ?? []);
@@ -49,7 +77,8 @@ function UploadPage() {
         ...newFiles.map(file => URL.createObjectURL(file))
       ]);
     }
-  
+    
+
     async function handleSubmit(e: React.FormEvent) {
       e.preventDefault();
       if (files.length === 0) {
@@ -69,18 +98,32 @@ function UploadPage() {
     try {
       const uploadPromises = files.map(async (file) => {
         const s3Key = await uploadContent(file);
-        return fetch("/api/media/upload-url", {
+        console.log("creatorId received:", creator?.id);
+        console.log('Uploading post metadata:', {
+          s3Key,
+          caption,
+          creatorId: creator?.id,
+          type: file.type,
+          viewable: viewable
+        });
+        const response = await fetch(`/api/media?username=${session?.user?.username}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             s3Key,
             caption,
-            creatorId: session.user.id,
+            creatorId: creator?.id,
             type: file.type,
             viewable: viewable
           }),
         });
+        if (!response.ok) {
+          const data = await response.json();
+          console.error('Post creation failed', data);
+        }
       });
+      
+      
       await Promise.all(uploadPromises);
       setMessage(`Upload successful! Uploaded ${files.length} file(s).`);
       // reset states
