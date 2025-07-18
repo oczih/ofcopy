@@ -5,7 +5,7 @@ interface SignedUrlResponse {
   url: string;
   key: string;
 }
-
+const API_URL=`${process.env.NEXT_PUBLIC_API_URL}/api/posts`
 interface CreatePostParams {
   creatorId: string;
   file: File;
@@ -76,4 +76,21 @@ export async function uploadContent(file: File): Promise<string> {
   const { url, key } = await getSignedUrl(file.name, file.type);
   await uploadFileToS3(file, url);
   return key;
+}
+
+
+const update = async (id: string, newData: Partial<typeof Post>): Promise<{ post: typeof Post }> => {
+  try {
+      console.log('Updating creator:', id, newData);
+      const response = await axios.put(`${API_URL}/${id}`, newData);
+      return response.data;
+
+  }catch(error){
+      console.error('Error updating creator:', error);
+      throw error;
+  }
+}
+
+export default {
+  update
 }

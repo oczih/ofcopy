@@ -79,6 +79,20 @@ function UploadPage() {
     }
     
 
+function getImageDimensions(file: File): Promise<{ width: number; height: number } | null> {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith('image/')) return resolve(null);
+    const img = new window.Image();
+    img.onload = function () {
+      resolve({ width: img.width, height: img.height });
+    };
+    img.onerror = function () {
+      resolve(null);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
     async function handleSubmit(e: React.FormEvent) {
       e.preventDefault();
       if (files.length === 0) {
@@ -98,13 +112,21 @@ function UploadPage() {
     try {
       const uploadPromises = files.map(async (file) => {
         const s3Key = await uploadContent(file);
+        let width, height;
+        const dims = await getImageDimensions(file);
+        if (dims) {
+          width = dims.width;
+          height = dims.height;
+        }
         console.log("creatorId received:", creator?.id);
         console.log('Uploading post metadata:', {
           s3Key,
           caption,
           creatorId: creator?.id,
           type: file.type,
-          viewable: viewable
+          viewable: viewable,
+          width,
+          height
         });
         const response = await fetch(`/api/media?username=${session?.user?.username}`, {
           method: "POST",
@@ -114,7 +136,9 @@ function UploadPage() {
             caption,
             creatorId: creator?.id,
             type: file.type,
-            viewable: viewable
+            viewable: viewable,
+            width,
+            height
           }),
         });
         if (!response.ok) {
@@ -122,8 +146,6 @@ function UploadPage() {
           console.error('Post creation failed', data);
         }
       });
-      
-      
       await Promise.all(uploadPromises);
       setMessage(`Upload successful! Uploaded ${files.length} file(s).`);
       // reset states

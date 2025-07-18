@@ -46,7 +46,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             subscribers: 0,
             price: 9.99,
             category: 'General',
-            user: user._id, // Ensure this field is populated if required by the schema
+            user: user.id, // Ensure this field is populated if required by the schema
           });
         }
       }

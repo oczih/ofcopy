@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongoose';
 import Post from '@/app/models/postmodel';
 import Creator from '@/app/models/creatormodel';
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+const s3 = new S3Client({
+  region: "eu-north-1",
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY!,
+    secretAccessKey: process.env.AWS_SECRET_KEY!,
+  },
+});
 
 export async function GET(req: NextRequest) {
   await connectDB();
@@ -13,14 +23,35 @@ export async function GET(req: NextRequest) {
   if (!creator) {
     return NextResponse.json({ error: 'Creator not found' }, { status: 404 });
   }
-  // Return posts in reverse chronological order
-  const posts = (creator.posts || []).slice().reverse();
-  return NextResponse.json({ posts });
+
+  // Generate signed URLs for each post:
+  const postsWithSignedUrls = await Promise.all(
+    (creator.posts || []).map(async (post: any) => {
+      if (!post.s3Key) return post;
+      try {
+        const command = new GetObjectCommand({
+          Bucket: process.env.AWS_BUCKET_NAME!,
+          Key: post.s3Key,
+        });
+        const signedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
+        return {
+          ...post.toObject(),
+          signedUrl,
+        };
+      } catch (err) {
+        console.error("Failed to get signed URL for post:", post._id, err);
+        return post.toObject(); // fallback: return without signed URL
+      }
+    })
+  );
+
+  // Return posts with signed URLs in reverse chronological order:
+  return NextResponse.json({ posts: postsWithSignedUrls.slice().reverse() });
 }
 
 export async function POST(req: NextRequest) {
   await connectDB();
-  const { s3Key, caption, creatorId, type } = await req.json();
+  const { s3Key, caption, creatorId, type, width, height, viewable } = await req.json();
   if (!s3Key || !caption || !creatorId || !type) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
@@ -40,8 +71,67 @@ export async function POST(req: NextRequest) {
     type,
     caption,
     createdAt: new Date(),
+    width,
+    height,
+    viewableFor: viewable || 'followers',
   });
   // Add post to creator's posts array
   await Creator.findByIdAndUpdate(creator._id, { $push: { posts: post._id } });
   return NextResponse.json({ post });
+}
+
+export async function PUT(req: NextRequest) {
+  await connectDB();
+  const username = req.nextUrl.searchParams.get('username');
+  const { postId, likes, comment } = await req.json();
+  if (!username || !postId) {
+    return NextResponse.json({ error: 'Missing username or postId' }, { status: 400 });
+  }
+  const creator = await Creator.findOne({ username }).populate('posts');
+  if (!creator) {
+    return NextResponse.json({ error: 'Creator not found' }, { status: 404 });
+  }
+  try {
+    let update = {};
+    if (typeof likes === 'number') {
+      update = { ...update, likes };
+    }
+    let updatedPost;
+    if (comment) {
+      updatedPost = await Post.findByIdAndUpdate(
+        postId,
+        { $push: { comments: comment }, ...(update.likes !== undefined ? { likes: update.likes } : {}) },
+        { new: true }
+      );
+    } else if (update.likes !== undefined) {
+      updatedPost = await Post.findByIdAndUpdate(postId, { likes: update.likes }, { new: true });
+    } else {
+      return NextResponse.json({ error: 'No valid update fields' }, { status: 400 });
+    }
+    // Re-fetch creator's posts with signed URLs
+    const postsWithSignedUrls = await Promise.all(
+      (creator.posts || []).map(async (post: any) => {
+        if (!post.s3Key) return post;
+        try {
+          const command = new GetObjectCommand({
+            Bucket: process.env.AWS_BUCKET_NAME!,
+            Key: post.s3Key,
+          });
+          const signedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
+          return {
+            ...post.toObject(),
+            signedUrl,
+            ...(post._id.toString() === postId ? updatedPost.toObject() : {}),
+          };
+        } catch (err) {
+          console.error("Failed to get signed URL for post:", post._id, err);
+          return post.toObject();
+        }
+      })
+    );
+    return NextResponse.json({ posts: postsWithSignedUrls.slice().reverse() });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Failed to update post' }, { status: 500 });
+  }
 } 

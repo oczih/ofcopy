@@ -11,7 +11,8 @@ import creatorservice from "./services/creatorservice";
 import statsservice from "./services/statsservice";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import { CreatorCard } from "./components/CreatorCard";
+import Image from "next/image";
+import { CreatorPostCard } from "./components/CreatorPostCard";
 export default function Page() {
   return (
     <SessionProvider>
@@ -42,7 +43,8 @@ function App() {
           creatorservice.get(),
           statsservice.get()
         ]);
-        console.log("fetchedcreators:", fetchedCreators)
+        const kakka = await creatorservice.get();
+        console.log("Kakka", kakka.creators[0].posts[0]);
         if (fetchedCreators) {
           const sortedCreators = fetchedCreators.creators.map((creator: Creator) => ({
             ...creator,
@@ -64,6 +66,7 @@ function App() {
     fetchData();
   }, []);
   console.log(creators)
+  
   return (
     <div className="min-h-screen w-full ml-72 bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-hidden">
       {/* Enhanced animated background elements */}
@@ -139,35 +142,32 @@ function App() {
             </div>
             {/* Creators and their posts */}
             <div className="space-y-10 mt-10">
-                  {creators && creators.length > 0 && creators.map((creator) => (
-                    <div key={creator.id} className="bg-white/5 rounded-3xl p-6 shadow-xl">
-                      {creator.posts && creator.posts.length > 0 ? (
-                        <div className="mt-4 gap-4">
-                          {creator.posts
-                            .filter(post => {
-                              const isCreator = session?.user.id === creator.id;
-                              const isFollower = session?.user.following.includes(creator.id);
-                              const isSubscriber = session.user.subscriptions.includes(creator.id);
-
-                              return post.viewableFor !== 'followers' || isCreator || isFollower || isSubscriber;
-                            })
-                            .map((post) => (
-                              <div key={post._id} className="bg-slate-900/80 rounded-xl p-4 border border-white/10">
-                                {post.signedUrl && (
-                                  <img src={post.signedUrl} alt={post.caption} className="rounded-md mb-2" />
-                                )}
-                                <div className="text-white font-semibold mb-2">{post.caption}</div>
-                                <div className="text-gray-500 text-xs">{new Date(post.createdAt).toLocaleString()}</div>
-                              </div>
-                            ))
-                          }
-                        </div>
-                      ) : (
-                        <div className="text-gray-400 italic mt-4">No posts yet.</div>
-                      )}
-                    </div>
-                  ))}
+              {creators && creators.length > 0 && creators.map((creator) => (
+                <div key={creator.id} className="space-y-8">
+                  {creator.posts && creator.posts.length > 0 ? (
+                    creator.posts.map(post => {
+                      const isCreator = session?.user?.id === creator.user;
+                      const isFollower = session?.user?.following?.some(f => f.creatorId.toString() === creator.id);
+                      const isSubscriber = !!session?.user?.subscriptions?.some(s => s.creatorId.toString() === creator.id);
+                      return (
+                        <CreatorPostCard
+                          key={post._id}
+                          creator={creator}
+                          post={post}
+                          session={session}
+                          user={session?.user}
+                          isCreator={isCreator}
+                          isFollower={isFollower}
+                          isSubscriber={isSubscriber}
+                        />
+                      );
+                    })
+                  ) : (
+                    <div className="text-gray-400 italic mt-4">No posts yet.</div>
+                  )}
                 </div>
+              ))}
+            </div>
 
             {/* User Subscriptions Section (existing) */}
             {session?.user && (
@@ -186,9 +186,11 @@ function App() {
                         <div className="p-6">
                           <div className="flex items-center gap-4 mb-4">
                             <div className="relative">
-                              <img 
+                              <Image 
                                 src={subscription.creatorImage || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"} 
                                 alt={subscription.creatorName}
+                                width={50}
+                                height={50}
                                 className="w-12 h-12 rounded-full border-2 border-pink-500/50"
                               />
                               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-slate-950 animate-pulse"></div>

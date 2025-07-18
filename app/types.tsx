@@ -53,6 +53,7 @@ export interface Following {
   followingDate: Date;
 }
 export type Comment = {
+  _id: string;
   userId: string;
   username: string;
   text: string;
@@ -65,10 +66,13 @@ export type Post = {
   s3Key: string;
   type: string;
   caption: string;
+  likes: number;
   createdAt: string | Date;   // Depending on usage
   viewableFor: string;
   comments: Comment[];            // Replace with proper Comment type if you have it
   signedUrl?: string;         // Optional signed URL added at runtime (not stored in DB)
+  width?: number;             // Optional image width
+  height?: number;            // Optional image height
 };
 declare module "next-auth" {
   interface User {
@@ -85,6 +89,7 @@ declare module "next-auth" {
     subscriptions?: Subscription[] 
     notifications?: Notification[]
     creator?: boolean
+    following?: Following[]
   }
 
   interface Session {

@@ -5,6 +5,7 @@ const postSchema = new Schema({
   s3Key: { type: String, required: true },
   type: { type: String, required: true },
   caption: { type: String, required: true },
+  likes: {type: Number, default: 0},
   createdAt: { type: Date, default: Date.now },
   viewableFor: {type: String, enum: ['followers', 'subscribers'], default: 'followers'},
   comments: [
@@ -15,6 +16,8 @@ const postSchema = new Schema({
       createdAt: { type: Date, default: Date.now },
     }
   ],
+  width: { type: Number },
+  height: { type: Number },
 });
 
 const Post = (mongoose.models?.Post) || model('Post', postSchema);

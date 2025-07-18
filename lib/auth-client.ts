@@ -149,6 +149,7 @@ export const authOptions: NextAuthOptions = {
 
       if (user) {
         console.log("[Session] Found user:", user._id.toString(), "Token ID:", token.id);
+      
         session.user.id = user._id.toString();
         session.user.username = user.username;
         session.user.email = user.email;
@@ -160,9 +161,11 @@ export const authOptions: NextAuthOptions = {
         session.user.hasAccess = user.hasAccess;
         session.user.lastUsernameChange = user.lastUsernameChange;
         session.user.isUsernameChangeBlocked = user.isUsernameChangeBlocked;
-        session.user.subscriptions = user.subscriptions;
-        session.user.notifications = user.notifications;
+        session.user.subscriptions = user.subscriptions || [];
+        session.user.notifications = user.notifications || [];
+        session.user.following = user.following || [];
         session.user.creator = isCreator;
+      
       } else {
         console.log("[Session] No user found in database");
       }
