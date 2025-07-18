@@ -1,11 +1,12 @@
 import axios from "axios";
-import Post from "../models/postmodel";
-import Creator from "../models/creatormodel";
+
 interface SignedUrlResponse {
-  url: string;
+  uploadUrl: string;
   key: string;
 }
-const API_URL=`${process.env.NEXT_PUBLIC_API_URL}/api/posts`
+
+const POST_API = '/api/media';  // Assuming your post creation is via this API
+
 interface CreatePostParams {
   creatorId: string;
   file: File;
@@ -14,45 +15,18 @@ interface CreatePostParams {
   viewableFor?: 'followers' | 'subscribers';
 }
 
-export async function getDownloadUrl(key: string): Promise<string> {
-  const response = await axios.get<SignedUrlResponse>("/api/media/get-media", {
-    params: { key },
-  });
-  return response.data.url;
+export async function getDownloadUrl(s3Key: string): Promise<string> {
+  const response = await axios.post<{ downloadUrl: string }>("/api/media/download-url", { s3Key });
+  return response.data.downloadUrl;
 }
 
-async function getSignedUrl(fileName: string, fileType: string): Promise<SignedUrlResponse> {
+async function getSignedUrl(fileName: string, contentType: string): Promise<SignedUrlResponse> {
   const response = await axios.post<SignedUrlResponse>("/api/media/upload-url", {
-    fileName,
-    fileType,
+    s3Key: `uploads/${fileName}`,
+    contentType,
   });
+  console.log(response.data)
   return response.data;
-}
-export async function createPostWithUpload({
-  creatorId,
-  file,
-  type,
-  caption,
-  viewableFor = 'followers',
-}: CreatePostParams) {
-  // Step 1: Upload the file to S3
-  const s3Key = await uploadContent(file);  // <== your existing function
-
-  // Step 2: Create the Post
-  const newPost = await Post.create({
-    creator: creatorId,
-    s3Key,
-    type,
-    caption,
-    viewableFor,
-  });
-  console.log("NewPost: ", newPost)
-  // Step 3: Add the post to the creator
-  await Creator.findByIdAndUpdate(creatorId, {
-    $push: { posts: newPost._id },
-  });
-
-  return newPost;
 }
 
 async function uploadFileToS3(file: File, signedUrl: string): Promise<void> {
@@ -61,36 +35,56 @@ async function uploadFileToS3(file: File, signedUrl: string): Promise<void> {
       "Content-Type": file.type,
     },
     onUploadProgress: (progressEvent) => {
-      const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-      console.log(`Upload progress: ${progress}%`);
+      if (progressEvent.total) {
+        const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        console.log(`Upload progress: ${progress}%`);
+      }
     },
   });
 }
 
-/**
- * Uploads file to S3 via signed URL flow.
- * @param file File to upload
- * @returns The S3 key (path) of the uploaded file
- */
 export async function uploadContent(file: File): Promise<string> {
-  const { url, key } = await getSignedUrl(file.name, file.type);
-  await uploadFileToS3(file, url);
+  const { uploadUrl, key } = await getSignedUrl(file.name, file.type);
+  await uploadFileToS3(file, uploadUrl);
+  console.log("Key:",key)
   return key;
 }
 
+export async function createPostWithUpload({
+  creatorId,
+  file,
+  type,
+  caption,
+  viewableFor = 'followers',
+}: CreatePostParams) {
+  const s3Key = await uploadContent(file);
+  console.log('Uploaded S3 key:', s3Key);
+  const response = await axios.post(`${POST_API}`, {
+    s3Key,
+    caption,
+    creatorId,
+    type,
+    viewable: viewableFor,
+    width: 1024,  // Replace with actual if needed
+    height: 1536,
+  });
 
-const update = async (id: string, newData: Partial<typeof Post>): Promise<{ post: typeof Post }> => {
-  try {
-      console.log('Updating creator:', id, newData);
-      const response = await axios.put(`${API_URL}/${id}`, newData);
-      return response.data;
-
-  }catch(error){
-      console.error('Error updating creator:', error);
-      throw error;
-  }
+  return response.data.post;
 }
+
+const updatePost = async (id: string, newData: any): Promise<any> => {
+  try {
+    const response = await axios.put(`${POST_API}/${id}`, newData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating post:', error);
+    throw error;
+  }
+};
 
 export default {
-  update
-}
+  createPostWithUpload,
+  uploadContent,
+  updatePost,
+  getDownloadUrl,
+};

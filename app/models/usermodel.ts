@@ -13,12 +13,12 @@ export interface Subscription {
   nextBillingDate?: Date;
   autoRenew: boolean;
 }
-export interface Following {
-  creatorId: mongoose.Types.ObjectId;
-  creatorName: string;
-  creatorUsername: string;
-  creatorImage?: string;
-  followingDate: Date;
+export type Comment = {
+  _id: string;
+  userId: string;
+  username: string;
+  text: string;
+  createdAt: Date;
 }
 export type NotificationType =
   | 'newsub'
@@ -54,6 +54,7 @@ export interface UserDocument {
   notifications: Notification[];
   creator?: boolean;
   following?: Following[];
+  comments: Comment[];
 }
 
 
@@ -182,7 +183,17 @@ const userSchema = new Schema<UserDocument>({
       type: Date,
       required: true
     }
-  }]
+  }],
+  comments: [
+    {
+      commentId: { type: String, required: true },
+      postId: { type: String, required: true },
+      text: { type: String, required: true },
+      createdAt: { type: Date, default: Date.now },
+      username: { type: String },
+      userId: { type: String },
+    }
+  ],
 }, { timestamps: true });
 
 userSchema.set('toJSON', {

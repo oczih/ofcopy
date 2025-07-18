@@ -13,6 +13,8 @@ import toast from "react-hot-toast";
 import Link from "next/link";
 import Image from "next/image";
 import { CreatorPostCard } from "./components/CreatorPostCard";
+import userservice from "./services/userservice";
+import { User } from "./types";
 export default function Page() {
   return (
     <SessionProvider>
@@ -26,6 +28,8 @@ function App() {
   const { data: session } = useSession();
   const [creators, setCreators] = useState<Creator[] | null>(null);
   const [page, setPage] = useState("Feed");
+  const [users, setUsers] = useState<User[] | null>(null)
+  console.log(users)
   const [stats, setStats] = useState({
     totalCreators: 0,
     activeCreators: 0,
@@ -43,8 +47,8 @@ function App() {
           creatorservice.get(),
           statsservice.get()
         ]);
-        const kakka = await creatorservice.get();
-        console.log("Kakka", kakka.creators[0].posts[0]);
+        const fetchedUsers = await userservice.get()
+        setUsers(fetchedUsers)
         if (fetchedCreators) {
           const sortedCreators = fetchedCreators.creators.map((creator: Creator) => ({
             ...creator,
@@ -144,7 +148,7 @@ function App() {
             <div className="space-y-10 mt-10">
               {creators && creators.length > 0 && creators.map((creator) => (
                 <div key={creator.id} className="space-y-8">
-                  {creator.posts && creator.posts.length > 0 ? (
+                  {creator.posts && creator.posts.length > 0 && users && session ? (
                     creator.posts.map(post => {
                       const isCreator = session?.user?.id === creator.user;
                       const isFollower = session?.user?.following?.some(f => f.creatorId.toString() === creator.id);
@@ -159,6 +163,7 @@ function App() {
                           isCreator={isCreator}
                           isFollower={isFollower}
                           isSubscriber={isSubscriber}
+                          users={users.users}
                         />
                       );
                     })

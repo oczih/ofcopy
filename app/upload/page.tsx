@@ -128,6 +128,7 @@ function getImageDimensions(file: File): Promise<{ width: number; height: number
           width,
           height
         });
+        
         const response = await fetch(`/api/media?username=${session?.user?.username}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },

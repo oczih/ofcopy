@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -12,18 +12,25 @@ const s3 = new S3Client({
 
 export async function POST(req: NextRequest) {
   try {
-    const { s3Key } = await req.json(); // s3Key like 'uploads/your-image.png'
+    const { s3Key, contentType } = await req.json();
 
-    const command = new GetObjectCommand({
+    if (!s3Key || !contentType) {
+      return NextResponse.json({ error: "Missing s3Key or contentType" }, { status: 400 });
+    }
+
+    const command = new PutObjectCommand({
       Bucket: process.env.AWS_BUCKET_NAME!,
       Key: s3Key,
+      ContentType: contentType,
     });
 
-    const url = await getSignedUrl(s3, command, { expiresIn: 3600 }); // 1 hour expiry
+    const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
 
-    return NextResponse.json({ url });
+    // Return both uploadUrl and the key back
+    return NextResponse.json({ uploadUrl, key: s3Key });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to generate download URL" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to generate upload URL" }, { status: 500 });
   }
 }
+

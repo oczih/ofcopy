@@ -18,13 +18,7 @@ export const connectDB = async () => {
     console.log("⚠️ MONGO_URI not found in process.env, trying alternatives...");
     MONGO_URI = process.env.MONGODB_URI || process.env.MONGODB_URL || process.env.DATABASE_URL;
   }
-  
-  console.log("🔍 DEBUGGING MONGOOSE CONNECTION:");
-  console.log("MONGO_URI exists:", !!MONGO_URI);
-  console.log("MONGO_URI length:", MONGO_URI?.length);
-  console.log("MONGO_URI starts with:", MONGO_URI?.substring(0, 20));
-  console.log("process.env keys:", Object.keys(process.env).filter(key => key.includes('MONGO')));
-  console.log("All env vars:", Object.keys(process.env).slice(0, 10)); // Show first 10 env vars
+
 
   if (!MONGO_URI) {
     console.error("❌ MONGO_URI is undefined or empty");

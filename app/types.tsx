@@ -15,6 +15,7 @@ export type User = {
     notifications?: Notification[]
     creator?: boolean
     following: Following[];
+    comments: Comment[];
   }
   
 export type Creator = {
@@ -52,12 +53,13 @@ export interface Following {
   creatorImage?: string;
   followingDate: Date;
 }
-export type Comment = {
-  _id: string;
-  userId: string;
-  username: string;
+export interface Comment {
+  commentId: string;
+  postId: string;
   text: string;
-  createdAt: Date;
+  createdAt: string;
+  username?: string;
+  userId?: string;
 }
 
 export type Post = {
@@ -90,6 +92,9 @@ declare module "next-auth" {
     notifications?: Notification[]
     creator?: boolean
     following?: Following[]
+    comments?: Comment[];
+    name?: string;
+    image?: string;
   }
 
   interface Session {

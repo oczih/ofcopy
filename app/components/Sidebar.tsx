@@ -10,15 +10,16 @@ import {
   TrendingUp,
   Bell
 } from "lucide-react";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 
-export const Sidebar = () => {
+export const Sidebar = ({user}) => {
   const pathname = usePathname();
   const { data: session } = useSession();
   console.log(session?.user)
+  const router = useRouter();
   const menuItems = [
     { id: "feed", label: "Home Feed", icon: Home, color: "pink", href: "/" },
     { id: "discover", label: "Discover", icon: Compass, color: "purple", href: "/discover" },
@@ -35,7 +36,12 @@ export const Sidebar = () => {
     }
     return `text-gray-300 hover:text-white hover:bg-white/10 hover:scale-105`;
   };
-
+  const handleSignOut = async () => {
+    await signOut({ redirect: false });
+    localStorage.removeItem('user');
+    router.push('/');
+    toast.success('Signed out successfully');
+  };
   return (
     <aside className="w-72 h-screen fixed left-0 top-0 z-30 bg-gradient-to-b from-slate-900/80 via-purple-900/70 to-slate-900/90 backdrop-blur-xl border-r border-white/10 shadow-2xl p-6 flex flex-col">
       {/* User Profile Section */}
@@ -128,6 +134,16 @@ export const Sidebar = () => {
           </div>
         </div>
       </div>
+      {session?.user && (
+              <div className="border-t border-gray-700 pt-4 space-y-2">
+                <Button 
+                  onClick={handleSignOut} 
+                  className="block w-full text-left px-4 py-3 rounded-lg text-white border border-white text-center hover:bg-sky-500/50 transition duration-150"
+                >
+                  Sign Out
+                </Button>
+              </div>
+            )}
     </aside>
   );
 };

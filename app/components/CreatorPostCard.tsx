@@ -21,7 +21,8 @@ export function CreatorPostCard({
   isCreator,
   isFollower,
   isSubscriber,
-  user
+  user,
+  users
 }: {
   creator: Creator;
   post: Post;
@@ -30,6 +31,7 @@ export function CreatorPostCard({
   isFollower: boolean;
   isSubscriber: boolean;
   user: User
+  users: User[]
 }) {
   // Restriction logic
   const isFollowersOnly = post.viewableFor === "followers";
@@ -105,7 +107,10 @@ export function CreatorPostCard({
       setSending(false);
     }
   };
-
+  const rightUser = (comment: Comment) => {
+    const correctUser = users?.find(u => u.id === comment.userId)
+    return correctUser
+  }
   return (
   <div className="bg-white/5 rounded-2xl shadow-xl border border-white/10 p-0 overflow-hidden max-w-3xl w-full mx-auto animate-fade-in">
     {/* Header */}
@@ -196,57 +201,71 @@ export function CreatorPostCard({
           <MessageCircle className="w-5 h-5" />
         </Button>
       </div>
-      <div className="flex gap-3 text-xs text-gray-400">
+      <div className="flex gap-3 text-xs text-gray-400 items-center">
         <span>{likes} Likes</span>
-        <Button onClick={handleShowComments}><span>{comments.length} Comments</span></Button>
+        <span
+          className="hover:underline"
+        >
+          {comments.length} Comments
+        </span>
       </div>
     </div>
 
     {/* Comments Section */}
-    {showcomment && (
-      <div className="w-full px-5 pb-2 space-y-2">
-        {comments && comments.length > 0 ? (
-          comments.map((comment: Comment, idx) => (
-            <div key={comment._id || idx} className="flex items-start gap-2 bg-slate-800/60 rounded-lg p-2">
-              <div className="flex-1">
-                <div className="text-xs text-pink-300 font-semibold">{comment.username}</div>
-                <div className="text-white text-sm break-words">{comment.text}</div>
-                <div className="text-xs text-gray-400 mt-1">{comment.createdAt ? new Date(comment.createdAt).toLocaleString() : ''}</div>
-              </div>
+    {(commentOpen || showcomment) && (
+      <div className="w-full px-5 pb-4 mt-5 mb-5 space-y-4 animate-fade-in-fast">
+        {/* Comments List */}
+        <div className="space-y-2">
+          {comments && comments.length > 0 ? (
+            comments.map((comment: Comment, idx) => {
+              const userObj = rightUser(comment);
+              return (
+                <div key={comment.commentId || idx} className="flex items-start gap-3 bg-slate-800/60 rounded-lg p-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={userObj?.image || ''} alt={userObj?.name || userObj?.username || 'User'} />
+                        <AvatarFallback>{userObj?.name?.[0] || userObj?.username?.[0] || 'U'}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs text-pink-300 font-semibold truncate">{comment.username}</span>
+                    </div>
+                  <div className="flex-1 flex flex-col min-w-0">
+                    <span className="text-white text-sm break-words">{comment.text}</span>
+                    <span className="text-xs text-gray-400 mt-1">{comment.createdAt ? new Date(comment.createdAt).toLocaleString() : ''}</span>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="text-gray-400 italic">No comments yet.</div>
+          )}
+        </div>
+        {/* Comment Input */}
+        <div className="flex w-full items-start gap-3">
+              {session?.user?.image && (
+                <Avatar className="w-8 h-8 mt-1">
+                  <AvatarImage src={session.user.image} alt={session.user.name || 'User'} />
+                  <AvatarFallback>{session.user.name?.[0] || 'U'}</AvatarFallback>
+                </Avatar>
+              )}
+              <textarea
+                className="flex-1 rounded-lg border border-white/20 bg-slate-900 text-white p-2 resize-none transition-all duration-200 hover:border-white focus:border-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+                rows={2}
+                placeholder="Add a comment..."
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                disabled={sending}
+              />
+              <Button
+                size="sm"
+                className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold px-4 py-1 rounded-full shadow mt-1"
+                onClick={handleSendComment}
+                disabled={sending || !commentText.trim()}
+              >
+                {sending ? "Sending..." : "Send"}
+              </Button>
             </div>
-          ))
-        ) : (
-          <div className="text-gray-400 italic">No comments yet.</div>
-        )}
+
       </div>
-    )}
-    {commentOpen && (
-      <div className="w-full px-5 pb-4 space-y-2 animate-fade-in-fast mt-2">
-      <div className="flex w-full items-start gap-3">
-        {session?.user?.image && (
-          <Avatar className="w-8 h-8">
-            <AvatarImage src={session.user.image} alt={session.user.name || 'User'} />
-            <AvatarFallback>{session.user.name?.[0] || 'U'}</AvatarFallback>
-          </Avatar>
-        )}
-        <textarea
-          className="flex-1 rounded-lg border border-white/20 bg-slate-900 text-white p-2 resize-none transition-all duration-200 hover:border-white focus:border-white focus:outline-none focus:ring-2 focus:ring-pink-500"
-          rows={2}
-          placeholder="Add a comment..."
-          value={commentText}
-          onChange={e => setCommentText(e.target.value)}
-          disabled={sending}
-        />
-      </div>
-      <Button
-        size="sm"
-        className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold px-4 py-1 rounded-full shadow"
-        onClick={handleSendComment}
-        disabled={sending || !commentText.trim()}
-      >
-        {sending ? "Sending..." : "Send"}
-      </Button>
-    </div>
     )}
   </div>
 );
