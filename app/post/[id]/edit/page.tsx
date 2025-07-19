@@ -1,145 +1,166 @@
 'use client';
 
-import { SessionProvider, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Avatar, AvatarImage, AvatarFallback } from '@/app/components/ui/avatar';
-import { Button } from '@/app/components/ui/button';
-import { Badge } from '@/app/components/ui/badge';
-import { MoreHorizontal, Heart, UserPlus, MessageCircle } from 'lucide-react';
-import { Post, User } from '@/app/types';
-import { useParams } from 'next/navigation';
-import postservice from '@/app/services/postservice';
 import { Sidebar } from '@/app/components/Sidebar';
+import { Button } from '@/app/components/ui/button';
+import { useParams, useRouter } from 'next/navigation';
+import postservice from '@/app/services/postservice';
+import creatorservice from '@/app/services/creatorservice';
 
 export default function EditPostPage() {
-  return (
-    <SessionProvider>
-      <EditPost />
-    </SessionProvider>
-  );
+  return <EditPost />;
 }
 
 function EditPost() {
   const { data: session } = useSession();
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const postId = params.id;
 
-  const [post, setPost] = useState<Post | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [likes, setLikes] = useState(0);
-  const [comments, setComments] = useState([]);
-  const [user, setUser] = useState<User | null>(null);
+  const [post, setPost] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [caption, setCaption] = useState('');
+  const [viewable, setViewable] = useState('followers');
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
 
-  // Fetch post
   useEffect(() => {
     async function fetchPost() {
-      const fetchedPost = await postservice.getOne(postId);
-      setPost(fetchedPost);
-      setLikes(fetchedPost.likes || 0);
-      setComments(fetchedPost.comments || []);
+      setLoading(true);
+      setError('');
+      try {
+        const fetchedPost = await postservice.getOne(postId);
+        if (fetchedPost.s3Key) {
+          const res = await fetch('/api/media/download-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ s3Key: fetchedPost.s3Key }),
+          });
+          const { downloadUrl } = await res.json();
+          fetchedPost.signedUrl = downloadUrl;
+        }
+        setPost(fetchedPost);
+        setCaption(fetchedPost.caption || '');
+        setViewable(fetchedPost.viewable || 'followers');
+      } catch (err) {
+        setError('Failed to load post.');
+      } finally {
+        setLoading(false);
+      }
     }
     fetchPost();
   }, [postId]);
 
-  // Mock user info (replace with actual session.user fetch if needed)
-  useEffect(() => {
-    if (session?.user) {
-      setUser(session.user as User); // assuming session.user has the User type
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+      </div>
+    );
+  }
+
+  if (error || !post) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="bg-white/10 p-8 rounded-xl text-center">
+          <h2 className="text-xl font-bold text-red-500 mb-2">Error</h2>
+          <p className="text-gray-300">{error || 'Post not found.'}</p>
+          <Link href="/" className="text-pink-400 underline mt-4 block">Go back home</Link>
+        </div>
+      </div>
+    );
+  }
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setSaveMessage('');
+    try {
+      await postservice.update(postId, { caption, viewable });
+      setSaveMessage('Post updated!');
+      setTimeout(() => setSaveMessage(''), 2000);
+      router.push("/")
+    } catch (err) {
+      setSaveMessage('Failed to update post.');
+    } finally {
+      setSaving(false);
     }
-  }, [session]);
-
-  if (!post) return <p>Loading...</p>;
-  console.log("Post:", post)
-  const postCreator = post.creator;
-  const isFollowersOnly = post.viewableFor === 'followers';
-  const isSubscribersOnly = post.viewableFor === 'subscribers';
-
-  const isCreator = user?.id === postCreator.id;
-  const isFollower = true; // TODO: determine based on your logic
-  const isSubscriber = true; // TODO: determine based on your logic
-
-  const canView = !isFollowersOnly && !isSubscribersOnly || isCreator || isFollower || isSubscriber;
-
-  const handleModalToggle = () => setModalOpen(!modalOpen);
-  const handleLike = () => setLikes((prev) => prev + 1);
-  const handleToggleComment = () => {};
-  const handleEditPost = () => { console.log('Edit post') };
-  const handleRepostContent = () => { console.log('Repost content') };
-  const handleDeletePost = () => { console.log('Delete post') };
+  };
 
   return (
-    <div>
-      <Sidebar />
-      <div className="bg-white/5 rounded-2xl shadow-xl border border-white/10 max-w-3xl mx-auto overflow-hidden animate-fade-in">
-        
-        {/* Header */}
-        <header className="flex items-center gap-4 px-5 py-4 border-b border-white/10 bg-gradient-to-r from-slate-900/80 to-purple-900/80">
-          <Link href={`/${postCreator.username}`} className="flex items-center gap-3 flex-1 min-w-0">
-            <Avatar className="w-12 h-12">
-              <AvatarImage src={postCreator.avatar} alt={postCreator.name || postCreator.username} />
-              <AvatarFallback>{postCreator.name?.[0] || postCreator.username?.[0]}</AvatarFallback>
-            </Avatar>
-            <div>
-              <div className="font-semibold text-white truncate">{postCreator.name}</div>
-              <div className="text-xs text-gray-400 truncate">@{postCreator.username}</div>
-            </div>
-          </Link>
-
-          <div className="relative">
-            <Button variant="ghost" onClick={handleModalToggle} size="icon" className="text-gray-400 hover:text-pink-400">
-              <MoreHorizontal className="w-5 h-5" />
-            </Button>
-            {modalOpen && (
-              <div className="absolute right-0 mt-2 bg-slate-800 rounded shadow p-2 space-y-1 z-10">
-                {isCreator && (
-                  <>
-                    <Button variant="ghost" onClick={handleEditPost}>Edit Post</Button>
-                    <Button variant="ghost" onClick={handleRepostContent}>Repost Content</Button>
-                    <Button variant="ghost" onClick={handleDeletePost} className="text-red-500">Delete Post</Button>
-                  </>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
+      <div className="flex max-w-5xl mx-auto px-4 py-12 gap-8">
+        <Sidebar />
+        <main className="flex-1 flex flex-col items-center">
+          <div className="bg-white/10 rounded-3xl p-8 shadow-2xl flex flex-col items-center w-full max-w-2xl">
+            <h1 className="text-3xl font-bold text-white mb-6">Edit Post</h1>
+            {/* Image preview */}
+            <div className="w-full mb-10">
+                <label className="block text-white font-semibold mb-2">Who can view this post?</label>
+                <select
+                  className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white focus:border-pink-500"
+                  value={viewable}
+                  onChange={e => setViewable(e.target.value)}
+                >
+                  <option value="followers">Followers and Subscribers</option>
+                  <option value="subscribers">Subscribers Only</option>
+                </select>
+              </div>
+            <div className="w-full flex justify-center mb-6">
+              <div className="relative w-72 h-72 bg-slate-900 rounded-xl flex items-center justify-center overflow-hidden">
+                {post.signedUrl ? (
+                  <Image
+                    src={post.signedUrl}
+                    alt={caption || 'Post image'}
+                    fill
+                    style={{ objectFit: 'contain' }}
+                    sizes="(max-width: 600px) 100vw, 600px"
+                    className="rounded-xl"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                    No image available
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-        </header>
-
-        {/* Media */}
-        <div className="relative bg-slate-900">
-            <div className="relative w-full" style={{ aspectRatio: `${post.width} / ${post.height}` }}>
-              <Image
-                src={post.signedUrl}
-                alt={post.caption}
-                fill
-                style={{ objectFit: 'contain' }}
-                sizes="(max-width: 1200px) 100vw, 1200px"
-                className="rounded-none"
-              />
             </div>
-        </div>
-
-        {/* Caption */}
-          <div className="px-5 py-3">
-            <div className="text-white text-sm">{post.caption}</div>
-            <div className="text-xs text-gray-500">{new Date(post.createdAt).toLocaleString()}</div>
+            {/* Edit form */}
+            <form onSubmit={handleSave} className="flex flex-col items-center gap-4 w-full max-w-md">
+              <div className="w-full">
+                <label className="block text-white font-semibold mb-2">Caption</label>
+                <textarea
+                  className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white focus:border-pink-500 resize-none"
+                  rows={4}
+                  value={caption}
+                  onChange={e => setCaption(e.target.value)}
+                  required
+                  maxLength={300}
+                />
+              </div>
+              {saveMessage && <div className={`text-sm ${saveMessage.includes('updated') ? 'text-green-400' : 'text-red-400'}`}>{saveMessage}</div>}
+              <div className="flex gap-3 justify-end w-full">
+              <Button 
+  type="submit" 
+  className={`bg-white duration-500 ease-in-out hover:bg-gradient-to-r from-pink-500 to-purple-600 text-gray-900 w-full flex items-center justify-center transition-colors`} 
+  disabled={saving}
+>
+  {saving ? (
+    <span className="flex items-center justify-center gap-2 text-white transition-colors">
+      <span className="animate-spin inline-block w-5 h-5 border-[3px] border-t-transparent border-white rounded-full"></span>
+      Saving...
+    </span>
+  ) : (
+    <span className="transition-colors">Save</span>
+  )}
+</Button>
+              </div>
+            </form>
           </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-white/10 bg-slate-950/80">
-          <div className="flex gap-2">
-            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-pink-400" onClick={handleLike}>
-              <Heart className="w-5 h-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-400" onClick={handleToggleComment}>
-              <MessageCircle className="w-5 h-5" />
-            </Button>
-          </div>
-          <div className="flex gap-3 text-xs text-gray-400">
-            <span>{likes} Likes</span>
-            <span>{comments.length} Comments</span>
-          </div>
-        </div>
+        </main>
       </div>
     </div>
   );

@@ -22,6 +22,18 @@ const getOne = async (id: string): Promise<{ post: Post }> => {
         throw error;
     }
 }
+const update = async (id: string, newData: Partial<Post>): Promise<{ creator: Post }> => {
+    try {
+        console.log('Updating post:', id, newData);
+        const response = await axios.put(`${API_URL}/${id}`, newData);
+        return response.data;
+
+    }catch(error){
+        console.error('Error updating post:', error);
+        throw error;
+    }
+}
+
 const deletePost = async (id:string): Promise<{post: Post}> => {
     try {
         const response = await axios.delete(`${API_URL}/${id}`)
@@ -34,5 +46,6 @@ const deletePost = async (id:string): Promise<{post: Post}> => {
 export default {
     get, 
     getOne,
-    deletePost
+    deletePost,
+    update
 }
