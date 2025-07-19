@@ -1,5 +1,5 @@
 import axios from "axios";
-
+import { Post } from "../types";
 interface SignedUrlResponse {
   uploadUrl: string;
   key: string;
@@ -72,7 +72,7 @@ export async function createPostWithUpload({
   return response.data.post;
 }
 
-const updatePost = async (id: string, newData: any): Promise<any> => {
+const updatePost = async (id: string, newData: Partial<Post>): Promise<Post> => {
   try {
     const response = await axios.put(`${POST_API}/${id}`, newData);
     return response.data;

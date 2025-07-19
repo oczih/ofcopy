@@ -12,6 +12,8 @@ import { Session } from "@auth/core/types";
 import { Comment, Creator, Post } from "../types";
 import uploadmediaservice from "../services/uploadmediaservice";
 import { User } from "../types";
+import postservice from "../services/postservice";
+
 // Dynamically import emoji-picker-react to avoid SSR issues
 
 export function CreatorPostCard({
@@ -40,13 +42,14 @@ export function CreatorPostCard({
 
   // Like and comment modal state
   const [commentOpen, setCommentOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false)
   const [commentText, setCommentText] = useState("");
   const [sending, setSending] = useState(false);
   const [showEmojis, setShowEmojis] = useState(false);
   const [likes, setLikes] = useState(post.likes ?? 0);
   const [comments, setComments] = useState(post.comments ?? []);
   const [showcomment, setShowComments] = useState(false)
-
+  const [showConfirm, setShowConfirm] = useState(false);
   const handleLike = async () => {
     try {
       const res = await fetch(`/api/media?username=${creator.username}`, {
@@ -74,6 +77,20 @@ export function CreatorPostCard({
   const handleShowComments = () => {
     setShowComments((open) => !open)
   }
+  const handleModalOpen = () => {
+    setModalOpen((open) => !open)
+  }
+  const handleRepostContent = () => {
+    setShowConfirm(true);
+  };
+  const confirmRepost = () => {
+    setShowConfirm(false);
+    // TODO: Call your API to repost content
+    console.log('Content reposted');
+  };
+  const cancelRepost = () => {
+    setShowConfirm(false);
+  };
   const handleSendComment = async () => {
     if (!commentText.trim()) return;
     setSending(true);
@@ -111,6 +128,14 @@ export function CreatorPostCard({
     const correctUser = users?.find(u => u.id === comment.userId)
     return correctUser
   }
+  const handleDeletePost = (id: string) => {
+    try {
+      postservice.deletePost(id)}
+      catch(error){
+        console.error(error)
+        alert('Failed to delete post')
+      }
+  }
   return (
   <div className="bg-white/5 rounded-2xl shadow-xl border border-white/10 p-0 overflow-hidden max-w-3xl w-full mx-auto animate-fade-in">
     {/* Header */}
@@ -127,9 +152,45 @@ export function CreatorPostCard({
       </Link>
       <div className="flex flex-col items-end gap-1 text-xs text-gray-400">
         <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-pink-400">
+        <Button variant="ghost" onClick={handleModalOpen} size="icon" className="text-gray-400 hover:text-pink-400">
           <MoreHorizontal className="w-5 h-5" />
         </Button>
+        {modalOpen && user.creator && (
+          <div>
+            <Link href={`/post/${post._id}/edit`}>
+              <Button>
+                  Edit Post
+              </Button>
+              </Link>
+              <Button onClick={handleRepostContent}>
+                Repost Content
+              </Button>
+              <Button onClick={() => handleDeletePost(post._id)}>
+                  Delete Post
+                </Button>
+            </div>
+        )}
+        {showConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg max-w-sm w-full space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Confirm Repost
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Are you sure you want to repost this content?
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button variant="ghost" onClick={cancelRepost}>Cancel</Button>
+              <Button className="bg-pink-600 text-white" onClick={confirmRepost}>Confirm</Button>
+            </div>
+          </div>
+        </div>
+      )}
+        {modalOpen && !user.creator && (
+          <div>
+            
+          </div>
+        ) }
       </div>
     </header>
 
