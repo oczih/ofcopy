@@ -1,5 +1,12 @@
 import mongoose, { Schema, model } from "mongoose";
 
+export interface Subscription {
+  userId: mongoose.Types.ObjectId;
+  username: string;
+  userImage?: string;
+  subscribedAt: Date;
+}
+
 export interface CreatorDocument {
     username: string;
     _id: string;
@@ -10,14 +17,11 @@ export interface CreatorDocument {
     image?: string;
     oauthProvider?: string;
     oauthId?: string;
-    bio?: string
     lastUsernameChange?: Date;
     subscribers?: number;
     price?: number;
     category?: string;
-    banner?: string  
-    posts?: mongoose.Types.ObjectId[];
-    user?: mongoose.Types.ObjectId; 
+    subscription?: Subscription[];
 }
 
 const creatorSchema = new Schema<CreatorDocument>({
@@ -39,14 +43,11 @@ const creatorSchema = new Schema<CreatorDocument>({
         "Email is invalid",
         ],
     },
-
     googleId: {
         type: String,
         default: null,
     },
     image: { type: String },
-    banner: {type: String},
-    bio: {type: String},
     oauthProvider: { type: String },
     oauthId: { type: String },
     lastUsernameChange: {
@@ -65,30 +66,26 @@ const creatorSchema = new Schema<CreatorDocument>({
         type: String,
         default: 'General',
     },
-    user: { type: Schema.Types.ObjectId, ref: 'User', required: true }
+    subscription: [{
+      userId: {
+        type: Schema.Types.ObjectId,
+        ref: 'OFUser',
+        required: true
+      },
+      username: {
+        type: String,
+        required: true
+      },
+      userImage: {
+        type: String
+      },
+      subscribedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }]
 }, { timestamps: true })
-creatorSchema.virtual('posts', {
-    ref: 'Post',           // The model to use
-    localField: '_id',     // Find posts where `creator` equals `_id` of Creator
-    foreignField: 'creator',
-    justOne: false,
-  });
-  creatorSchema.set('toObject', { virtuals: true });
-creatorSchema.set('toJSON', { virtuals: true });
-const Creator = mongoose.models?.Creator || model<CreatorDocument>('Creator', creatorSchema);
 
-// Creator Application Model
-const CreatorApplicationSchema = new Schema({
-  username: { type: String, required: true },
-  displayName: { type: String, required: true },
-  bio: { type: String, required: true },
-  socialLinks: { type: [String], default: [] },
-  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  email: { type: String, required: true },
-  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
-  createdAt: { type: Date, default: Date.now },
-});
-
-export const CreatorApplication = mongoose.models?.CreatorApplication || model('CreatorApplication', CreatorApplicationSchema);
+const Creator = mongoose.models.Creator || model<CreatorDocument>("Creator", creatorSchema);
 
 export default Creator;

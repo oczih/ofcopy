@@ -13,12 +13,7 @@ import { useRouter } from "next/navigation";
 export default function SettingsPage() {
   return (
     <SessionProvider>
-      <div className="flex min-h-screen">
-        <Sidebar />
-        <div className="flex-1">
           <SettingsApp />
-        </div>
-      </div>
     </SessionProvider>
   );
 }

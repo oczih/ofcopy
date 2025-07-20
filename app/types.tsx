@@ -24,6 +24,7 @@ export type Creator = {
     username: string;
     avatar: string;
     subscribers: number;
+    followers: number
     isSubscribed: boolean;
     price: number;
     category: string;

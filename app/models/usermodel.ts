@@ -13,6 +13,13 @@ export interface Subscription {
   nextBillingDate?: Date;
   autoRenew: boolean;
 }
+
+// Following interface (reference only)
+export interface Following {
+  creatorId: mongoose.Types.ObjectId;
+  followedAt: Date;
+}
+
 export type Comment = {
   _id: string;
   userId: string;
@@ -50,10 +57,10 @@ export interface UserDocument {
   membership?: boolean;
   lastUsernameChange?: Date;
   subscriptions: Subscription[];
+  following: Following[];
   messages: Message[];
   notifications: Notification[];
   creator?: boolean;
-  following?: Following[];
   comments: Comment[];
 }
 
@@ -89,10 +96,6 @@ const userSchema = new Schema<UserDocument>({
     type: Boolean,
     default: false,
   },
-  creator: {
-    type: Boolean,
-    default: false,
-  },
   customerId: {
     type: String,
     validate(value: string) {
@@ -113,28 +116,6 @@ const userSchema = new Schema<UserDocument>({
     type: Date,
     default: '',
   },
-  following: [{
-    creatorId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Creator',
-      required: true
-    },
-    creatorName: {
-      type: String,
-      required: true
-    },
-    creatorUsername: {
-      type: String,
-      required: true
-    },
-    creatorImage: {
-      type: String
-    },
-    followingDate: {
-      type: Date,
-      default: Date.now
-    },
-  }],
   subscriptions: [{
     creatorId: {
       type: Schema.Types.ObjectId,
@@ -173,6 +154,17 @@ const userSchema = new Schema<UserDocument>({
       default: true
     }
   }],
+  following: [{
+    creatorId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Creator',
+      required: true
+    },
+    followedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   notifications: [{
     type: {
       type: String,
@@ -197,12 +189,11 @@ const userSchema = new Schema<UserDocument>({
 }, { timestamps: true });
 
 userSchema.set('toJSON', {
-    transform: (_doc, ret: UserDocument & { _id?: string; __v?: number; password?: string }) => {
-      const r = ret as unknown as Record<string, unknown>;
-      r.id = ret._id?.toString();
-      delete r._id;
-      delete r.__v;
-      delete r.password;
+    transform: (_doc, ret: any) => {
+      ret.id = ret._id?.toString();
+      delete ret._id;
+      delete ret.__v;
+      delete ret.password;
     },
   });
 const OFUser = mongoose.models?.OFUser || model<UserDocument>('OFUser', userSchema);

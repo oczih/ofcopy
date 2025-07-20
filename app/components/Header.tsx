@@ -20,13 +20,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu";
-import { LoginModal } from "@/app/components/LoginModal";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import Link from "next/link";
 export const Header = () => {
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const { data: session } = useSession();
   const router = useRouter();
   const handleSignOut = async () => {
@@ -35,6 +33,9 @@ export const Header = () => {
     router.push('/');
     toast.success('Signed out successfully');
   };
+  const handleSignIn = () => {
+    router.push("/signup")
+  }
   return (
     <>
       <header className="bg-black/20 backdrop-blur-xl border-b border-white/10 sticky top-0 z-50 shadow-2xl">
@@ -128,13 +129,13 @@ export const Header = () => {
                   <Button 
                     variant="ghost" 
                     className="text-white hover:bg-white/10 rounded-full px-6 py-2 font-medium transition-all duration-300 hover:scale-105"
-                    onClick={() => setShowLoginModal(true)}
+                    onClick={() => handleSignIn}
                   >
                     Sign In
                   </Button>
                   <Button 
                     className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 rounded-full px-6 py-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                    onClick={() => setShowLoginModal(true)}
+                    onClick={() => handleSignIn}
                   >
                     Get Started
                   </Button>
@@ -145,13 +146,6 @@ export const Header = () => {
         </div>
       </header>
 
-      <LoginModal 
-        isOpen={showLoginModal} 
-        onClose={() => setShowLoginModal(false)}
-        onLogin={() => {
-          setShowLoginModal(false);
-        }}
-      />
     </>
   );
 };
