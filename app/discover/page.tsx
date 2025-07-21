@@ -10,13 +10,13 @@ import { SessionProvider } from "next-auth/react";
 import creatorservice from "../services/creatorservice";
 import toast from "react-hot-toast";
 import { Creator } from "../types";
-
+import AppWrapper from "../components/AppWrapper";
 export default function DiscoverPage() {
   return (
     <SessionProvider>
-
+      <AppWrapper>
           <DiscoverApp />
-        
+        </AppWrapper>
     </SessionProvider>
   );
 }

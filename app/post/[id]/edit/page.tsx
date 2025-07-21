@@ -9,9 +9,13 @@ import { Button } from '@/app/components/ui/button';
 import { useParams, useRouter } from 'next/navigation';
 import postservice from '@/app/services/postservice';
 import creatorservice from '@/app/services/creatorservice';
-
+import AppWrapper from '@/app/components/AppWrapper';
 export default function EditPostPage() {
-  return <EditPost />;
+  return (
+    <AppWrapper>
+  <EditPost />
+  </AppWrapper>
+);
 }
 
 function EditPost() {

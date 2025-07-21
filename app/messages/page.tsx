@@ -8,14 +8,13 @@ import { MessageCircle, Send, Search, MoreVertical, Phone, Video, Image as Image
 import { SessionProvider } from "next-auth/react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
+import AppWrapper from "../components/AppWrapper";
 export default function MessagesPage() {
   return (
     <SessionProvider>
-      <div className="flex min-h-screen">
-        <div className="flex-1">
+      <AppWrapper>
           <MessagesApp />
-        </div>
-      </div>
+        </AppWrapper>
     </SessionProvider>
   );
 }

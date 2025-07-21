@@ -6,9 +6,13 @@ import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-
+import AppWrapper from "../components/AppWrapper";
 export default function ApplyCreator() {
-  return <ApplyCreatorPage />;
+  return (
+  <AppWrapper>
+    <ApplyCreatorPage />
+  </AppWrapper>
+  );
 }
 
 function ApplyCreatorPage() {

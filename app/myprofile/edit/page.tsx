@@ -6,8 +6,17 @@ import Image from 'next/image';
 import { Sidebar } from '@/app/components/Sidebar';
 import { Card, CardContent } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
+import AppWrapper from '@/app/components/AppWrapper';
 
 export default function EditProfilePage() {
+    return (
+        <AppWrapper>
+            <EditProfile/>
+        </AppWrapper>
+    )
+}
+
+function EditProfile() {
   const [profilePic, setProfilePic] = useState('/default-profile.png'); // Placeholder image
   const [selectedFile, setSelectedFile] = useState(null);
 

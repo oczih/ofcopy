@@ -4,10 +4,10 @@ import { connectDB } from '@/lib/mongoose';
 import Media from '../models/mediamodel';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-client';
-import { Sidebar } from '../components/Sidebar';
 import User from '../models/usermodel';
 import Purchase from '@/app/models/purchasemodel';
 import Link from 'next/link';
+import AppWrapper from "../components/AppWrapper";
 const RESERVED_ROUTES = [
   'discover', 'messages', 'settings', 'subscriptions', 'notifications', 'api', 'components',
   'models', 'services', 'context', 'favicon.ico',
@@ -24,8 +24,16 @@ interface MediaPost {
   type?: string;
   createdAt?: Date;
 }
-
 export default async function UserProfilePage({ params }: { params: { username: string } }) {
+  return (
+    <AppWrapper>
+      {await UserProfile({ params: Promise.resolve(params) })}
+    </AppWrapper>
+  );
+}
+
+async function UserProfile({ params: paramsPromise }: { params: Promise<{ username: string }> })  {
+  const params = await paramsPromise;
   const session = await getServerSession(authOptions);
   await connectDB();
 
@@ -61,11 +69,9 @@ export default async function UserProfilePage({ params }: { params: { username: 
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-hidden">
-      <div className="flex max-w-7xl mx-auto px-6 py-8 gap-8 relative z-10">
-        <Sidebar />
-        <main className="flex-1">
-          <div className="max-w-2xl mx-auto text-white">
+    <div className="flex max-w-7xl mx-auto px-6 py-8 gap-8 relative z-10">
+      <main className="flex-1">
+        <div className="max-w-2xl mx-auto text-white">
             <div className="bg-white/10 rounded-2xl p-8 shadow-xl flex flex-col items-center mb-8">
               <img
                 src={user.image || '/default-avatar.png'}
@@ -106,7 +112,6 @@ export default async function UserProfilePage({ params }: { params: { username: 
             )}
           </div>
         </main>
-      </div>
     </div>
   );
 }

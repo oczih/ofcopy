@@ -20,7 +20,11 @@ import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import creatorservice from "../services/creatorservice";
 import { Creator } from "../types";
 
-export const Sidebar = () => {
+interface SidebarProps {
+  onCollapseChange?: (collapsed: boolean) => void;
+}
+
+export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
   const pathname = usePathname();
   const { data: session } = useSession();
   const router = useRouter();
@@ -74,7 +78,9 @@ export const Sidebar = () => {
   };
 
   const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
+    const newCollapsedState = !isCollapsed;
+    setIsCollapsed(newCollapsedState);
+    onCollapseChange?.(newCollapsedState);
   };
 
   console.log("Creator", creator)
@@ -156,7 +162,13 @@ export const Sidebar = () => {
                   {!isCollapsed && (
                     <>
                       <span className="font-medium opacity-100 transition-opacity duration-300">{item.label}</span>
+                      {isActive && (
+                        <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                      )}
                     </>
+                  )}
+                  {isCollapsed && isActive && (
+                    <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-white rounded-full animate-pulse"></div>
                   )}
                 </Button>
               </Link>
@@ -186,10 +198,14 @@ export const Sidebar = () => {
                 {!isCollapsed && (
                   <>
                     <span className="font-medium opacity-100 transition-opacity duration-300">Apply Creator</span>
+                    {pathname === "/apply-creator" && (
+                      <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                    )}
                   </>
                 )}
-
-
+                {isCollapsed && pathname === "/apply-creator" && (
+                  <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                )}
               </Button>
             </Link>
             

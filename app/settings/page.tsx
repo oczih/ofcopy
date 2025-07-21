@@ -8,11 +8,13 @@ import { Badge } from "../components/ui/badge";
 import { Settings, User, Shield, Bell, Palette, CreditCard, LogOut, Save } from "lucide-react";
 import { SessionProvider, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-
+import AppWrapper from "../components/AppWrapper";
 export default function SettingsPage() {
   return (
     <SessionProvider>
-          <SettingsApp />
+          <AppWrapper>
+            <SettingsApp/>
+          </AppWrapper>
     </SessionProvider>
   );
 }
