@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { CreatorCard } from "@/app/components/CreatorCard";
-import { Sidebar } from "../components/Sidebar";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
@@ -61,7 +60,6 @@ function DiscoverApp() {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
       </div>
 
-      <Sidebar />
       <main className="flex-1 max-w-7xl mx-auto px-4 py-8 gap-8 relative z-10">
         
         <div className="space-y-8 animate-fade-in">

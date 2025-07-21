@@ -1,20 +1,29 @@
 
 import { notFound, redirect } from 'next/navigation';
-import Creator from '../models/creatormodel';
 import { connectDB } from '@/lib/mongoose';
 import Media from '../models/mediamodel';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-client';
-import { Header } from '../components/Header';
 import { Sidebar } from '../components/Sidebar';
-import User from '../models/usermodel'; // assuming you have a User model
-import Purchase from '../models/purchasemodel'; // assuming a Purchase model tracks purchases
+import User from '../models/usermodel';
+import Purchase from '@/app/models/purchasemodel';
 import Link from 'next/link';
-const RESERVED_ROUTES = ['discover', 'messages', 'settings', 'subscriptions', 'notifications', 'api', 'components', 
-'models', 'services', 'context', 'favicon.ico', 
-'globals.css', 'layout.tsx', 'page.tsx', 'public', 
-'lib', 'ui', 'auth', 'creators', 'stats', 'media', 
-'users', 'upload'];
+const RESERVED_ROUTES = [
+  'discover', 'messages', 'settings', 'subscriptions', 'notifications', 'api', 'components',
+  'models', 'services', 'context', 'favicon.ico',
+  'globals.css', 'layout.tsx', 'page.tsx', 'public',
+  'lib', 'ui', 'auth', 'creators', 'stats', 'media',
+  'users', 'upload',
+];
+
+// Define a type for Media posts
+interface MediaPost {
+  _id: string;
+  title: string;
+  s3Key: string;
+  type?: string;
+  createdAt?: Date;
+}
 
 export default async function UserProfilePage({ params }: { params: { username: string } }) {
   const session = await getServerSession(authOptions);
@@ -32,31 +41,29 @@ export default async function UserProfilePage({ params }: { params: { username: 
     notFound();
   }
 
-  // If no session and user is NOT a creator, redirect to signup
+  const isOwnProfile = session?.user?.username === user.username;
+
+  // If not logged in and viewing a normal user (not creator), redirect to signup
   if (!session && !user.isCreator) {
     redirect('/signup');
   }
 
-  const isOwnProfile = session?.user?.username === user.username;
-
-  let posts = [];
+  let posts: MediaPost[] = [];
   let totalSpent = 0;
   let relationshipStatus = 'none';
 
   if (user.isCreator) {
     posts = await Media.find({ creatorId: user._id }).sort({ createdAt: -1 });
-    if (!isOwnProfile && session) {
-      // Logic to determine relationship status (e.g., check subscriptions/followers)
-      // Replace with actual logic
-      relationshipStatus = await getUserRelationshipStatus(session?.user.id, user._id);
-      totalSpent = await getTotalSpentOnCreator(session?.user.id, user._id);
+    if (!isOwnProfile && session?.user?.id) {
+      relationshipStatus = await getUserRelationshipStatus();
+      totalSpent = await getTotalSpentOnCreator(session.user.id, user._id.toString());
     }
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-hidden">
       <div className="flex max-w-7xl mx-auto px-6 py-8 gap-8 relative z-10">
-        <Sidebar user={user} />
+        <Sidebar />
         <main className="flex-1">
           <div className="max-w-2xl mx-auto text-white">
             <div className="bg-white/10 rounded-2xl p-8 shadow-xl flex flex-col items-center mb-8">
@@ -71,8 +78,7 @@ export default async function UserProfilePage({ params }: { params: { username: 
               {isOwnProfile ? (
                 <>
                   <Link href="/myprofile/edit" className="bg-pink-500 text-white px-4 py-2 rounded-lg mb-4">Edit Profile</Link>
-                  {/* Toggle between purchased content / likes */}
-                  <UserContentToggles userId={user._id} />
+                  <UserContentToggles />
                 </>
               ) : user.isCreator ? (
                 <>
@@ -92,7 +98,7 @@ export default async function UserProfilePage({ params }: { params: { username: 
                 {posts.length === 0 ? (
                   <div className="text-center text-gray-400">No posts yet.</div>
                 ) : (
-                  posts.map((post: any) => (
+                  posts.map((post) => (
                     <PostDisplay key={post._id} post={post} isLoggedIn={!!session} />
                   ))
                 )}
@@ -105,20 +111,19 @@ export default async function UserProfilePage({ params }: { params: { username: 
   );
 }
 
-// Placeholder: replace with your actual logic
-async function getUserRelationshipStatus(viewerId: string, creatorId: string) {
-  // Example logic
-  return 'subscriber'; // or 'follower', 'none'
+// Relationship status logic placeholder
+async function getUserRelationshipStatus() {
+  // TODO: Implement actual logic for follower/subscriber/none
+  return 'subscriber';
 }
 
 async function getTotalSpentOnCreator(viewerId: string, creatorId: string) {
-  // Example logic
   const purchases = await Purchase.find({ userId: viewerId, creatorId });
-  return purchases.reduce((sum, p) => sum + p.amount, 0);
+  return purchases.reduce((sum: number, p: { amount: number }) => sum + p.amount, 0);
 }
 
 // Post component rendering image/video
-function PostDisplay({ post, isLoggedIn }: { post: any, isLoggedIn: boolean }) {
+function PostDisplay({ post, isLoggedIn }: { post: MediaPost, isLoggedIn: boolean }) {
   return (
     <div className="bg-white/10 rounded-2xl p-6 shadow-lg flex flex-col items-center">
       <div className="w-full flex justify-center">
@@ -143,8 +148,8 @@ function PostDisplay({ post, isLoggedIn }: { post: any, isLoggedIn: boolean }) {
   );
 }
 
-// Dummy Toggle Component
-function UserContentToggles({ userId }: { userId: string }) {
+// Toggle between purchased content and likes (only for own profile)
+function UserContentToggles() {
   return (
     <div className="flex gap-4 mb-4">
       <button className="bg-purple-600 px-3 py-1 rounded">Purchased Content</button>

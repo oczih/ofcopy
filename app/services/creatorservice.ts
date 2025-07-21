@@ -16,6 +16,7 @@ const get = async () => {
     try {
         const response = await axios.get(API_URL);
         // Transform database data to match frontend Creator type
+        console.log("response:", response)
         const creators = response.data
         return creators;
     } catch (error) {

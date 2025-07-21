@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from "react";
-import { Sidebar } from "../components/Sidebar";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
@@ -13,7 +12,6 @@ export default function MessagesPage() {
   return (
     <SessionProvider>
       <div className="flex min-h-screen">
-        <Sidebar />
         <div className="flex-1">
           <MessagesApp />
         </div>

@@ -18,7 +18,7 @@ async function addSignedUrlsToPosts(posts: Post) {
       });
       const signedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
       return {
-        ...post.toObject(),
+        ...(typeof post.toObject === 'function' ? post.toObject() : post),
         signedUrl,
       };
     } catch (err) {
@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
       }
 
       const creator = await Creator.findOne({ _id: userId }).populate('posts');
+      console.log("Creator", creator)
       if (!creator) {
         return NextResponse.json({ error: 'Creator not found for user' }, { status: 404 });
       }
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ creator: creatorObj });
     } else {
       const creators = await Creator.find({}).populate('posts');
-
+        console.log("Creators:", creators) 
       // Add signed URLs for all creators' posts
       const creatorsWithSignedUrls = await Promise.all(
         creators.map(async (creator) => {

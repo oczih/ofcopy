@@ -1,5 +1,5 @@
 import mongoose, { Schema, model } from "mongoose";
-
+import Post from "./postmodel";
 export interface Subscription {
   userId: mongoose.Types.ObjectId;
   username: string;
@@ -22,6 +22,7 @@ export interface CreatorDocument {
     price?: number;
     category?: string;
     subscription?: Subscription[];
+    posts?: typeof Post[]
 }
 
 const creatorSchema = new Schema<CreatorDocument>({
@@ -83,7 +84,11 @@ const creatorSchema = new Schema<CreatorDocument>({
         type: Date,
         default: Date.now
       }
-    }]
+    }],
+    posts: {
+      type: Schema.Types.ObjectId,
+      ref: 'Post'
+    }
 }, { timestamps: true })
 
 const Creator = mongoose.models.Creator || model<CreatorDocument>("Creator", creatorSchema);
