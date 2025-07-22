@@ -1,12 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "./components/Header";
 import { Sidebar } from "./components/Sidebar";
 import { Button } from "./components/ui/button";
 import { Sparkles, TrendingUp, Users, Star } from "lucide-react";
 import { SessionProvider, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-
 export default function Page() {
   return (
     <SessionProvider>
@@ -17,8 +16,41 @@ export default function Page() {
 
 function LandingPage() {
   const router = useRouter();
-  const { data: session} = useSession();
+  const { data: session, status } = useSession();
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    if (status !== 'loading') {
+      setLoading(false);
+    }
+  }, [status]);
+  if(loading){
+    return (
+      <div className="flex items-center justify-center h-full">
+        <svg
+          className="animate-spin h-8 w-8 text-blue-500"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+          />
+        </svg>
+      </div>
+    );
+  }
   if (session?.user) {
+    
     if (typeof window !== "undefined") router.replace("/home");
     return null;
   }

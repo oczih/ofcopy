@@ -1,13 +1,16 @@
+'use client'
 
 import { notFound, redirect } from 'next/navigation';
 import { connectDB } from '@/lib/mongoose';
-import Media from '../models/mediamodel';
+import Media from '@/app/models/mediamodel';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-client';
 import User from '../models/usermodel';
 import Purchase from '@/app/models/purchasemodel';
 import Link from 'next/link';
 import AppWrapper from "../components/AppWrapper";
+import { useState } from 'react';
+import Post from '../models/postmodel';
 const RESERVED_ROUTES = [
   'discover', 'messages', 'settings', 'subscriptions', 'notifications', 'api', 'components',
   'models', 'services', 'context', 'favicon.ico',
@@ -16,14 +19,18 @@ const RESERVED_ROUTES = [
   'users', 'upload',
 ];
 
-// Define a type for Media posts
-interface MediaPost {
-  _id: string;
-  title: string;
-  s3Key: string;
-  type?: string;
-  createdAt?: Date;
+// Define types
+
+interface UserProfileData {
+  user: typeof User; 
+  posts: Post[];
+  purchasedContent: MediaPost[];
+  totalSpent: number;
+  relationshipStatus: string;
+  isOwnProfile: boolean;
+  canViewContent: boolean;
 }
+
 export default async function UserProfilePage({ params }: { params: { username: string } }) {
   return (
     <AppWrapper>
@@ -32,7 +39,7 @@ export default async function UserProfilePage({ params }: { params: { username: 
   );
 }
 
-async function UserProfile({ params: paramsPromise }: { params: Promise<{ username: string }> })  {
+async function UserProfile({ params: paramsPromise }: { params: Promise<{ username: string }> }) {
   const params = await paramsPromise;
   const session = await getServerSession(authOptions);
   await connectDB();
@@ -57,108 +64,299 @@ async function UserProfile({ params: paramsPromise }: { params: Promise<{ userna
   }
 
   let posts: MediaPost[] = [];
+  let purchasedContent: MediaPost[] = [];
   let totalSpent = 0;
   let relationshipStatus = 'none';
+  let canViewContent = isOwnProfile;
 
   if (user.isCreator) {
     posts = await Media.find({ creatorId: user._id }).sort({ createdAt: -1 });
+    
     if (!isOwnProfile && session?.user?.id) {
-      relationshipStatus = await getUserRelationshipStatus();
+      relationshipStatus = await getUserRelationshipStatus(session.user.id, user._id.toString());
       totalSpent = await getTotalSpentOnCreator(session.user.id, user._id.toString());
+      canViewContent = relationshipStatus === 'subscriber' || relationshipStatus === 'follower';
     }
   }
 
+  // Get purchased content for any user (creator or regular user)
+  if (session?.user?.id) {
+    const purchases = await Purchase.find({ userId: session.user.id }).populate('mediaId');
+    purchasedContent = purchases.map(p => p.mediaId).filter(Boolean);
+  }
+
+  const profileData: UserProfileData = {
+    user,
+    posts,
+    purchasedContent,
+    totalSpent,
+    relationshipStatus,
+    isOwnProfile,
+    canViewContent
+  };
+
+  return <ProfileContent {...profileData} />;
+}
+
+function ProfileContent({ 
+  user, 
+  posts, 
+  purchasedContent, 
+  totalSpent, 
+  relationshipStatus, 
+  isOwnProfile, 
+  canViewContent 
+}: UserProfileData) {
   return (
-    <div className="flex max-w-7xl mx-auto px-6 py-8 gap-8 relative z-10">
-      <main className="flex-1">
-        <div className="max-w-2xl mx-auto text-white">
-            <div className="bg-white/10 rounded-2xl p-8 shadow-xl flex flex-col items-center mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* Profile Header */}
+        <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 mb-8 border border-white/20">
+          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
+            {/* Profile Image */}
+            <div className="relative">
               <img
                 src={user.image || '/default-avatar.png'}
                 alt={user.name || user.username}
-                className="w-32 h-32 rounded-full object-cover mb-4 border-4 border-pink-400"
+                className="w-32 h-32 lg:w-40 lg:h-40 rounded-full object-cover border-4 border-gradient-to-r from-pink-400 to-purple-400 shadow-2xl"
               />
-              <h1 className="text-3xl font-bold mb-2">{user.name || user.username}</h1>
-              <p className="text-lg text-gray-300 mb-2">@{user.username}</p>
-
-              {isOwnProfile ? (
-                <>
-                  <Link href="/myprofile/edit" className="bg-pink-500 text-white px-4 py-2 rounded-lg mb-4">Edit Profile</Link>
-                  <UserContentToggles />
-                </>
-              ) : user.isCreator ? (
-                <>
-                  <span className="inline-block bg-pink-500/20 text-pink-300 px-4 py-1 rounded-full mb-2">Creator</span>
-                  <div className="text-sm text-gray-300 mb-2">Status: {relationshipStatus}</div>
-                  <div className="text-sm text-gray-300 mb-4">Total Spent: ${totalSpent.toFixed(2)}</div>
-                </>
-              ) : (
-                <>
-                  <div className="text-gray-400">This is a regular user.</div>
-                </>
+              {user.isCreator && (
+                <div className="absolute -bottom-2 -right-2 bg-pink-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
+                  Creator
+                </div>
               )}
             </div>
 
-            {user.isCreator && (
-              <div className="space-y-8">
-                {posts.length === 0 ? (
-                  <div className="text-center text-gray-400">No posts yet.</div>
+            {/* Profile Info */}
+            <div className="flex-1 text-center lg:text-left">
+              <h1 className="text-4xl font-bold text-white mb-2">
+                {user.name || user.username}
+              </h1>
+              <p className="text-xl text-purple-200 mb-4">@{user.username}</p>
+              
+              {user.bio && (
+                <p className="text-gray-300 mb-6 max-w-2xl">{user.bio}</p>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
+                {isOwnProfile ? (
+                  <Link 
+                    href="/myprofile/edit" 
+                    className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                  >
+                    Edit Profile
+                  </Link>
                 ) : (
-                  posts.map((post) => (
-                    <PostDisplay key={post._id} post={post} isLoggedIn={!!session} />
-                  ))
+                  <>
+                    {relationshipStatus === 'none' && (
+                      <button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+                        Follow
+                      </button>
+                    )}
+                    {user.isCreator && relationshipStatus !== 'subscriber' && (
+                      <button className="bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+                        Subscribe
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
-            )}
+
+              {/* Stats */}
+              {!isOwnProfile && user.isCreator && (
+                <div className="mt-6 flex gap-6 text-center lg:text-left">
+                  <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
+                    <div className="text-sm text-gray-300">Status</div>
+                    <div className="text-lg font-semibold text-white capitalize">
+                      {relationshipStatus}
+                    </div>
+                  </div>
+                  <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
+                    <div className="text-sm text-gray-300">Total Spent</div>
+                    <div className="text-lg font-semibold text-green-400">
+                      ${totalSpent.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </main>
+        </div>
+
+        {/* Content Tabs */}
+        <ContentTabs 
+          posts={posts}
+          purchasedContent={purchasedContent}
+          isCreator={user.isCreator}
+          isOwnProfile={isOwnProfile}
+          canViewContent={canViewContent}
+        />
+      </div>
     </div>
   );
 }
 
-// Relationship status logic placeholder
-async function getUserRelationshipStatus() {
+function ContentTabs({ 
+  posts, 
+  purchasedContent, 
+  isCreator, 
+  isOwnProfile, 
+  canViewContent 
+}: {
+  posts: MediaPost[];
+  purchasedContent: MediaPost[];
+  isCreator: boolean;
+  isOwnProfile: boolean;
+  canViewContent: boolean;
+}) {
+  const [activeTab, setActiveTab] = useState(isCreator ? 'posts' : 'purchased');
+
+  const tabs = [
+    ...(isCreator ? [{ id: 'posts', label: 'Posts & Media', count: posts.length }] : []),
+    { id: 'purchased', label: 'Purchased Content', count: purchasedContent.length },
+    ...(isOwnProfile ? [{ id: 'likes', label: 'Likes', count: 0 }] : []),
+  ];
+
+  return (
+    <div className="bg-white/10 backdrop-blur-lg rounded-3xl border border-white/20 overflow-hidden">
+      {/* Tab Headers */}
+      <div className="flex border-b border-white/20">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 px-6 py-4 font-semibold transition-all duration-200 ${
+              activeTab === tab.id
+                ? 'bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-white border-b-2 border-pink-400'
+                : 'text-gray-300 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            {tab.label}
+            {tab.count > 0 && (
+              <span className="ml-2 bg-white/20 px-2 py-1 rounded-full text-xs">
+                {tab.count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className="p-6">
+        {activeTab === 'posts' && (
+          <PostsGrid posts={posts} canViewContent={canViewContent} />
+        )}
+        {activeTab === 'purchased' && (
+          <PostsGrid posts={purchasedContent} canViewContent={true} />
+        )}
+        {activeTab === 'likes' && (
+          <div className="text-center text-gray-400 py-12">
+            <div className="text-6xl mb-4">❤️</div>
+            <p>Your liked content will appear here</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PostsGrid({ posts, canViewContent }: { posts: MediaPost[]; canViewContent: boolean }) {
+  if (posts.length === 0) {
+    return (
+      <div className="text-center text-gray-400 py-12">
+        <div className="text-6xl mb-4">📱</div>
+        <p>No content available</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {posts.map((post) => (
+        <PostCard key={post._id} post={post} canViewContent={canViewContent} />
+      ))}
+    </div>
+  );
+}
+
+function PostCard({ post, canViewContent }: { post: MediaPost; canViewContent: boolean }) {
+  const shouldBlur = !canViewContent && !post.isPublic;
+  
+  return (
+    <div className="bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/20 hover:border-white/40 transition-all duration-300 group hover:transform hover:scale-105 hover:shadow-2xl">
+      <div className="aspect-square relative overflow-hidden">
+        {post.type?.startsWith('image') ? (
+          <img
+            src={canViewContent ? `/api/media/get-media?key=${encodeURIComponent(post.s3Key)}` : '/blurred.png'}
+            alt={post.title}
+            className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-110 ${
+              shouldBlur ? 'blur-lg' : ''
+            }`}
+          />
+        ) : post.type?.startsWith('video') ? (
+          <video
+            src={canViewContent ? `/api/media/get-media?key=${encodeURIComponent(post.s3Key)}` : ''}
+            className={`w-full h-full object-cover ${shouldBlur ? 'blur-lg' : ''}`}
+            poster="/video-placeholder.png"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+            <div className="text-4xl">📄</div>
+          </div>
+        )}
+        
+        {/* Overlay */}
+        {shouldBlur && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <div className="text-center text-white">
+              <div className="text-2xl mb-2">🔒</div>
+              <p className="text-sm">Subscribe to view</p>
+            </div>
+          </div>
+        )}
+
+        {/* Price tag */}
+        {post.price && post.price > 0 && (
+          <div className="absolute top-3 right-3 bg-green-500 text-white px-2 py-1 rounded-lg text-sm font-semibold shadow-lg">
+            ${post.price}
+          </div>
+        )}
+      </div>
+
+      {/* Content Info */}
+      <div className="p-4">
+        <h3 className={`font-semibold text-white mb-2 ${shouldBlur ? 'blur-sm select-none' : ''}`}>
+          {post.title}
+        </h3>
+        <div className="flex items-center justify-between text-sm text-gray-400">
+          <span>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ''}</span>
+          <div className="flex items-center gap-2">
+            {post.subscriberOnly && (
+              <span className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-xs">
+                Subscribers Only
+              </span>
+            )}
+            {post.isPublic && (
+              <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs">
+                Public
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Helper functions
+async function getUserRelationshipStatus(viewerId: string, creatorId: string) {
   // TODO: Implement actual logic for follower/subscriber/none
+  // This should check your Follow and Subscription models
   return 'subscriber';
 }
 
 async function getTotalSpentOnCreator(viewerId: string, creatorId: string) {
   const purchases = await Purchase.find({ userId: viewerId, creatorId });
   return purchases.reduce((sum: number, p: { amount: number }) => sum + p.amount, 0);
-}
-
-// Post component rendering image/video
-function PostDisplay({ post, isLoggedIn }: { post: MediaPost, isLoggedIn: boolean }) {
-  return (
-    <div className="bg-white/10 rounded-2xl p-6 shadow-lg flex flex-col items-center">
-      <div className="w-full flex justify-center">
-        {post.type?.startsWith('image') ? (
-          <img
-            src={isLoggedIn ? `/api/media/get-media?key=${encodeURIComponent(post.s3Key)}` : '/blurred.png'}
-            alt={post.title}
-            className={`max-w-md max-h-96 rounded-lg shadow-lg ${!isLoggedIn ? 'blur-lg' : ''}`}
-          />
-        ) : post.type?.startsWith('video') ? (
-          <video
-            src={isLoggedIn ? `/api/media/get-media?key=${encodeURIComponent(post.s3Key)}` : ''}
-            controls={isLoggedIn}
-            className={`max-w-md max-h-96 rounded-lg shadow-lg ${!isLoggedIn ? 'blur-lg' : ''}`}
-          />
-        ) : null}
-      </div>
-      <div className="mt-4 text-white text-lg text-center font-semibold">
-        {isLoggedIn ? post.title : <span className="blur-sm select-none">{post.title}</span>}
-      </div>
-    </div>
-  );
-}
-
-// Toggle between purchased content and likes (only for own profile)
-function UserContentToggles() {
-  return (
-    <div className="flex gap-4 mb-4">
-      <button className="bg-purple-600 px-3 py-1 rounded">Purchased Content</button>
-      <button className="bg-purple-600 px-3 py-1 rounded">Likes</button>
-    </div>
-  );
 }

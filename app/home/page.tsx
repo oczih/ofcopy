@@ -28,12 +28,12 @@ export default function Page() {
 }
 
 function App() {
-  const { data: session } = useSession();
+  
+  const { data: session, status } = useSession();
   const [creators, setCreators] = useState<Creator[] | null>(null);
   const [page, setPage] = useState("Feed");
   const [users, setUsers] = useState<User[] | null>(null);
-  console.log(users);
-  
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalCreators: 0,
     activeCreators: 0,
@@ -44,6 +44,14 @@ function App() {
     averageSubscribers: 0,
     averagePrice: 0
   });
+  useEffect(() => {
+    if (status !== 'loading') {
+      setLoading(false);
+    }
+  }, [status]);
+  
+  console.log(users);
+  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -77,7 +85,32 @@ function App() {
   }, []);
 
   console.log(creators);
-
+  if(loading){
+    return (
+      <div className="flex items-center justify-center h-full">
+        <svg
+          className="animate-spin h-8 w-8 text-blue-500"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+          />
+        </svg>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen w-full relative">
       {/* Dynamic overlay that creates depth */}
@@ -175,7 +208,7 @@ function App() {
                         const isFollower = session?.user?.following?.some(f => f.creatorId.toString() === creator.id);
                         const isSubscriber = !!session?.user?.subscriptions?.some(s => s.creatorId.toString() === creator.id);
                         return (
-                          <div key={post._id} className="transform hover:scale-[1.01] transition-transform duration-300">
+                          <div key={post._id} className="transform transition-transform duration-300">
                             <CreatorPostCard
                               creator={creator}
                               post={post}

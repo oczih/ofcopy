@@ -1,13 +1,33 @@
-import mongoose, { Schema, model } from 'mongoose';
+import mongoose, { Schema, Document, model } from 'mongoose';
 
-const postSchema = new Schema({
+export interface Comment {
+  userId: mongoose.Types.ObjectId;
+  username: string;
+  text: string;
+  createdAt: Date;
+}
+
+export interface PostDocument extends Document {
+  creator: mongoose.Types.ObjectId;
+  s3Key: string;
+  type: string;
+  caption: string;
+  likes: number;
+  createdAt: Date;
+  viewableFor: 'followers' | 'subscribers';
+  comments: Comment[];
+  width?: number;
+  height?: number;
+}
+
+const postSchema = new Schema<PostDocument>({
   creator: { type: Schema.Types.ObjectId, ref: 'Creator', required: true },
   s3Key: { type: String, required: true },
   type: { type: String, required: true },
   caption: { type: String, required: true },
-  likes: {type: Number, default: 0},
+  likes: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
-  viewableFor: {type: String, enum: ['followers', 'subscribers'], default: 'followers'},
+  viewableFor: { type: String, enum: ['followers', 'subscribers'], default: 'followers' },
   comments: [
     {
       userId: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true },
@@ -20,6 +40,7 @@ const postSchema = new Schema({
   height: { type: Number },
 });
 
-const Post = (mongoose.models?.Post) || model('Post', postSchema);
+const Post = mongoose.models?.Post || model<PostDocument>('Post', postSchema);
 
-export default Post; 
+export default Post;
+export type { PostDocument };

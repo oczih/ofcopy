@@ -5,9 +5,6 @@ import Image from "next/image";
 import { MoreHorizontal, Heart, MessageCircle, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import dynamic from "next/dynamic";
-import type { EmojiClickData } from "emoji-picker-react";
-import { Theme } from "emoji-picker-react";
 import { Session } from "@auth/core/types";
 import { Comment, Creator, Post } from "../types";
 import uploadmediaservice from "../services/uploadmediaservice";
@@ -139,61 +136,81 @@ export function CreatorPostCard({
   return (
   <div className="bg-white/5 rounded-2xl shadow-xl border border-white/10 p-0 overflow-hidden max-w-3xl w-full mx-auto animate-fade-in">
     {/* Header */}
+  
     <header className="flex items-center gap-4 px-5 py-4 border-b border-white/10 bg-gradient-to-r from-slate-900/80 to-purple-900/80">
-      <Link href={`/${creator.username}`} className="flex items-center gap-3 flex-1 min-w-0">
-        <Avatar className="w-12 h-12">
-          <AvatarImage src={creator.avatar} alt={creator.name || creator.username} />
-          <AvatarFallback>{creator.name?.[0] || creator.username?.[0]}</AvatarFallback>
-        </Avatar>
-        <div className="min-w-0">
-          <div className="font-semibold text-white truncate">{creator.name}</div>
-          <div className="text-xs text-gray-400 truncate">@{creator.username}</div>
-        </div>
-      </Link>
+    <div className="flex items-center gap-3 flex-1 min-w-0">
+  <Link href={`/${creator.username}`}>
+    <Avatar className="w-12 h-12">
+      <AvatarImage src={creator.avatar} alt={creator.name || creator.username} />
+      <AvatarFallback>{creator.name?.[0] || creator.username?.[0]}</AvatarFallback>
+    </Avatar>
+  </Link>
+
+  <div className="min-w-0">
+    <Link href={`/${creator.username}`}>
+    <div className="font-semibold text-white truncate">{creator.name}</div>
+    <div className="text-xs text-gray-400 truncate">@{creator.username}</div>
+    </Link>
+  </div>
+</div>
+      
       <div className="flex flex-col items-end gap-1 text-xs text-gray-400">
         <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-        <Button variant="ghost" onClick={handleModalOpen} size="icon" className="text-gray-400 hover:text-pink-400">
+        <Button
+          variant="ghost"
+          onClick={handleModalOpen}
+          size="icon"
+          className="text-gray-400 hover:text-pink-400"
+        >
           <MoreHorizontal className="w-5 h-5" />
         </Button>
-        {modalOpen && user.creator && (
-          <div>
-            <Link href={`/post/${post._id}/edit`}>
-              <Button>
-                  Edit Post
-              </Button>
-              </Link>
-              <Button onClick={handleRepostContent}>
-                Repost Content
-              </Button>
-              <Button onClick={() => handleDeletePost(post._id)}>
-                  Delete Post
-                </Button>
-            </div>
-        )}
-        {showConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg max-w-sm w-full space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Confirm Repost
-            </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              Are you sure you want to repost this content?
-            </p>
-            <div className="flex justify-end gap-3">
-              <Button variant="ghost" onClick={cancelRepost}>Cancel</Button>
-              <Button className="bg-pink-600 text-white" onClick={confirmRepost}>Confirm</Button>
-            </div>
-          </div>
-        </div>
-      )}
+
+{/* Animated Dropdown for Post Options */}
+<div className="relative">
+  
+{modalOpen && user.creator && (
+  <div
+    className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-95 opacity-0 animate-fade-in z-30 cursor-pointer"
+  >
+    <Link href={`/post/${post._id}/edit`}>
+      <Button variant="ghost" className="w-full justify-start text-left hover:bg-gray-100 dark:hover:bg-slate-600 cursor-pointer">
+        Edit Post
+      </Button>
+    </Link>
+    <Button
+      variant="ghost"
+      onClick={handleRepostContent}
+      className="w-full justify-start text-left hover:bg-gray-100 dark:hover:bg-slate-600 cursor-pointer"
+    >
+      Repost Content
+    </Button>
+    <Button
+      variant="ghost"
+      onClick={() => handleDeletePost(post._id)}
+      className="w-full justify-start text-left text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
+    >
+      Delete Post
+    </Button>
+  </div>
+)}
+
+</div>
+      
         {modalOpen && !user.creator && (
-          <div>
-            
-          </div>
+          <div
+          className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-95 opacity-0 animate-fade-in z-30"
+        >
+          <Link href={`/${creator.username}`}>
+            <Button variant="ghost" className="w-full justify-start text-left">
+              Go to creator profile
+            </Button>
+          </Link>
+
+        </div>
         ) }
       </div>
     </header>
-
+    
     {/* Media */}
     <div className="relative bg-slate-900">
       {canView && post.signedUrl ? (
