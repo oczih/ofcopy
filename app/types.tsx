@@ -66,9 +66,9 @@ export interface Comment {
 export type Post = {
   _id: string;
   creator: string;            // Just the ID string, unless you populate the whole creator
-  s3Key: string;
+  s3Key?: string;
   type: string;
-  caption: string;
+  caption?: string;
   likes: number;
   createdAt: string | Date;   // Depending on usage
   viewableFor: string;

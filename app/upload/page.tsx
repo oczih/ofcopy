@@ -34,10 +34,10 @@ function UploadPage() {
     const [price, setPrice] = useState('');
     const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
     const [tempPrice, setTempPrice] = useState('');
-    const [tempPriceType, setTempPriceType] = useState('free');
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
     const [showDim, setShowDim] = useState(false);
-
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
     useEffect(() => {
       const fetchCreators = async () => {
         const creators = await creatorservice.get();
@@ -57,16 +57,48 @@ function UploadPage() {
       };
       fetchCreators();
     }, [session?.user.id, router]);
-
+    useEffect(() => {
+      if (status !== 'loading') {
+        setLoading(false);
+      }
+    }, [status]);
+    useEffect(() => {
+      return () => {
+        previews.forEach((preview) => URL.revokeObjectURL(preview));
+      };
+    }, [previews]);
     if (status === "loading") return null;
 
     if (!session?.user.creator) {
       if (typeof window !== "undefined") router.replace("/");
       return null;
     }
-
-    if (!creator) {
-      return <div>Loading creator info...</div>;
+    
+    if(loading){
+      return (
+        <div className="flex items-center justify-center h-full">
+          <svg
+            className="animate-spin h-8 w-8 text-blue-500"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+            />
+          </svg>
+        </div>
+      );
     }
 
     function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -79,6 +111,7 @@ function UploadPage() {
         ...prev,
         ...newFiles.map(file => URL.createObjectURL(file))
       ]);
+      setShowDim(false)
     }
 
     function getImageDimensions(file: File): Promise<{ width: number; height: number } | null> {
@@ -113,10 +146,6 @@ function UploadPage() {
 
     async function handleSubmit(e: React.FormEvent) {
       e.preventDefault();
-      if (files.length === 0) {
-        setMessage("Please select at least one file to upload.");
-        return;
-      }
       if (!caption.trim()) {
         setMessage("Please enter a caption for your post.");
         return;
@@ -128,76 +157,99 @@ function UploadPage() {
       setUploading(true);
       setMessage("Uploading...");
       try {
-        const uploadPromises = files.map(async (file) => {
-          const s3Key = await uploadContent(file);
-          let width, height;
-          const dims = await getImageDimensions(file);
-          if (dims) {
-            width = dims.width;
-            height = dims.height;
-          }
-          console.log("creatorId received:", creator?.id);
-          console.log('Uploading post metadata:', {
-            s3Key,
-            caption,
-            creatorId: creator?.id,
-            type: file.type,
-            viewable: priceType === 'subscribers' ? 'subscribers' : viewable,
-            width,
-            height,
-            price: priceType === 'paid' ? price : 0,
-            priceType
-          });
-          
+        if (files.length === 0) {
+          // No files - create a post without media
           const response = await fetch(`/api/media?username=${session?.user?.username}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              s3Key,
+              s3Key: null,
               caption,
               creatorId: creator?.id,
-              type: file.type,
-              viewable: priceType === 'subscribers' ? 'subscribers' : viewable,
-              width,
-              height,
-              price: priceType === 'paid' ? price : 0,
-              priceType
+              type: null,
+              viewable,
+              width: null,
+              height: null,
+              price: price ? price : 0,
             }),
           });
+      
           if (!response.ok) {
-            const data = await response.json();
-            console.error('Post creation failed', data);
+            console.error('Post creation without file failed');
+            setMessage("Failed to create post without files.");
+            return;
           }
-        });
-        await Promise.all(uploadPromises);
-        setMessage(`Upload successful! Uploaded ${files.length} file(s).`);
-        // reset states
+      
+          setMessage("Post created without files.");
+        } else {
+          // Upload files
+          const uploadPromises = files.map(async (file) => {
+            const s3Key = await uploadContent(file);
+            if (!s3Key) {
+              console.error("Failed to get s3Key for file:", file.name);
+              return;
+            }
+      
+            const dims = await getImageDimensions(file);
+            const width = dims?.width || null;
+            const height = dims?.height || null;
+      
+            const response = await fetch(`/api/media?username=${session?.user?.username}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                s3Key,
+                caption,
+                creatorId: creator?.id,
+                type: file.type,
+                viewable,
+                width,
+                height,
+                price: price ? price : 0,
+              }),
+            });
+      
+            if (!response.ok) {
+              console.error('Post creation with file failed');
+            }
+          });
+      
+          await Promise.all(uploadPromises);
+          setMessage(`Upload successful! Uploaded ${files.length} file(s).`);
+        }
+      
+        // Reset state
         setFiles([]);
         setPreviews([]);
         setCaption("");
-        setPriceType('free');
-        setPrice(0);
+        setPrice('');
         router.push("/");
       } catch (err) {
         console.error("Upload failed", err);
         setMessage("Upload failed. Please try again.");
       } finally {
         setUploading(false);
-      }
+      }      
     }
 
     const handleChange = (event: SelectChangeEvent) => {
       setViewable(event.target.value as string);
     };
-
-    const getPriceDisplayText = () => {
-      return (
-  <div>
-    {price.toFixed(2)}
-       Set Price
-       </div>
-      )};
-
+    const triggerFileInput = () => {
+      setShowDim(true);
+      fileInputRef.current?.click();
+    };
+    
+    const handleRemoveAll = () => {
+      setFiles([]);
+      setPreviews([]);
+      setPrice('');
+      setShowDim(false); // Hide dim when clearing files
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    };
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
         {(showDim || isPriceModalOpen) && (
@@ -216,7 +268,7 @@ function UploadPage() {
           <main className="flex-1 flex flex-col items-center">
             <div className="bg-white/10 rounded-3xl p-8 shadow-2xl flex flex-col items-center w-full max-w-2xl">
               <h1 className="text-3xl font-bold text-white mb-6">Create Post</h1>
-              <form onSubmit={handleSubmit} className="flex flex-col items-center gap-4 w-full max-w-md">
+              <form onSubmit={handleSubmit} className="flex flex-col items-left gap-4 w-full max-w-md">
                 
                 {/* Visibility select */}
                 <div className="w-full mb-2">
@@ -256,42 +308,63 @@ function UploadPage() {
                     <label
                       htmlFor="file-upload"
                       className="flex flex-col items-center justify-center w-48 h-48 border-2 border-dashed border-white rounded-xl cursor-pointer bg-white/10 text-pink-300 hover:bg-white/20 transition"
-                      onClick={() => setShowDim(true)}
+                      onClick={triggerFileInput}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 mb-2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                       </svg>
                       <span className="font-semibold">Upload from device</span>
                       <input
-                        id="file-upload"
-                        type="file"
-                        accept="image/*,video/*"
-                        multiple
-                        onChange={handleFileChange}
-                        className="hidden"
-                        disabled={uploading}
-                        onFocus={() => setShowDim(true)}
-                        onBlur={() => setShowDim(false)}
-                      />
+                          ref={fileInputRef}
+                          id="file-upload"
+                          type="file"
+                          accept="image/*,video/*"
+                          multiple
+                          onChange={handleFileChange}
+                          className="hidden"
+                          disabled={uploading}
+                          onFocus={() => setShowDim(true)}
+                          onBlur={() => setShowDim(false)}  // Triggers when file dialog is closed, including cancel
+                        />
                     </label>
                   ) : (
-                    <div className="relative flex flex-col items-center w-48 h-48 justify-center">
-                      <button
-                        type="button"
-                        onClick={() => { setFiles([]); setPreviews([]); setPrice(0) }}
-                        className="absolute top-2 right-2 z-10 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 w-8 h-8 flex items-center justify-center"
-                        aria-label="Remove media"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                      {files[0].type.startsWith("image") ? (
-                        <img src={previews[0]} alt="Preview" className="max-w-xs max-h-64 rounded-xl border border-white/20" />
-                      ) : (
-                        <video src={previews[0]} controls className="max-w-xs max-h-64 rounded-xl border border-white/20" />
-                      )}
-                    </div>
+                    <div className="relative flex flex-row gap-2 items-start w-full overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200 py-2">
+                        {previews.map((preview, index) => (
+                          <div key={index} className="relative group">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newFiles = files.filter((_, i) => i !== index);
+                                const newPreviews = previews.filter((_, i) => i !== index);
+                                setFiles(newFiles);
+                                setPreviews(newPreviews);
+                              }}
+                              className="absolute top-2 right-2 z-10 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              aria-label="Remove media"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+
+                            {files[index]?.type.startsWith("image") ? (
+                              <img
+                                src={preview}
+                                alt={`Preview ${index}`}
+                                className="max-w-xs max-h-40 rounded-xl border border-white/20 mb-2"
+                              />
+                            ) : (
+                              <video
+                                src={preview}
+                                controls
+                                className="max-w-xs max-h-64 rounded-xl border border-white/20 mb-2"
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+
                   )}
                 </div>
 
@@ -307,32 +380,37 @@ function UploadPage() {
                 />
 
                 {/* Price Setting Button */}
-                <div className="w-full flex gap-3">
-                  <Button
+                <div className="w-1/5 items-start relative flex gap-3">
+                <Button
                     type="button"
                     onClick={handleSetPrice}
                     disabled={files.length === 0}
                     className={`flex-1 flex items-center justify-center gap-3 py-3 px-4 rounded-xl font-semibold transition-all duration-200 ${
-                      files.length === 0 
-                        ? 'bg-gray-500 cursor-not-allowed' 
+                      files.length === 0
+                        ? 'bg-gray-500 cursor-not-allowed'
                         : 'bg-yellow-600 hover:bg-yellow-700'
                     }`}
-                  >{price && price}
-                    {!price && <div className="w-5 h-5">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                        <g data-name="pricetags">
-                          <path d="M12.87 22a1.84 1.84 0 0 1-1.29-.53l-6.41-6.42a1 1 0 0 1-.29-.61L4 5.09a1 1 0 0 1 .29-.8 1 1 0 0 1 .8-.29l9.35.88a1 1 0 0 1 .61.29l6.42 6.41a1.82 1.82 0 0 1 0 2.57l-7.32 7.32a1.82 1.82 0 0 1-1.28.53zm-6-8.11 6 6 7.05-7.05-6-6-7.81-.73z"></path>
-                          <circle cx="10.5" cy="10.5" r="1.5"></circle>
-                        </g>
-                      </svg>
-                    </div>}
+                  >
+                    {price ? `$${price}` : (
+                      <div className="flex items-center justify-center gap-3 flex-1 min-w-0">
+                      <div className="w-5 h-5">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                          <g data-name="pricetags">
+                            <path d="M12.87 22a1.84 1.84 0 0 1-1.29-.53l-6.41-6.42a1 1 0 0 1-.29-.61L4 5.09a1 1 0 0 1 .29-.8 1 1 0 0 1 .8-.29l9.35.88a1 1 0 0 1 .61.29l6.42 6.41a1.82 1.82 0 0 1 0 2.57l-7.32 7.32a1.82 1.82 0 0 1-1.28.53zm-6-8.11 6 6 7.05-7.05-6-6-7.81-.73z"></path>
+                            <circle cx="10.5" cy="10.5" r="1.5"></circle>
+                          </g>
+                        </svg>
+                      </div>
+                      <div>Add Price</div>
+                      </div>
+                    )}
                   </Button>
                 </div>
 
                 {/* Upload Button */}
                 <Button
                   type="submit"
-                  disabled={uploading || files.length === 0}
+                  disabled={uploading || !caption}
                   className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 disabled:from-gray-400 disabled:to-gray-500 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   {uploading ? "Uploading..." : "Create Post"}
@@ -427,7 +505,7 @@ function UploadPage() {
                     <div className="text-sm">
                       <p className="text-blue-300 font-medium mb-1">Pricing Info</p>
                       <p className="text-blue-200">
-                        {tempPriceType === 'paid' && 'Users will need to purchase this content individually to view it.'}
+                        Users will need to purchase this content individually to view it.
                       </p>
                     </div>
                   </div>
@@ -444,7 +522,7 @@ function UploadPage() {
                 </button>
                 <button
                   onClick={handleSavePrice}
-                  disabled={tempPriceType === 'paid' && (!tempPrice || parseFloat(tempPrice) < 0.99)}
+                  disabled={(!tempPrice || parseFloat(tempPrice) < 0.99)}
                   className="flex-1 px-4 py-3 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
                 >
                   Set Price

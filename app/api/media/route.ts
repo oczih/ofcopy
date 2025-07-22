@@ -51,9 +51,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   await connectDB();
-  const { s3Key, caption, creatorId, type, width, height, viewable } = await req.json();
-  if (!s3Key || !caption || !creatorId || !type) {
-    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+  const { s3Key, caption, creatorId, type, width, height, viewable, price } = await req.json();
+  if ((!s3Key && !caption) || !creatorId) {
+    return NextResponse.json({ error: 'Post must have either a file or a caption' }, { status: 400 });
   }
   // Ensure creatorId is the Creator's _id
   let creator = await Creator.findById(creatorId);
@@ -67,12 +67,13 @@ export async function POST(req: NextRequest) {
   // Create the post
   const post = await Post.create({
     creator: creator._id,
-    s3Key,
-    type,
-    caption,
+    s3Key: s3Key || null,
+    type: type || null,
+    caption: caption || '',
     createdAt: new Date(),
-    width,
-    height,
+    width: width || null,
+    height: height || null,
+    price: price || 0,
     viewableFor: viewable || 'followers',
   });
   // Add post to creator's posts array

@@ -9,23 +9,23 @@ export interface Comment {
 
 export interface PostDocument extends Document {
   creator: mongoose.Types.ObjectId;
-  s3Key: string;
+  s3Key?: string;
   type: string;
-  caption: string;
+  caption?: string;
   likes: number;
   createdAt: Date;
   viewableFor: 'followers' | 'subscribers';
   comments: Comment[];
   width?: number;
   height?: number;
-  price: number;
+  price?: number;
 }
 
 const postSchema = new Schema<PostDocument>({
   creator: { type: Schema.Types.ObjectId, ref: 'Creator', required: true },
-  s3Key: { type: String, required: true },
-  type: { type: String, required: true },
-  caption: { type: String, required: true },
+  s3Key: { type: String },  // no required
+  type: { type: String },
+  caption: { type: String },  // no required
   likes: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
   viewableFor: { type: String, enum: ['followers', 'subscribers'], default: 'followers' },
@@ -39,7 +39,7 @@ const postSchema = new Schema<PostDocument>({
   ],
   width: { type: Number },
   height: { type: Number },
-  price: {type: Number},
+  price: { type: Number },
 });
 
 const Post = mongoose.models?.Post || model<PostDocument>('Post', postSchema);
