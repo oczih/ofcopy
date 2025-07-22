@@ -36,6 +36,7 @@ export type Notification = {
   date: Date,
   seen: boolean
 }
+
 export type Subscription = {
   creatorId: string;
   creatorName: string;
@@ -62,14 +63,16 @@ export interface Comment {
   username?: string;
   userId?: string;
 }
-
+export interface Like {
+  userId: string
+}
 export type Post = {
   _id: string;
   creator: string;            // Just the ID string, unless you populate the whole creator
   s3Key?: string;
   type: string;
   caption?: string;
-  likes: number;
+  likes: Like[];
   createdAt: string | Date;   // Depending on usage
   viewableFor: string;
   comments: Comment[];            // Replace with proper Comment type if you have it

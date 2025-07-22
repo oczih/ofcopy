@@ -6,13 +6,15 @@ export interface Comment {
   text: string;
   createdAt: Date;
 }
-
+export interface Like {
+  userId: mongoose.Types.ObjectId;
+} 
 export interface PostDocument extends Document {
   creator: mongoose.Types.ObjectId;
   s3Key?: string;
   type: string;
   caption?: string;
-  likes: number;
+  likes: Like[];  // Updated from number to Like[]
   createdAt: Date;
   viewableFor: 'followers' | 'subscribers';
   comments: Comment[];
@@ -26,7 +28,9 @@ const postSchema = new Schema<PostDocument>({
   s3Key: { type: String },  // no required
   type: { type: String },
   caption: { type: String },  // no required
-  likes: { type: Number, default: 0 },
+  likes: [
+    { userId: {type: Schema.Types.ObjectId, ref: 'OFUser', required: true} }
+  ],
   createdAt: { type: Date, default: Date.now },
   viewableFor: { type: String, enum: ['followers', 'subscribers'], default: 'followers' },
   comments: [

@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
     height: height || null,
     price: price || 0,
     viewableFor: viewable || 'followers',
+    likes: []
   });
   // Add post to creator's posts array
   await Creator.findByIdAndUpdate(creator._id, { $push: { posts: post._id } });
@@ -84,31 +85,53 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   await connectDB();
   const username = req.nextUrl.searchParams.get('username');
-  const { postId, likes, comment } = await req.json();
-  if (!username || !postId) {
-    return NextResponse.json({ error: 'Missing username or postId' }, { status: 400 });
-  }
-  const creator = await Creator.findOne({ username }).populate('posts');
-  if (!creator) {
-    return NextResponse.json({ error: 'Creator not found' }, { status: 404 });
-  }
-  try {
-    let update = {};
-    if (typeof likes === 'number') {
-      update = { ...update, likes };
+  const { postId, liker, comment, unlike } = await req.json();
+
+    if (!username || !postId) {
+      return NextResponse.json({ error: 'Missing username or postId' }, { status: 400 });
     }
+
+    if (liker && !liker.userId) {
+      return NextResponse.json({ error: 'Missing userId in liker' }, { status: 400 });
+    }
+
+    const creator = await Creator.findOne({ username }).populate('posts');
+    if (!creator) {
+      return NextResponse.json({ error: 'Creator not found' }, { status: 404 });
+}
+  try {
     let updatedPost;
-    if (comment) {
-      updatedPost = await Post.findByIdAndUpdate(
-        postId,
-        { $push: { comments: comment }, ...(update.likes !== undefined ? { likes: update.likes } : {}) },
-        { new: true }
-      );
-    } else if (update.likes !== undefined) {
-      updatedPost = await Post.findByIdAndUpdate(postId, { likes: update.likes }, { new: true });
+
+if (comment) {
+  updatedPost = await Post.findByIdAndUpdate(
+    postId,
+    { $push: { comments: comment } },
+    { new: true }
+  );
+} else if (liker) {
+      if (unlike) {
+        // Remove like
+        updatedPost = await Post.findByIdAndUpdate(
+          postId,
+          { $pull: { likes: { userId: liker.userId } } },
+          { new: true }
+        );
+      } else {
+        // Add like if not exists
+        updatedPost = await Post.findOneAndUpdate(
+          { _id: postId, 'likes.userId': { $ne: liker.userId } },
+          { $push: { likes: { userId: liker.userId } } },
+          { new: true }
+        );
+        if (!updatedPost) {
+          // User already liked, return existing post
+          updatedPost = await Post.findById(postId);
+        }
+      }
     } else {
       return NextResponse.json({ error: 'No valid update fields' }, { status: 400 });
     }
+
     // Re-fetch creator's posts with signed URLs
     const postsWithSignedUrls = await Promise.all(
       (creator.posts || []).map(async (post: any) => {

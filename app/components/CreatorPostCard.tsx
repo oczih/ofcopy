@@ -43,22 +43,50 @@ export function CreatorPostCard({
   const [commentText, setCommentText] = useState("");
   const [sending, setSending] = useState(false);
   const [showEmojis, setShowEmojis] = useState(false);
-  const [likes, setLikes] = useState(post.likes ?? 0);
+  const [likes, setLikes] = useState(post.likes.length ?? 0);
   const [comments, setComments] = useState(post.comments ?? []);
   const [showcomment, setShowComments] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false);
-  const handleLike = async () => {
+  const handleLike = async (post: Post) => {
+    if(post.likes.some(like => like.userId.toString() === session.user?.id)){
+      try {
+        const res = await fetch(`/api/media?username=${creator.username}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            postId: post._id,
+            liker: { userId: session.user?.id },
+            unlike: true
+          }),
+        });
+    
+        if (res.ok) {
+          const data = await res.json();
+          const updated = data.posts.find((p: Post) => p._id === post._id);
+          if (updated) setLikes(updated.likes);
+        } else {
+          alert('Failed to unlike post');
+        }
+      } catch (error) {
+        console.error(error);
+        alert('Failed to unlike post');
+      }
+    }
+    else {
     try {
       const res = await fetch(`/api/media?username=${creator.username}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId: post._id, likes: likes + 1 }),
+        body: JSON.stringify({
+          postId: post._id,
+          liker: { userId: session.user?.id }
+        })
       });
+  
       if (res.ok) {
         const data = await res.json();
-        // Find the updated post in the returned posts
-        const updated = data.posts.find((p: typeof post) => p._id === post._id);
-        if (updated) setLikes(updated.likes ?? likes + 1);
+        const updated = data.posts.find((p: Post) => p._id === post._id);
+        if (updated) setLikes(updated.likes ?? []);
       } else {
         alert('Failed to like post');
       }
@@ -66,8 +94,9 @@ export function CreatorPostCard({
       console.error(error);
       alert('Failed to like post');
     }
+  }
   };
-
+  
   const handleToggleComment = () => {
     setCommentOpen((open) => !open);
   };
@@ -272,15 +301,26 @@ export function CreatorPostCard({
     {/* Footer */}
     <div className="flex items-center justify-between px-5 py-3 border-t border-white/10 bg-slate-950/80">
       <div className="flex gap-2">
-        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-pink-400" onClick={handleLike}>
-          <Heart className="w-5 h-5" />
-        </Button>
+      <Button
+            variant="ghost"
+            size="icon"
+            className="text-gray-400 hover:text-pink-400"
+            onClick={() => handleLike(post)}
+          >
+            <Heart
+              className={`w-5 h-5 ${
+                post.likes.some(like => like.userId.toString() === session.user?.id)
+                  ? "text-pink-400 fill-pink-400"
+                  : "text-gray-400"
+              }`}
+            />
+          </Button>
         <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-400" onClick={handleToggleComment}>
           <MessageCircle className="w-5 h-5" />
         </Button>
       </div>
       <div className="flex gap-3 text-xs text-gray-400 items-center">
-        <span>{likes} Likes</span>
+        <span>{post.likes.length} Likes</span>
         <span
           className="hover:underline"
         >
