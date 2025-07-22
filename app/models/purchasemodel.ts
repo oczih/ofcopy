@@ -18,5 +18,5 @@ const purchaseSchema = new Schema<PurchaseDocument>({
   timestamps: true,
 });
 
-const Purchase = mongoose.models.Purchase || model<PurchaseDocument>('Purchase', purchaseSchema);
+const Purchase = mongoose.models?.Purchase || model<PurchaseDocument>('Purchase', purchaseSchema);
 export default Purchase; 

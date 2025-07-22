@@ -18,6 +18,7 @@ export interface PostDocument extends Document {
   comments: Comment[];
   width?: number;
   height?: number;
+  price: number;
 }
 
 const postSchema = new Schema<PostDocument>({
@@ -38,6 +39,7 @@ const postSchema = new Schema<PostDocument>({
   ],
   width: { type: Number },
   height: { type: Number },
+  price: {type: Number},
 });
 
 const Post = mongoose.models?.Post || model<PostDocument>('Post', postSchema);

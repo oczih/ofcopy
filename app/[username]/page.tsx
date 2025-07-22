@@ -23,8 +23,8 @@ const RESERVED_ROUTES = [
 
 interface UserProfileData {
   user: typeof User; 
-  posts: Post[];
-  purchasedContent: MediaPost[];
+  posts: typeof Post[];
+  purchasedContent: typeof Post[];
   totalSpent: number;
   relationshipStatus: string;
   isOwnProfile: boolean;
@@ -63,8 +63,8 @@ async function UserProfile({ params: paramsPromise }: { params: Promise<{ userna
     redirect('/signup');
   }
 
-  let posts: MediaPost[] = [];
-  let purchasedContent: MediaPost[] = [];
+  let posts: typeof Post[] = [];
+  let purchasedContent: typeof Post[] = [];
   let totalSpent = 0;
   let relationshipStatus = 'none';
   let canViewContent = isOwnProfile;
