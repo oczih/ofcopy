@@ -10,7 +10,7 @@ import { Comment, Creator, Post } from "../types";
 import uploadmediaservice from "../services/uploadmediaservice";
 import { User } from "../types";
 import postservice from "../services/postservice";
-
+import { Skeleton } from "@/app/components/ui/skeleton"
 // Dynamically import emoji-picker-react to avoid SSR issues
 
 export function CreatorPostCard({
@@ -47,6 +47,7 @@ export function CreatorPostCard({
   const [comments, setComments] = useState(post.comments ?? []);
   const [showcomment, setShowComments] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true)
   const handleLike = async (post: Post) => {
     if(post.likes.some(like => like.userId.toString() === session.user?.id)){
       try {
@@ -242,28 +243,43 @@ export function CreatorPostCard({
     
     {/* Media */}
     <div className="relative bg-slate-900">
-      {canView && post.signedUrl ? (
-        post.width && post.height ? (
-          <div className="relative w-full" style={{ aspectRatio: `${post.width} / ${post.height}` }}>
-            <Image
-              src={post.signedUrl}
-              alt={post.caption}
-              fill
-              style={{ objectFit: 'contain' }}
-              sizes="(max-width: 1200px) 100vw, 1200px"
-              className="rounded-none"
-            />
-          </div>
+      
+    {canView && post.signedUrl ? (
+      <div
+        className="relative w-full bg-black"
+        style={post.width && post.height ? { aspectRatio: `${post.width} / ${post.height}` } : {}}
+      >
+        {imageLoading && (
+          <Skeleton
+          className="w-full h-full rounded-none bg-gray-200 dark:bg-gray-700"
+        />  
+        )}
+
+        {post.width && post.height ? (
+          <Image
+            src={post.signedUrl}
+            alt={post.caption}
+            fill
+            onLoad={() => setImageLoading(false)}
+            onError={() => setImageLoading(false)}
+            style={{ objectFit: 'contain' }}
+            sizes="(max-width: 1200px) 100vw, 1200px"
+            className={`transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"}`}
+          />
         ) : (
           <Image
             src={post.signedUrl}
             alt={post.caption}
             width={600}
             height={400}
-            className="w-full h-100 object-cover object-center"
+            onLoad={() => setImageLoading(false)}
+            onError={() => setImageLoading(false)}
+            style={{ objectFit: 'cover' }}
+            className={`w-full h-auto transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"}`}
           />
-        )
-      ) : (
+        )}
+      </div>
+    ) : (
         <div className="flex flex-col items-center justify-center h-72 w-full bg-slate-800 text-center space-y-3">
           <span className="text-2xl text-gray-300">
             {isSubscribersOnly ? "Subscribe to view" : isFollowersOnly ? "Follow to view" : "Restricted"}

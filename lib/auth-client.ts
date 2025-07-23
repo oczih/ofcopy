@@ -4,6 +4,17 @@ import TwitterProvider from "next-auth/providers/twitter";
 import OFUser from "@/app/models/usermodel";
 import { connectDB } from "@/lib/mongoose";
 
+async function generateUniqueUsername(baseUsername: string): Promise<string> {
+  let username = baseUsername.toLowerCase().replace(/\s+/g, "_");
+  let count = 0;
+  while (await OFUser.findOne({ username })) {
+    count++;
+    username = `${baseUsername.toLowerCase().replace(/\s+/g, "_")}_${count}`;
+  }
+  return username;
+}
+
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -47,9 +58,11 @@ export const authOptions: NextAuthOptions = {
         existingUser = await OFUser.findOne({ email: user.email });
 
         if (!existingUser) {
+          const usernameBase = user.name || `google_user_${providerId}`;
+          const uniqueUsername = await generateUniqueUsername(usernameBase);
           existingUser = await OFUser.create({
             email: user.email,
-            username: user.name?.replace(/\s+/g, "_").toLowerCase() || `google_user_${providerId}`,
+            username: uniqueUsername,
             name: user.name,
             image: user.image,
             oauthProvider: "google",
@@ -69,9 +82,11 @@ export const authOptions: NextAuthOptions = {
         existingUser = await OFUser.findOne({ oauthId: twitterId });
 
         if (!existingUser) {
+          const usernameBase = user.name || `twitter_user_${twitterId}`;
+          const uniqueUsername = await generateUniqueUsername(usernameBase);
           existingUser = await OFUser.create({
             email: fallbackEmail,
-            username: user.name || `twitter_user_${twitterId}`,
+            username: uniqueUsername,
             name: user.name,
             image: user.image,
             oauthProvider: "twitter",

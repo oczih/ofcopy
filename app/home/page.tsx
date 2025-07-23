@@ -83,7 +83,13 @@ function App() {
     };
     fetchData();
   }, []);
-
+  const followedCreatorIds = new Set([
+    ...(session?.user.following?.map(f => f.creatorId.toString()) || []),
+    ...(session?.user.subscriptions?.map(s => s.creatorId.toString()) || [])
+  ]);
+  
+  const filteredCreators = creators?.filter(creator => followedCreatorIds.has(creator.id.toString()));
+  
   console.log(creators);
   if(loading){
     return (
@@ -199,8 +205,8 @@ function App() {
 
             {/* Creators and their posts with enhanced spacing */}
             <div className="space-y-10 mt-10">
-              {creators && creators.length > 0 && users && session ? (
-                creators.map((creator) => (
+              {filteredCreators && filteredCreators.length > 0 && users && session ? (
+                filteredCreators.map((creator) => (
                   <div key={creator.id} className="space-y-8">
                     {creator.posts && creator.posts.length > 0 && (
                       creator.posts.map(post => {
@@ -227,7 +233,7 @@ function App() {
                 ))
               ) : (
                 <div className="text-gray-400 italic mt-4 text-center bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                  No posts yet.
+                  You aren't subscribed to or don't follow anyone yet!
                 </div>
               )}
             </div>
