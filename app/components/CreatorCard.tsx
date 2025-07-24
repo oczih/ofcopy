@@ -27,7 +27,7 @@ export const CreatorCard = ({ creator }: CreatorCardProps) => {
           {/* Avatar gradient border */}
           <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 rounded-full p-1 animate-pulse" />
           <Avatar className="w-24 h-24 border-4 border-white/20 shadow-lg relative z-10">
-            <AvatarImage src={creator.avatar} alt={creator.name || creator.username} />
+            <AvatarImage src={creator.image} alt={creator.name || creator.username} />
             <AvatarFallback>{creator.name?.[0] || creator.username?.[0] || "C"}</AvatarFallback>
           </Avatar>
           {/* Status indicator */}

@@ -108,7 +108,7 @@ function ProfileContent({
   canViewContent 
 }: UserProfileData) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Profile Header */}
         <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 mb-8 border border-white/20">

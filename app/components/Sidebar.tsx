@@ -10,7 +10,8 @@ import {
   TrendingUp,
   Bell,
   ChevronLeft,
-  ChevronRight
+  ChevronRight, 
+  UserCheck
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
@@ -194,7 +195,7 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
                 variant="ghost"
                 className={`w-full ${isCollapsed ? 'justify-center px-2' : 'justify-start px-4'} py-3 rounded-2xl transition-all duration-300 ${getButtonStyles(pathname === "/apply-creator")}`}
               >
-                <Settings className={`w-5 h-5 ${isCollapsed ? 'mr-0' : 'mr-3'} transition-all duration-300`} />
+                <UserCheck className={`w-5 h-5 ${isCollapsed ? 'mr-0' : 'mr-3'} transition-all duration-300`} />
                 {!isCollapsed && (
                   <>
                     <span className="font-medium opacity-100 transition-opacity duration-300">Apply Creator</span>

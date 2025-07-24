@@ -23,7 +23,6 @@ export default function DiscoverPage() {
 
 function DiscoverApp() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
   const [creators, setCreators] = useState<Creator[]>([]);
   useEffect(() => {
     const fetchCreators = async () => {
@@ -39,18 +38,12 @@ function DiscoverApp() {
     fetchCreators()
   }, []); // Added dependency array
   console.log("Creators: ",creators)
-  const categories = [
-    "all", "lifestyle", "fitness", "art", "music", "cooking", "travel", "tech", "fashion"
-  ];
-
   const filteredCreators = creators?.filter(creator => {
     const matchesSearch = creator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          creator.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          creator.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || creator.category.toLowerCase() === selectedCategory;
-    return matchesSearch && matchesCategory;
+    return matchesSearch
   });
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-hidden">
       {/* Animated background elements */}
@@ -82,7 +75,7 @@ function DiscoverApp() {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <Input
-                    placeholder="Search creators, categories..."
+                    placeholder="Search creators..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10 bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-purple-500"
@@ -97,22 +90,6 @@ function DiscoverApp() {
               </div>
 
               {/* Category Filter */}
-              <div className="flex flex-wrap gap-2">
-                {categories.map((category) => (
-                  <Badge
-                    key={category}
-                    variant={selectedCategory === category ? "default" : "secondary"}
-                    className={`cursor-pointer transition-all duration-300 ${
-                      selectedCategory === category
-                        ? "bg-gradient-to-r from-purple-500 to-pink-600 text-white"
-                        : "bg-white/10 text-gray-300 hover:bg-white/20"
-                    }`}
-                    onClick={() => setSelectedCategory(category)}
-                  >
-                    {category.charAt(0).toUpperCase() + category.slice(1)}
-                  </Badge>
-                ))}
-              </div>
             </div>
 
             {/* Trending Section */}
@@ -130,7 +107,7 @@ function DiscoverApp() {
                 {creators.slice(0, 4).map((creator, index) => (
                   <div key={creator.id} className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
                     <div className="flex items-center gap-3">
-                      <img src={creator.avatar} alt={creator.name} className="w-12 h-12 rounded-full object-cover" />
+                      <img src={creator.image} alt={creator.name} className="w-12 h-12 rounded-full object-cover" />
                       <div className="flex-1">
                         <h3 className="text-white font-semibold text-sm">{creator.name}</h3>
                         <p className="text-gray-400 text-xs">{creator.category}</p>
@@ -149,7 +126,7 @@ function DiscoverApp() {
             <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-white">
-                  {filteredCreators.length} Creators Found
+                  Our current creators
                 </h2>
                 <div className="flex items-center gap-2 text-gray-400">
                   <Sparkles className="w-5 h-5" />

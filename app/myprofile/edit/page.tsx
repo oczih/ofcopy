@@ -7,6 +7,7 @@ import { Sidebar } from '@/app/components/Sidebar';
 import { Card, CardContent } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import AppWrapper from '@/app/components/AppWrapper';
+import { useSession } from 'next-auth/react';
 
 export default function EditProfilePage() {
     return (
@@ -17,7 +18,8 @@ export default function EditProfilePage() {
 }
 
 function EditProfile() {
-  const [profilePic, setProfilePic] = useState('/default-profile.png'); // Placeholder image
+  const { data: session } = useSession()
+  const [profilePic, setProfilePic] = useState(session?.user?.image || '/default-profile.png'); // Placeholder image
   const [selectedFile, setSelectedFile] = useState(null);
 
   function handleFileChange(e) {
@@ -62,7 +64,7 @@ function EditProfile() {
                 src={profilePic}
                 alt="Profile Picture"
                 fill
-                className="object-cover"
+                className="object-cover z-10"
               />
               <label className="absolute bottom-0 right-0 bg-pink-500 p-1 rounded-full cursor-pointer">
                 <input
