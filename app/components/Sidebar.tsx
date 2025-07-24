@@ -7,7 +7,6 @@ import {
   MessageCircle,
   Settings,
   Crown,
-  TrendingUp,
   Bell,
   ChevronLeft,
   ChevronRight, 
@@ -17,9 +16,10 @@ import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
+import Image from "next/image";
 import creatorservice from "../services/creatorservice";
 import { Creator } from "../types";
+import { Skeleton } from "@/app/components/ui/skeleton"
 
 interface SidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
@@ -31,6 +31,7 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState(true);
 
   const menuItems = [
     { id: "feed", label: "Home Feed", icon: Home, color: "pink", href: "/home" },
@@ -65,7 +66,7 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
     if (isActive) {
       return `bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg hover:shadow-xl`;
     }
-    return `text-gray-300 hover:text-white hover:bg-white/10 hover:scale-105`;
+    return `text-gray-300 hover:text-white hover:bg-white/10 cursor-pointer`;
   };
 
   const handleSignOut = async () => {
@@ -102,28 +103,40 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
       {session?.user && (
         <div className={`flex flex-col items-center ${isCollapsed ? 'mb-6 mt-8' : 'mb-10 mt-2'} relative transition-all duration-300`}>
           <div className="relative group">
-            <Link href={`/${session.user.username}`}>
-              <Avatar className={`${isCollapsed ? 'w-12 h-12' : 'w-20 h-20'} border-4 border-pink-500/40 shadow-lg mb-3 mx-auto transition-all duration-300`}>
-                <AvatarImage src={session.user.image} alt={session.user.name || session.user.username} />
-                <AvatarFallback>{session.user.name?.[0] || session.user.username?.[0] || "U"}</AvatarFallback>
-              </Avatar>
+  <Link href={`/${session.user.username}`} className="flex items-center space-x-3">
+    <div className="relative w-10 h-10">
+      <Image
+        src={session.user.image || "/default-profile.png"}
+        alt={session.user.name || session.user.username || "User profile image"}
+        fill
+        className="rounded-full border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
+        onLoad={() => setImageLoading(false)}
+        onError={() => setImageLoading(false)}
+      />
+      {imageLoading && (
+        <Skeleton className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 absolute top-0 left-0" />
+      )}
+    </div>
 
-              {/* Profile hover tooltip for collapsed state */}
-              {isCollapsed && (
-                <div className="absolute left-16 top-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-sm rounded-lg px-3 py-2 whitespace-nowrap shadow-lg z-50 pointer-events-none">
-                  <div className="font-semibold">{session.user.name}</div>
-                  <div className="text-pink-400 text-xs">@{session.user.username}</div>
-                </div>
-              )}
-            </Link>
+    <div className="opacity-100 transition-opacity duration-300">
+      <div className="text-lg font-semibold text-white truncate max-w-[12rem]">
+        {session.user.name}
+      </div>
+      <div className="text-sm text-pink-400 truncate max-w-[12rem]">
+        @{session.user.username}
+      </div>
+    </div>
+  </Link>
 
-            {!isCollapsed && (
-              <div className="text-center opacity-100 transition-opacity duration-300">
-                <div className="text-lg font-semibold text-white truncate max-w-[12rem]">{session.user.name}</div>
-                <div className="text-sm text-pink-400 truncate max-w-[12rem]">@{session.user.username}</div>
-              </div>
-            )}
-          </div>
+  {/* Tooltip still appears only when collapsed */}
+  {isCollapsed && (
+    <div className="absolute left-16 top-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-sm rounded-lg px-3 py-2 whitespace-nowrap shadow-lg z-50 pointer-events-none">
+      <div className="font-semibold">{session.user.name}</div>
+      <div className="text-pink-400 text-xs">@{session.user.username}</div>
+    </div>
+  )}
+</div>
+
 
           {/* Followers and Subscribers Count for Creators */}
           {creator && !isCollapsed && (
@@ -230,7 +243,7 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
           <Link href="/upload">
             <Button
               variant="default"
-              className={`w-full ${isCollapsed ? 'justify-center px-2 py-3' : 'justify-center py-4 px-4'} rounded-2xl transition-all duration-300 bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500 text-white font-semibold ${isCollapsed ? 'text-base' : 'text-lg'} shadow-lg hover:scale-105 flex items-center ${isCollapsed ? 'gap-0' : 'gap-3'} mt-4 mb-2`}
+              className={`w-full ${isCollapsed ? 'justify-center px-2 py-3' : 'justify-center py-4 px-4'} rounded-2xl transition-all duration-300 bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500 text-white font-semibold ${isCollapsed ? 'text-base' : 'text-lg'} shadow-lg flex items-center ${isCollapsed ? 'gap-0' : 'gap-3'} mt-4 mb-2`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${isCollapsed ? 'mr-0' : ''} transition-all duration-300`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" />
@@ -309,7 +322,7 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
         >
           <Button
             variant="ghost"
-            className={`bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 rounded-full ${isCollapsed ? 'px-3 py-2' : 'px-6 py-2'} font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105`}
+            className={`bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 rounded-full ${isCollapsed ? 'px-3 py-2' : 'px-6 py-2'} font-semibold shadow-lg hover:shadow-xl transition-all duration-300`}
             onClick={handleSignIn}
           >
             {isCollapsed ? (

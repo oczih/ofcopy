@@ -5,7 +5,8 @@ const nextConfig: NextConfig = {
   images: {
     domains: [
       "creatorhubbucket.s3.eu-north-1.amazonaws.com",
-      "images.unsplash.com"
+      "images.unsplash.com",
+      "lh3.googleusercontent.com"
     ],
   },
 };

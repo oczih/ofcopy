@@ -826,7 +826,7 @@ function ApplyCreatorPage() {
       
       <div className="flex max-w-7xl mx-auto px-6 py-8 gap-8 relative z-10">
         <main className="flex-1 flex items-center justify-center">
-          <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl max-w-2xl w-full animate-fade-in overflow-hidden">
+          <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl max-w-2xl w-full animate-fade-in overflow-hidden s">
             {/* Progress Bar */}
             <div className="mb-8">
               <div className="flex justify-between items-center mb-2">
