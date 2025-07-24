@@ -7,10 +7,11 @@ import { Sidebar } from "../components/Sidebar";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import AppWrapper from "../components/AppWrapper";
-import { Camera } from 'lucide-react';
+import { Camera, X, ZoomIn, ZoomOut } from 'lucide-react';
 import userservice from "../services/userservice";
 import Cropper from 'react-easy-crop';
 import getCroppedImg from '@/lib/utils'
+
 export default function ApplyCreator() {
   return (
       <ApplyCreatorPage />
@@ -444,74 +445,132 @@ function ApplyCreatorPage() {
         
               <div>
                 <div className="flex justify-center">
+                  
                 {cropModalOpen && selectedImage && (
-                  <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
-                    <div className="bg-white p-4 rounded shadow-md max-w-[90vw] max-h-[90vh]">
-                      <div className="relative w-[300px] h-[300px]">
-                        <Cropper
-                          image={URL.createObjectURL(selectedImage)}
-                          crop={crop}
-                          zoom={zoom}
-                          aspect={1}
-                          onCropChange={setCrop}
-                          onZoomChange={setZoom}
-                          onCropComplete={(_, areaPixels) => setCroppedAreaPixels(areaPixels)}
-                        />
-                      </div>
-                      <div className="mt-4 flex justify-end space-x-2">
-                        <button
-                          className="px-4 py-2 bg-gray-200 rounded"
-                          onClick={() => setCropModalOpen(false)}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          className="px-4 py-2 bg-pink-500 text-white rounded"
-                          onClick={async () => {
-                            const cropped = await getCroppedImg(
-                              URL.createObjectURL(selectedImage),
-                              croppedAreaPixels
-                            );
-                            setCroppedImage(cropped);
-                            setFormData((prev) => ({ ...prev, profilePic: new File([cropped], "profile.jpg") }));
-                            setCropModalOpen(false);
-                          }}
-                        >
-                          Crop & Save
-                        </button>
+                  <>
+                    {/* Dark Backdrop */}
+                    <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm rounded-3xl pointer-events-none" />
+                    
+                    {/* Modal */}
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                      <div className="bg-gradient-to-br from-purple-900/95 to-slate-900/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl max-w-lg w-full border border-white/20">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-6">
+                          <div>
+                            <h3 className="text-xl font-bold text-white">Crop Your Photo</h3>
+                            <p className="text-gray-300 text-sm">Adjust your profile picture</p>
+                          </div>
+                          <button
+                            onClick={() => setCropModalOpen(false)}
+                            className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        {/* Cropper Container */}
+                        <div className="relative w-full h-80 rounded-xl overflow-hidden mb-6 bg-black/20 border border-white/10">
+                          <Cropper
+                            image={URL.createObjectURL(selectedImage)}
+                            crop={crop}
+                            zoom={zoom}
+                            aspect={1}
+                            onCropChange={setCrop}
+                            onZoomChange={setZoom}
+                            onCropComplete={(_, areaPixels) => setCroppedAreaPixels(areaPixels)}
+                          />
+                        </div>
+
+                        {/* Zoom Controls */}
+                        <div className="mb-6">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-gray-300">Zoom</span>
+                            <span className="text-sm text-white font-medium">{Math.round(zoom * 100)}%</span>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <button
+                              onClick={() => setZoom(Math.max(1, zoom - 0.1))}
+                              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white"
+                            >
+                              <ZoomOut className="w-4 h-4" />
+                            </button>
+                            <input
+                              type="range"
+                              min={1}
+                              max={3}
+                              step={0.1}
+                              value={zoom}
+                              onChange={(e) => setZoom(Number(e.target.value))}
+                              className="flex-1 h-2 bg-white/20 rounded-lg appearance-none cursor-pointer slider"
+                            />
+                            <button
+                              onClick={() => setZoom(Math.min(3, zoom + 0.1))}
+                              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white"
+                            >
+                              <ZoomIn className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex space-x-3">
+                          <button
+                            className="flex-1 px-6 py-3 rounded-xl text-sm font-medium bg-white/10 text-white hover:bg-white/20 transition-all duration-200 border border-white/10"
+                            onClick={() => setCropModalOpen(false)}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            className="flex-1 px-6 py-3 rounded-xl text-sm font-medium bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white transition-all duration-200 shadow-lg"
+                            onClick={async () => {
+                              const cropped = await getCroppedImg(
+                                URL.createObjectURL(selectedImage),
+                                croppedAreaPixels
+                              );
+                              setCroppedImage(cropped);
+                              setFormData((prev) => ({
+                                ...prev,
+                                profilePic: new File([cropped], "profile.jpg"),
+                              }));
+                              setCropModalOpen(false);
+                            }}
+                          >
+                            Apply Changes
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </>
                 )}
                 
                 <div className="flex justify-center">
-  <label
-    htmlFor="profilePicUpload"
-    className="relative w-20 h-20 flex items-center justify-center rounded-full bg-white/10 border-2 border-dashed cursor-pointer hover:bg-white/20 transition"
-  >
-    {formData.profilePic ? (
-      <img
-        src={URL.createObjectURL(formData.profilePic)}
-        alt="Profile preview"
-        className="w-full h-full rounded-full object-cover"
-      />
-    ) : (
-      <Camera className="w-6 h-6" />
-    )}
-    {/* Optional overlay icon to indicate "change" */}
-    <div className="absolute bottom-0 right-0 bg-white p-1 rounded-full">
-      <Camera className="w-4 h-4 text-black" />
-    </div>
-  </label>
+                  <label
+                    htmlFor="profilePicUpload"
+                    className="relative w-40 h-40 flex items-center justify-center rounded-full bg-white/10 border-2 border-dashed cursor-pointer hover:bg-white/20 transition"
+                  >
+                    {formData.profilePic ? (
+                      <img
+                        src={URL.createObjectURL(formData.profilePic)}
+                        alt="Profile preview"
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <Camera className="w-6 h-6" />
+                    )}
+                    {/* Optional overlay icon to indicate "change" */}
+                    <div className="absolute bottom-0 right-0 bg-white p-1 rounded-full">
+                      <Camera className="w-4 h-4 text-black" />
+                    </div>
+                  </label>
 
-  <input
-    id="profilePicUpload"
-    type="file"
-    accept="image/*"
-    onChange={(e) => handleFileChange("profilePic", e.target.files?.[0] || null)}
-    className="hidden"
-  />
-</div>
+                        <input
+                          id="profilePicUpload"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleFileChange("profilePic", e.target.files?.[0] || null)}
+                          className="hidden"
+                        />
+                      </div>
 
                 </div>
               </div>
@@ -755,7 +814,7 @@ function ApplyCreatorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-hidden">
+    <div className={`min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-hidden`}>
       {/* Animated background elements */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse"></div>
@@ -764,13 +823,14 @@ function ApplyCreatorPage() {
       </div>
       
       
+      
       <div className="flex max-w-7xl mx-auto px-6 py-8 gap-8 relative z-10">
         <main className="flex-1 flex items-center justify-center">
-          <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl max-w-2xl w-full animate-fade-in">
+          <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl max-w-2xl w-full animate-fade-in overflow-hidden">
             {/* Progress Bar */}
             <div className="mb-8">
               <div className="flex justify-between items-center mb-2">
-                <h1 className="text-2xl font-bold gradient-text">Become a Creator</h1>
+                <h1 className="text-2xl font-bold text-white">Become a Creator</h1>
                 <span className="text-sm text-gray-300">Step {currentStep} of {totalSteps}</span>
               </div>
               <div className="w-full bg-white/10 rounded-full h-2">
@@ -782,7 +842,7 @@ function ApplyCreatorPage() {
             </div>
 
             {/* Form Content */}
-            <div className="min-h-[400px]">
+            <div className={`min-h-[400px]`}>
               {renderStep()}
             </div>
 
