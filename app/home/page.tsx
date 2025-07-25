@@ -1,21 +1,21 @@
 'use client';
 
-import { Sidebar } from "../components/Sidebar";
-import { Button } from "../components/ui/button";
-import { MessageCircle, Sparkles } from "lucide-react";
+import { Sidebar } from "../../components/Sidebar";
+import { Button } from "../../components/ui/button";
+import { CheckCircle, MessageCircle, Sparkles } from "lucide-react";
 import { SessionProvider, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { Creator } from "../types";
-import { Badge } from "../components/ui/badge";
+import { Badge } from "../../components/ui/badge";
 import creatorservice from "../services/creatorservice";
 import statsservice from "../services/statsservice";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import Image from "next/image";
-import { CreatorPostCard } from "../components/CreatorPostCard";
+import { CreatorPostCard } from "../../components/CreatorPostCard";
 import userservice from "../services/userservice";
 import { User } from "../types";
-import AppWrapper from "../components/AppWrapper";
+import AppWrapper from "../../components/AppWrapper";
 import { useRouter } from "next/navigation";
 
 export default function Page() {
@@ -150,6 +150,32 @@ function App() {
       </div>
     );
   }
+  const handleResendVerification = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: session.user.email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to resend verification email');
+      }
+
+      toast.success('Verification email sent!');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to resend verification email';
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen w-full relative">
       {/* Dynamic overlay that creates depth */}
@@ -235,7 +261,32 @@ function App() {
                 </div>
               </div>
             </div>
-
+            {!session.user.emailVerified && (
+              <div>
+                            <div className="mb-6">
+              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+              <h1 className="text-2xl font-bold text-white mb-2">Check Your Email!</h1>
+              <p className="text-gray-300">
+                We&apos;ve sent a verification link to <strong className="text-pink-400">{session.user.email}</strong>
+              </p>
+            </div>
+                <div className="space-y-4 text-sm text-gray-400">
+              <p>Click the link in your email to verify your account and complete registration.</p>
+              <p>Didn&apos;t receive the email? Check your spam folder or click below to resend.</p>
+            </div>
+            <div className="flex flex-col gap-3 mt-6">
+              <button
+                onClick={handleResendVerification}
+                disabled={loading}
+                className="btn bg-pink-600 hover:bg-pink-700 text-white py-2 px-4 rounded-lg transition disabled:opacity-50"
+              >
+                {loading ? 'Sending...' : 'Resend Verification Email'}
+              </button>
+            
+            </div>
+              </div>
+            )
+            }
             {/* Creators and their posts with enhanced spacing */}
             <div className="space-y-10 mt-10">
               {filteredCreators && filteredCreators.length > 0 && users && session ? (

@@ -8,7 +8,7 @@ import { authOptions } from '@/lib/auth-client';
 import User from '../models/usermodel';
 import Purchase from '@/app/models/purchasemodel';
 import Link from 'next/link';
-import AppWrapper from "../components/AppWrapper";
+import AppWrapper from "../../components/AppWrapper";
 import { useState } from 'react';
 import Post from '../models/postmodel';
 const RESERVED_ROUTES = [

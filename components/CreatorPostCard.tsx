@@ -6,11 +6,11 @@ import { MoreHorizontal, Heart, MessageCircle, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Session } from "@auth/core/types";
-import { Comment, Creator, Post } from "../types";
-import uploadmediaservice from "../services/uploadmediaservice";
-import { User } from "../types";
-import postservice from "../services/postservice";
-import { Skeleton } from "@/app/components/ui/skeleton"
+import { Comment, Creator, Post } from "../app/types";
+import uploadmediaservice from "../app/services/uploadmediaservice";
+import { User } from "../app/types";
+import postservice from "../app/services/postservice";
+import { Skeleton } from "@/components/ui/skeleton"
 // Dynamically import emoji-picker-react to avoid SSR issues
 
 export function CreatorPostCard({

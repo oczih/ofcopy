@@ -1,9 +1,11 @@
 "use client";
-import { useState } from "react";
-import { Crown, Eye, EyeOff, Mail, Lock, User, CheckCircle, AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { toast } from 'react-hot-toast';
 import Link from "next/link";
+import { Separator } from "@/components/ui/separator";
+import { useRouter } from "next/navigation";
 
 function Modal({ open, onClose, title, children }: { open: boolean, onClose: () => void, title: string, children: React.ReactNode }) {
   if (!open) return null;
@@ -27,19 +29,57 @@ function Modal({ open, onClose, title, children }: { open: boolean, onClose: () 
 export default function SignupPage() {
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
-  const [signupMethod, setSignupMethod] = useState<'oauth' | 'email'>('oauth');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [emailVerificationSent, setEmailVerificationSent] = useState(false);
-  
+  const router = useRouter();
   // Form state
   const [formData, setFormData] = useState({
     email: '',
+    username: '',
     password: '',
     confirmPassword: '',
-    username: '',
-    name: ''
   });
+
+  // Fun username generator
+  function generateUsername() {
+    const adjectives = [
+      'starry', 'brave', 'lucky', 'fuzzy', 'cosmic', 'silly', 'swift', 'sunny', 'fancy', 'mighty',
+      'frosty', 'jazzy', 'witty', 'zesty', 'breezy', 'quirky', 'snazzy', 'peachy', 'spicy', 'dreamy'
+    ];
+    const animals = [
+      'lion', 'otter', 'panda', 'fox', 'tiger', 'koala', 'eagle', 'wolf', 'bunny', 'owl',
+      'dolphin', 'bear', 'cat', 'dog', 'falcon', 'shark', 'whale', 'moose', 'lynx', 'gecko'
+    ];
+    const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const animal = animals[Math.floor(Math.random() * animals.length)];
+    const num = Math.floor(Math.random() * 1000);
+    return `${adj}${animal}${num}`;
+  }
+
+  // Auto-generate username when email is filled and username is empty
+  function handleEmailChange(value: string) {
+    setFormData(prev => {
+      let newUsername = prev.username;
+      if (!prev.username) {
+        newUsername = generateUsername();
+      }
+      return { ...prev, email: value, username: newUsername };
+    });
+    if (errors.email) {
+      setErrors(prev => ({ ...prev, email: '' }));
+    }
+  }
+
+  // Generate a username on mount if empty
+  useEffect(() => {
+    setFormData(prev => {
+      if (!prev.username) {
+        return { ...prev, username: generateUsername() };
+      }
+      return prev;
+    });
+    // eslint-disable-next-line
+  }, []);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -82,9 +122,6 @@ export default function SignupPage() {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
-    if (!formData.name) {
-      newErrors.name = 'Name is required';
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -94,7 +131,7 @@ export default function SignupPage() {
     e.preventDefault();
     
     if (!validateForm()) return;
-
+    console.log(e)
     setIsLoading(true);
     
     try {
@@ -106,8 +143,7 @@ export default function SignupPage() {
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
-          username: formData.username,
-          name: formData.name,
+          username: formData.username
         }),
       });
 
@@ -117,11 +153,12 @@ export default function SignupPage() {
         throw new Error(data.error || 'Registration failed');
       }
 
-      setEmailVerificationSent(true);
+      router.push("/home")
       toast.success('Registration successful! Please check your email to verify your account.');
       
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Registration failed';
+      console.log(message)
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -160,115 +197,19 @@ export default function SignupPage() {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
-
-  if (emailVerificationSent) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-hidden flex items-center justify-center">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 opacity-30 pointer-events-none z-0">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
-        </div>
-
-        <div className="relative z-10 w-full flex flex-col items-center justify-center max-w-md mx-auto px-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-8 w-full text-center">
-            <div className="mb-6">
-              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-              <h1 className="text-2xl font-bold text-white mb-2">Check Your Email!</h1>
-              <p className="text-gray-300">
-                We've sent a verification link to <strong className="text-pink-400">{formData.email}</strong>
-              </p>
-            </div>
-
-            <div className="space-y-4 text-sm text-gray-400">
-              <p>Click the link in your email to verify your account and complete registration.</p>
-              <p>Didn't receive the email? Check your spam folder or click below to resend.</p>
-            </div>
-
-            <div className="flex flex-col gap-3 mt-6">
-              <button
-                onClick={handleResendVerification}
-                disabled={isLoading}
-                className="btn bg-pink-600 hover:bg-pink-700 text-white py-2 px-4 rounded-lg transition disabled:opacity-50"
-              >
-                {isLoading ? 'Sending...' : 'Resend Verification Email'}
-              </button>
-              
-              <button
-                onClick={() => {
-                  setEmailVerificationSent(false);
-                  setFormData({
-                    email: '',
-                    password: '',
-                    confirmPassword: '',
-                    username: '',
-                    name: ''
-                  });
-                }}
-                className="text-purple-400 hover:text-purple-300 underline"
-              >
-                Back to Signup
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-hidden flex items-center justify-center">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 opacity-30 pointer-events-none z-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
-        <div className="absolute top-3/4 left-1/3 w-64 h-64 bg-yellow-500/15 rounded-full blur-3xl animate-pulse delay-1500"></div>
-      </div>
-
-      <div className="relative z-10 w-full flex flex-col items-center justify-center max-w-md mx-auto px-4">
-        <h1 className="text-4xl font-extrabold text-white mb-4 text-center drop-shadow-lg">Sign Up for CreatorHub</h1>
-        <p className="text-lg text-gray-300 mb-8 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-[#13072c]">
+       <h1 className="text-4xl font-extrabold text-white mb-4 text-center drop-shadow-lg">Join CreatorHub</h1>
+      <div className="w-full max-w-md bg-white/10 rounded-2xl shadow-xl p-8 flex flex-col items-center">
+       
+        <p className="text-sm text-white font-bold mb-6 text-center">
           Create your free account to become a fan and unlock exclusive content from your favorite creators.
         </p>
-
-        <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-8 w-full">
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <Crown className="w-6 h-6 text-purple-500" />
-            <span className="text-xl font-bold text-white">Welcome to CreatorHub</span>
-          </div>
-
-          {/* Signup Method Toggle */}
-          <div className="flex bg-slate-800 rounded-lg p-1 mb-6">
-            <button
-              onClick={() => setSignupMethod('oauth')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition ${
-                signupMethod === 'oauth' 
-                  ? 'bg-purple-600 text-white' 
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              Quick Signup
-            </button>
-            <button
-              onClick={() => setSignupMethod('email')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition ${
-                signupMethod === 'email' 
-                  ? 'bg-purple-600 text-white' 
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              Email Signup
-            </button>
-          </div>
-
-          {signupMethod === 'oauth' ? (
             <div className="flex flex-col gap-3 w-full">
               <button
                 onClick={() => handleOAuthSignIn('google')}
                 disabled={isLoading}
-                className="btn btn-outline text-white border-white hover:bg-sky-500/50 flex items-center gap-2 w-full justify-center py-2 rounded-lg transition disabled:opacity-50"
+                className="flex items-center gap-2 w-full justify-center py-2 rounded-full bg-white/10 text-white hover:border-white hover:border duration-300 transition disabled:opacity-50 cursor-pointer"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -281,7 +222,7 @@ export default function SignupPage() {
               <button
                 onClick={() => handleOAuthSignIn('twitter')}
                 disabled={isLoading}
-                className="btn btn-outline text-white border-white hover:bg-sky-500/50 flex items-center gap-2 w-full justify-center py-2 rounded-lg transition disabled:opacity-50"
+                className="flex items-center gap-2 w-full justify-center py-2 rounded-full bg-white/10 text-white hover:border-white hover:border duration-300 transition disabled:opacity-50 cursor-pointer"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
@@ -289,66 +230,23 @@ export default function SignupPage() {
                 {isLoading ? 'Signing up...' : 'Sign up with Twitter'}
               </button>
             </div>
-          ) : (
+            <div className="flex items-center my-8 w-full">
+            <Separator className="flex-1 h-px bg-white/10" />
+            <span className="mx-4 bg-white/10 px-3 text-white/10 text-xs font-semibold tracking-widest rounded-full shadow-sm">OR</span>
+            <Separator className="flex-1 h-px bg-white/10" />
+          </div>
             <form onSubmit={handleEmailSignup} className="space-y-4">
-              {/* Name Field */}
-              <div>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Full Name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    className={`w-full pl-10 pr-4 py-2 bg-slate-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${
-                      errors.name ? 'border-red-500 focus:ring-red-500' : 'border-slate-600 focus:ring-purple-500'
-                    }`}
-                  />
-                </div>
-                {errors.name && (
-                  <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.name}
-                  </p>
-                )}
-              </div>
-
-              {/* Username Field */}
-              <div>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Username"
-                    value={formData.username}
-                    onChange={(e) => handleInputChange('username', e.target.value)}
-                    className={`w-full pl-10 pr-4 py-2 bg-slate-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${
-                      errors.username ? 'border-red-500 focus:ring-red-500' : 'border-slate-600 focus:ring-purple-500'
-                    }`}
-                  />
-                </div>
-                {errors.username && (
-                  <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.username}
-                  </p>
-                )}
-              </div>
-
               {/* Email Field */}
-              <div>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <input
-                    type="email"
-                    placeholder="Email Address"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className={`w-full pl-10 pr-4 py-2 bg-slate-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${
-                      errors.email ? 'border-red-500 focus:ring-red-500' : 'border-slate-600 focus:ring-purple-500'
-                    }`}
-                  />
-                </div>
+              <div className="w-full">
+                <input
+                  type="email"
+                  placeholder="Email Address"
+                  value={formData.email}
+                  onChange={(e) => handleEmailChange(e.target.value)}
+                  className={`w-full pl-4 pr-4 py-3 bg-white/10 rounded-xl shadow-sm text-white placeholder-gray-400 hover:outline hover:outline-white transition-all duration-200 ${
+                    errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-purple-400'
+                  }`}
+                />
                 {errors.email && (
                   <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
                     <AlertCircle className="w-4 h-4" />
@@ -358,26 +256,23 @@ export default function SignupPage() {
               </div>
 
               {/* Password Field */}
-              <div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Password"
-                    value={formData.password}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
-                    className={`w-full pl-10 pr-12 py-2 bg-slate-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${
-                      errors.password ? 'border-red-500 focus:ring-red-500' : 'border-slate-600 focus:ring-purple-500'
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-white"
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
+              <div className="w-full relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  value={formData.password}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  className={`w-full pl-4 pr-12 py-3 bg-white/10 rounded-xl shadow-sm text-white placeholder-gray-400 hover:outline hover:outline-white transition-all duration-200 ${
+                    errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-purple-400'
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-gray-400 hover:text-purple-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
                 {errors.password && (
                   <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
                     <AlertCircle className="w-4 h-4" />
@@ -387,19 +282,16 @@ export default function SignupPage() {
               </div>
 
               {/* Confirm Password Field */}
-              <div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <input
-                    type="password"
-                    placeholder="Confirm Password"
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                    className={`w-full pl-10 pr-4 py-2 bg-slate-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${
-                      errors.confirmPassword ? 'border-red-500 focus:ring-red-500' : 'border-slate-600 focus:ring-purple-500'
-                    }`}
-                  />
-                </div>
+              <div className="w-full">
+                <input
+                  type="password"
+                  placeholder="Confirm Password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                  className={`w-full pl-4 pr-4 py-3 bg-white/10 rounded-xl shadow-sm text-white placeholder-gray-400 hover:outline hover:outline-white transition-all duration-200 ${
+                    errors.confirmPassword ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-purple-400'
+                  }`}
+                />
                 {errors.confirmPassword && (
                   <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
                     <AlertCircle className="w-4 h-4" />
@@ -410,13 +302,12 @@ export default function SignupPage() {
 
               <button
                 type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white py-2 px-4 rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isLoading} 
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Creating Account...' : 'Create Account'}
               </button>
             </form>
-          )}
 
           <div className="text-center text-sm text-gray-400 mt-6">
             By continuing, you agree to our
@@ -439,15 +330,14 @@ export default function SignupPage() {
 
           <div className="text-center mt-4">
             <p className="text-gray-400 text-sm">
-              Already have an account?{' '}
+              Already have an account?&nbsp;
               <Link href="/login" className="text-purple-400 hover:text-purple-300 underline">
                 Sign in
               </Link>
             </p>
           </div>
         </div>
-      </div>
-      <Modal open={showTerms} onClose={() => setShowTerms(false)} title="Terms of Service">
+      <Modal open={showTerms} onClose={() => setShowTerms(false)} title={"Terms of Service"}>
         <div className="space-y-4 text-left">
           <div>
             <span className="block font-bold text-lg mb-1">Effective Date:</span>
@@ -527,7 +417,7 @@ export default function SignupPage() {
           </div>
         </div>
       </Modal>
-      <Modal open={showPrivacy} onClose={() => setShowPrivacy(false)} title="Privacy Policy">
+      <Modal open={showPrivacy} onClose={() => setShowPrivacy(false)} title={"Privacy Policy"}>
         <div className="space-y-4 text-left">
           <div>
             <span className="block font-bold text-lg mb-1">Effective Date:</span>

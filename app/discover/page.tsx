@@ -1,16 +1,16 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { CreatorCard } from "@/app/components/CreatorCard";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Badge } from "../components/ui/badge";
+import { CreatorCard } from "@/components/CreatorCard";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Badge } from "../../components/ui/badge";
 import { Search, Filter, Sparkles, TrendingUp, Star, Compass } from "lucide-react";
 import { SessionProvider } from "next-auth/react";
 import creatorservice from "../services/creatorservice";
 import toast from "react-hot-toast";
 import { Creator } from "../types";
-import AppWrapper from "../components/AppWrapper";
+import AppWrapper from "../../components/AppWrapper";
 export default function DiscoverPage() {
   return (
     <SessionProvider>

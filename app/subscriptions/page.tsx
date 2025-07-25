@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { Header } from "../components/Header";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
+import { Header } from "../../components/Header";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
 import { 
   Crown, 
   Calendar, 

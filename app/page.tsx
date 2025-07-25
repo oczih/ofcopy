@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Header } from "./components/Header";
-import { Sidebar } from "./components/Sidebar";
-import { Button } from "./components/ui/button";
+import { Header } from "../components/Header";
+import { Sidebar } from "../components/Sidebar";
+import { Button } from "../components/ui/button";
 import { Sparkles, TrendingUp, Users, Star } from "lucide-react";
 import { SessionProvider, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";

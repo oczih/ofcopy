@@ -2,11 +2,11 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Header } from "../components/Header";
-import { Sidebar } from "../components/Sidebar";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import AppWrapper from "../components/AppWrapper";
+import { Header } from "../../components/Header";
+import { Sidebar } from "../../components/Sidebar";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import AppWrapper from "../../components/AppWrapper";
 import { Camera, X, ZoomIn, ZoomOut } from 'lucide-react';
 import userservice from "../services/userservice";
 import Cropper from 'react-easy-crop';

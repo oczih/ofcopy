@@ -4,12 +4,12 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Sidebar } from '@/app/components/Sidebar';
-import { Button } from '@/app/components/ui/button';
+import { Sidebar } from '@/components/Sidebar';
+import { Button } from '@/components/ui/button';
 import { useParams, useRouter } from 'next/navigation';
 import postservice from '@/app/services/postservice';
 import creatorservice from '@/app/services/creatorservice';
-import AppWrapper from '@/app/components/AppWrapper';
+import AppWrapper from '@/components/AppWrapper';
 export default function EditPostPage() {
   return (
     <AppWrapper>

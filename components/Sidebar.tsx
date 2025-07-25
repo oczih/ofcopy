@@ -17,9 +17,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import creatorservice from "../services/creatorservice";
-import { Creator } from "../types";
-import { Skeleton } from "@/app/components/ui/skeleton"
+import creatorservice from "../app/services/creatorservice";
+import { Creator } from "../app/types";
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface SidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;

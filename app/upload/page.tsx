@@ -1,9 +1,9 @@
 "use client";
 import * as React from 'react';
 import { useState } from "react";
-import { Header } from "../components/Header";
-import { Sidebar } from "../components/Sidebar";
-import { Button } from "../components/ui/button";
+import { Header } from "../../components/Header";
+import { Sidebar } from "../../components/Sidebar";
+import { Button } from "../../components/ui/button";
 import { SessionProvider, useSession } from "next-auth/react";
 import { redirect, useRouter } from "next/navigation";
 import { uploadContent } from "@/app/services/uploadmediaservice";

@@ -5,12 +5,13 @@ import { hashPassword, createVerificationToken } from '@/lib/auth-utils';
 import { sendVerificationEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
+  console.log(request.body)
   try {
-    const { email, password, username, name } = await request.json();
-
-    if (!email || !password || !username) {
+    const { email, password, username } = await request.json();
+    console.log('Received username:', username);
+    if (!email || !password) {
       return NextResponse.json(
-        { error: 'Email, password, and username are required' },
+        { error: 'Email and password are required' },
         { status: 400 }
       );
     }
@@ -37,11 +38,11 @@ export async function POST(request: NextRequest) {
       email,
       password: hashedPassword,
       username,
-      name,
+      name: username,
       emailVerified: false,
       oauthProvider: 'credentials'
     });
-
+    
     // Create verification token
     const verificationToken = await createVerificationToken(email, 'email_verification');
 
@@ -54,6 +55,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
+    
     console.error('Registration error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

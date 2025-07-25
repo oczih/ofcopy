@@ -102,6 +102,9 @@ declare module "next-auth" {
     comments?: Comment[];
     name?: string;
     image?: string;
+    emailVerified: boolean;
+    emailVerificationToken: string;
+    emailVerificationExpires: Date;
   }
 
   interface Session {

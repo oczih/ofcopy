@@ -1,11 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Eye, EyeOff, Mail, Lock, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { signIn, getSession, useSession } from "next-auth/react";
 import { toast } from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from "next/link";
-import { Separator } from "@/app/components/ui/separator"
+import { Separator } from "@/components/ui/separator";
 
 export default function LoginPage() {
   const { data: session, status } = useSession();
@@ -182,9 +182,8 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#13072c]">
       <div className="w-full max-w-md bg-white/10 rounded-2xl shadow-xl p-8 flex flex-col items-center">
-        <h1 className="text-2xl font-bold text-white mb-2 text-center">Sign in to your account</h1>
         <p className="text-sm text-white font-bold mb-6 text-center">
-          Access exclusive content from your favorite creators.
+          Create your free account to become a fan and unlock exclusive content from your favorite creators.
         </p>
         {/* Login Method Toggle */}
           <div className="flex flex-col gap-3 w-full">
@@ -212,19 +211,22 @@ export default function LoginPage() {
               {loading ? 'Signing in...' : 'Sign in with Twitter'}
             </button>
           </div>
-          <Separator className="z-10 text-white" />
-          <div className="space-y-4 w-full mt-10">
+          <div className="flex items-center my-8 w-full">
+            <Separator className="flex-1 h-px bg-white/10" />
+            <span className="mx-4 bg-white/10 px-3 text-white/10 text-xs font-semibold tracking-widest rounded-full shadow-sm">OR</span>
+            <Separator className="flex-1 h-px bg-white/10" />
+          </div>
+          <div className="space-y-4 w-full">
             {/* Email Field */}
             <div>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 h-5 w-5 text-white" />
                 <input
                   type="email"
-                  placeholder="Email Address"
+                  placeholder="Email Address*"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className={`w-full pl-10 pr-4 py-2 bg-white/10 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${
-                    errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
+                  className={`w-full pl-4 pr-4 py-3 bg-white/10 rounded-xl shadow-sm text-white placeholder-gray-400 hover:outline hover:outline-white transition-all duration-200 ${
+                    errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-purple-400'
                   }`}
                 />
               </div>
@@ -238,20 +240,19 @@ export default function LoginPage() {
             {/* Password Field */}
             <div>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <input
                   type={showPassword ? "text" : "password"}
-                  placeholder="Password"
+                  placeholder="Password*"
                   value={formData.password}
                   onChange={(e) => handleInputChange('password', e.target.value)}
-                  className={`w-full pl-10 pr-12 py-2 bg-white/10 border rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${
-                    errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
+                  className={`w-full pl-4 pr-12 py-3 bg-white/10 rounded-xl shadow-sm text-white placeholder-gray-400 hover:outline hover:outline-white  transition-all duration-200 ${
+                    errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-purple-400'
                   }`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-900"
+                  className="absolute right-3 top-3 text-gray-400 hover:text-purple-600 transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -279,7 +280,7 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Logging in...' : 'Log in'}
             </button>
           </div>
         <div className="text-center mt-6 w-full">

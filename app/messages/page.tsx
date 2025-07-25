@@ -1,14 +1,14 @@
 'use client';
 
 import { useState } from "react";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Badge } from "../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Badge } from "../../components/ui/badge";
 import { MessageCircle, Send, Search, MoreVertical, Phone, Video, Image as ImageIcon, Smile } from "lucide-react";
 import { SessionProvider } from "next-auth/react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
-import AppWrapper from "../components/AppWrapper";
+import AppWrapper from "../../components/AppWrapper";
 export default function MessagesPage() {
   return (
     <SessionProvider>

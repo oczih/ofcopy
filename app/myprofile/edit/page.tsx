@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import Image from 'next/image';
-import { Sidebar } from '@/app/components/Sidebar';
-import { Card, CardContent } from '@/app/components/ui/card';
-import { Button } from '@/app/components/ui/button';
-import AppWrapper from '@/app/components/AppWrapper';
+import { Sidebar } from '@/components/Sidebar';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import AppWrapper from '@/components/AppWrapper';
 import { useSession } from 'next-auth/react';
 
 export default function EditProfilePage() {
