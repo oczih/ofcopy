@@ -35,6 +35,7 @@ function App() {
   const [page, setPage] = useState("Feed");
   const [users, setUsers] = useState<User[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showBanner, setShowBanner] = useState(true);
   const [stats, setStats] = useState({
     totalCreators: 0,
     activeCreators: 0,
@@ -45,7 +46,7 @@ function App() {
     averageSubscribers: 0,
     averagePrice: 0
   });
-  
+  const HIDE_DURATION = 2 * 60 * 1000;
   useEffect(() => {
     if (status !== 'loading') {
       setLoading(false);
@@ -150,6 +151,7 @@ function App() {
       </div>
     );
   }
+  
   const handleResendVerification = async () => {
     try {
       const response = await fetch('/api/auth/resend-verification', {
@@ -167,6 +169,8 @@ function App() {
       }
 
       toast.success('Verification email sent!');
+      setShowBanner(false);
+      setTimeout(() => setShowBanner(true), HIDE_DURATION);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to resend verification email';
       console.log(message)
@@ -175,7 +179,7 @@ function App() {
       setLoading(false);
     }
   };
-
+  
   return (
     <div className="min-h-screen w-full relative">
       <Toaster
@@ -246,35 +250,37 @@ function App() {
         )}
         
 
-        {!session.user.emailVerified && (
-           <div className="flex justify-center z-30">
-  <div className="w-xl bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-lg relative overflow-hidden group text-sm">
-    <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-cyan-500/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-    <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-    
-    <div className="mb-4 text-center">
-      <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-2" />
-      <h1 className="text-base font-semibold text-white mb-1">Check Your Email</h1>
-      <p className="text-gray-300">
-        We've sent a link to <strong className="text-pink-400">{session.user.email}</strong>
-      </p>
-    </div>
-    
-    <div className="text-gray-400 space-y-1 text-xs text-center">
-      <p>Click the link in your email to verify your account.</p>
-      <p>Didn’t get it? Check spam or resend below.</p>
-    </div>
+        {!session?.user?.emailVerified && showBanner && (
+      <div className="flex justify-center z-30 px-4">
+        <div className="w-full max-w-md bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-lg relative overflow-hidden group text-sm">
+          <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-cyan-500/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+          
+          <div className="mb-4 text-center">
+            <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-2" />
+            <h1 className="text-base font-semibold text-white mb-1">Check Your Email</h1>
+            <p className="text-gray-300">
+              We've sent a link to <strong className="text-pink-400">{session.user.email}</strong>
+            </p>
+          </div>
+          
+          <div className="text-xs text-gray-400 space-y-1 text-center">
+            <p>Click the link in your email to verify your account.</p>
+            <p>Didn’t get it? Check spam or resend below.</p>
+          </div>
 
-    <div className="mt-4 flex justify-center">
-      <button
-        onClick={handleResendVerification}
-        className="bg-pink-600 hover:bg-pink-700 text-white text-xs py-1.5 px-4 rounded-md transition disabled:opacity-50 cursor-pointer"
-      >Resend Email
-      </button>
-    </div>
-  </div>
-  </div>
-)}
+          <div className="mt-4 flex justify-center">
+            <button
+              onClick={handleResendVerification}
+              className="bg-pink-600 hover:bg-pink-700 text-white text-xs py-1.5 px-4 rounded-md transition disabled:opacity-50 cursor-pointer"
+            >
+              Resend Email
+            </button>
+          </div>
+        </div>
+      </div>
+  )}
+
 
         {/* Feed View with enhanced styling */}
         {page === "Feed" && (

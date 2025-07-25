@@ -19,6 +19,7 @@ export type User = {
     emailVerified: boolean;
     emailVerificationToken: string;
     emailVerificationExpires: Date;
+    lastVerificationEmailSentAt: Date;
   }
   
 export type Creator = {
@@ -105,6 +106,7 @@ declare module "next-auth" {
     emailVerified: boolean;
     emailVerificationToken: string;
     emailVerificationExpires: Date;
+    lastVerificationEmailSentAt: Date;
   }
 
   interface Session {

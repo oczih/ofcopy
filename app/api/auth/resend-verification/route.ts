@@ -4,6 +4,9 @@ import OFUser, { VerificationToken } from '@/app/models/usermodel';
 import { createVerificationToken } from '@/lib/auth-utils';
 import { sendVerificationEmail } from '@/lib/email';
 
+const MIN_RESEND_INTERVAL = 5 * 60 * 1000;
+
+
 export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json();
@@ -32,7 +35,15 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
+    if (
+      user.lastVerificationEmailSentAt &&
+      Date.now() - user.lastVerificationEmailSentAt.getTime() < MIN_RESEND_INTERVAL
+    ) {
+      return NextResponse.json(
+        { error: 'Please wait before requesting another verification email.' },
+        { status: 429 }
+      );
+    }
     // Delete any existing verification tokens for this email
     await VerificationToken.deleteMany({ email, type: 'email_verification' });
 
@@ -41,7 +52,8 @@ export async function POST(request: NextRequest) {
 
     // Send verification email
     await sendVerificationEmail(email, verificationToken);
-
+    user.lastVerificationEmailSentAt = new Date();
+    await user.save()
     return NextResponse.json({
       message: 'Verification email sent successfully!'
     });
