@@ -16,6 +16,9 @@ export type User = {
     creator?: boolean
     following: Following[];
     comments: Comment[];
+    emailVerified: boolean;
+    emailVerificationToken: string;
+    emailVerificationExpires: Date;
   }
   
 export type Creator = {

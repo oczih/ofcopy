@@ -129,9 +129,9 @@ export const Header = () => {
                   <Button 
                     variant="ghost" 
                     className="text-white hover:bg-white/10 rounded-full px-6 py-2 font-medium transition-all duration-300 hover:scale-105"
-                    onClick={() => router.push("/signup")}
+                    onClick={() => router.push("/login")}
                   >
-                    Sign In
+                    Log In
                   </Button>
                   <Button 
                     className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 rounded-full px-6 py-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"

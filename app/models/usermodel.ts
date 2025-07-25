@@ -62,6 +62,10 @@ export interface UserDocument {
   notifications: Notification[];
   creator?: boolean;
   comments: Comment[];
+  emailVerified: boolean;
+  emailVerificationToken: string;
+  emailVerificationExpires: Date;
+
 }
 
 
@@ -102,6 +106,9 @@ const userSchema = new Schema<UserDocument>({
       return value.includes("cus_");
     },
   },
+  emailVerified: { type: Boolean, default: false },
+  emailVerificationToken: { type: String },
+  emailVerificationExpires: { type: Date },
   priceId: {
     type: String,
     validate(value: string) {
@@ -196,6 +203,17 @@ userSchema.set('toJSON', {
       delete ret.password;
     },
   });
+
+const verificationTokenSchema = new mongoose.Schema({
+    email: { type: String, required: true },
+    token: { type: String, required: true },
+    expires: { type: Date, required: true },
+    type: { type: String, enum: ['email_verification', 'password_reset'], required: true }
+  });
+  
+export const VerificationToken = mongoose.models.VerificationToken || mongoose.model('VerificationToken', verificationTokenSchema);
+
+  
 const OFUser = mongoose.models?.OFUser || model<UserDocument>('OFUser', userSchema);
 
 console.log("[OFUser] Model registered:", !!OFUser);

@@ -1,8 +1,10 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import TwitterProvider from "next-auth/providers/twitter";
+import CredentialsProvider from "next-auth/providers/credentials";
 import OFUser from "@/app/models/usermodel";
 import { connectDB } from "@/lib/mongoose";
+import bcrypt from "bcryptjs";
 
 async function generateUniqueUsername(baseUsername: string): Promise<string> {
   let username = baseUsername.toLowerCase().replace(/\s+/g, "_");
@@ -14,7 +16,6 @@ async function generateUniqueUsername(baseUsername: string): Promise<string> {
   return username;
 }
 
-
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -25,6 +26,54 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.TWITTER_CLIENT_ID!,
       clientSecret: process.env.TWITTER_CLIENT_SECRET!,
     }),
+    CredentialsProvider({
+      name: "credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Email and password are required");
+        }
+
+        try {
+          await connectDB();
+
+          const user = await OFUser.findOne({ 
+            email: credentials.email,
+            oauthProvider: "credentials" // Only credentials users
+          });
+
+          if (!user || !user.password) {
+            throw new Error("Invalid email or password");
+          }
+
+          // Check if email is verified
+          if (!user.emailVerified) {
+            throw new Error("Please verify your email before signing in. Check your inbox for the verification link.");
+          }
+
+          const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+
+          if (!isPasswordValid) {
+            throw new Error("Invalid email or password");
+          }
+
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            name: user.name,
+            username: user.username,
+            image: user.image,
+            membership: user.membership
+          };
+        } catch (error) {
+          console.error("Credentials auth error:", error);
+          throw error;
+        }
+      }
+    })
   ],
   debug: process.env.NODE_ENV === 'development',
   session: {
@@ -67,6 +116,7 @@ export const authOptions: NextAuthOptions = {
             image: user.image,
             oauthProvider: "google",
             oauthId: providerId,
+            emailVerified: true, // OAuth emails are pre-verified
           });
         }
 
@@ -91,12 +141,21 @@ export const authOptions: NextAuthOptions = {
             image: user.image,
             oauthProvider: "twitter",
             oauthId: twitterId,
+            emailVerified: true, // OAuth emails are pre-verified
           });
         }
 
         user.id = existingUser._id.toString();
         user.email = existingUser.email;
         user.membership = existingUser.membership;
+      }
+
+      if (provider === "credentials") {
+        // For credentials, the user verification is already handled in authorize()
+        // Just ensure we have the user data
+        if (!user.id) {
+          return false;
+        }
       }
 
       return true;
@@ -115,14 +174,12 @@ export const authOptions: NextAuthOptions = {
       }
     
       if (user) {
-        // The user object should now have the correct ID from the signIn callback
         token.id = user.id;
         console.log("[JWT] Setting token ID:", token.id, "from user object");
         token.username = user.username;
         token.email = user.email;
         token.membership = user.membership ?? false;
       } else {
-        // Preserve existing token data when no user object is provided
         console.log("[JWT] No user object, preserving existing token ID:", token.id);
       }
     
@@ -152,7 +209,11 @@ export const authOptions: NextAuthOptions = {
       console.log("[Session] Looking for user with token.email:", token.email, "token.sub:", token.sub, "token.id:", token.id);
 
       const user = await OFUser.findOne({
-        $or: [{ email: token.email }, { oauthId: token.sub }],
+        $or: [
+          { email: token.email }, 
+          { oauthId: token.sub },
+          { _id: token.id } // Also search by ID for credentials users
+        ],
       });
 
       // Check if user is a creator
@@ -180,6 +241,7 @@ export const authOptions: NextAuthOptions = {
         session.user.notifications = user.notifications || [];
         session.user.following = user.following || [];
         session.user.creator = isCreator;
+        session.user.emailVerified = user.emailVerified;
       
       } else {
         console.log("[Session] No user found in database");
@@ -193,7 +255,7 @@ export const authOptions: NextAuthOptions = {
     async redirect({ url, baseUrl }) {
       if (url.startsWith("/")) return `${baseUrl}${url}`;
       if (new URL(url).origin === baseUrl) return url;
-      return `${baseUrl}/subscribe`;
+      return `${baseUrl}/discover`;
     },
   },
 };

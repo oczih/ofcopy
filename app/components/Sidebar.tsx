@@ -72,11 +72,11 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
   const handleSignOut = async () => {
     await signOut({ redirect: false });
     localStorage.removeItem('user');
-    router.push('/signup');
+    router.push('/login');
   };
 
   const handleSignIn = () => {
-    router.push("/signup");
+    router.push("/login");
   };
 
   const toggleCollapse = () => {
