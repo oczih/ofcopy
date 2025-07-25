@@ -243,7 +243,7 @@ export default function SignupPage() {
                   placeholder="Email Address"
                   value={formData.email}
                   onChange={(e) => handleEmailChange(e.target.value)}
-                  className={`w-full pl-4 pr-4 py-3 bg-white/10 rounded-xl shadow-sm text-white placeholder-gray-400 hover:outline hover:outline-white transition-all duration-200 ${
+                  className={`w-sm pl-4 pr-4 py-3 bg-white/10 rounded-xl shadow-sm text-white placeholder-gray-400 hover:outline hover:outline-white transition-all duration-200 ${
                     errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-purple-400'
                   }`}
                 />

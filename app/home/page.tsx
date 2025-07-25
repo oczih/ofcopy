@@ -9,7 +9,7 @@ import { Creator } from "../types";
 import { Badge } from "../../components/ui/badge";
 import creatorservice from "../services/creatorservice";
 import statsservice from "../services/statsservice";
-import toast from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
 import Link from "next/link";
 import Image from "next/image";
 import { CreatorPostCard } from "../../components/CreatorPostCard";
@@ -151,7 +151,6 @@ function App() {
     );
   }
   const handleResendVerification = async () => {
-    setLoading(true);
     try {
       const response = await fetch('/api/auth/resend-verification', {
         method: 'POST',
@@ -170,6 +169,7 @@ function App() {
       toast.success('Verification email sent!');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to resend verification email';
+      console.log(message)
       toast.error(message);
     } finally {
       setLoading(false);
@@ -178,10 +178,14 @@ function App() {
 
   return (
     <div className="min-h-screen w-full relative">
+      <Toaster
+  position="top-center"
+  reverseOrder={false}
+/>
       {/* Dynamic overlay that creates depth */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-950/50 via-transparent to-purple-950/50 pointer-events-none"></div>
-      
-      <main className="relative z-10 space-y-8 max-w-7xl mx-auto px-6 py-8 gap-8">
+      <div className="flex justify-center">
+  <main className="relative z-10 space-y-8 max-w-3xl w-full px-4 py-8">
         {/* Toggle Buttons with enhanced styling */}
         <div className="flex gap-4 justify-center mb-15 mt-15">
           <Button
@@ -240,12 +244,43 @@ function App() {
             ))}
           </div>
         )}
+        
+
+        {!session.user.emailVerified && (
+           <div className="flex justify-center z-30">
+  <div className="w-xl bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-lg relative overflow-hidden group text-sm">
+    <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-cyan-500/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+    <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+    
+    <div className="mb-4 text-center">
+      <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-2" />
+      <h1 className="text-base font-semibold text-white mb-1">Check Your Email</h1>
+      <p className="text-gray-300">
+        We've sent a link to <strong className="text-pink-400">{session.user.email}</strong>
+      </p>
+    </div>
+    
+    <div className="text-gray-400 space-y-1 text-xs text-center">
+      <p>Click the link in your email to verify your account.</p>
+      <p>Didn’t get it? Check spam or resend below.</p>
+    </div>
+
+    <div className="mt-4 flex justify-center">
+      <button
+        onClick={handleResendVerification}
+        className="bg-pink-600 hover:bg-pink-700 text-white text-xs py-1.5 px-4 rounded-md transition disabled:opacity-50 cursor-pointer"
+      >Resend Email
+      </button>
+    </div>
+  </div>
+  </div>
+)}
 
         {/* Feed View with enhanced styling */}
         {page === "Feed" && (
           <>
             {/* Enhanced Hero Section */}
-            <div className="bg-gradient-to-r from-white/10 via-white/5 to-white/10 backdrop-blur-xl rounded-4xl p-8 border border-white/20 shadow-2xl relative overflow-hidden group">
+            <div className="w-2xl bg-gradient-to-r from-white/10 via-white/5 to-white/10 backdrop-blur-xl rounded-4xl p-8 border border-white/20 shadow-2xl relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
               
@@ -261,32 +296,7 @@ function App() {
                 </div>
               </div>
             </div>
-            {!session.user.emailVerified && (
-              <div>
-                            <div className="mb-6">
-              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-              <h1 className="text-2xl font-bold text-white mb-2">Check Your Email!</h1>
-              <p className="text-gray-300">
-                We&apos;ve sent a verification link to <strong className="text-pink-400">{session.user.email}</strong>
-              </p>
-            </div>
-                <div className="space-y-4 text-sm text-gray-400">
-              <p>Click the link in your email to verify your account and complete registration.</p>
-              <p>Didn&apos;t receive the email? Check your spam folder or click below to resend.</p>
-            </div>
-            <div className="flex flex-col gap-3 mt-6">
-              <button
-                onClick={handleResendVerification}
-                disabled={loading}
-                className="btn bg-pink-600 hover:bg-pink-700 text-white py-2 px-4 rounded-lg transition disabled:opacity-50"
-              >
-                {loading ? 'Sending...' : 'Resend Verification Email'}
-              </button>
-            
-            </div>
-              </div>
-            )
-            }
+
             {/* Creators and their posts with enhanced spacing */}
             <div className="space-y-10 mt-10">
               {filteredCreators && filteredCreators.length > 0 && users && session ? (
@@ -390,6 +400,7 @@ function App() {
           </>
         )}
       </main>
+      </div>
     </div>
   );
 }
