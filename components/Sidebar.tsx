@@ -10,7 +10,8 @@ import {
   Bell,
   ChevronLeft,
   ChevronRight, 
-  UserCheck
+  UserCheck,
+  LogOut
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
@@ -286,32 +287,30 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
 
       {/* Sign Out Button */}
       {session?.user && (
-        <div 
-          className={`border-t border-gray-700 pt-4 space-y-2 ${isCollapsed ? 'mt-auto' : ''} relative`}
-          onMouseEnter={() => setHoveredItem('signout')}
-          onMouseLeave={() => setHoveredItem(null)}
-        >
-          <Button
-            onClick={handleSignOut}
-            className={`block w-full ${isCollapsed ? 'px-2 py-2' : 'px-4 py-3'} rounded-lg text-white border border-white ${isCollapsed ? 'text-center' : 'text-center'} hover:bg-sky-500/50 transition duration-150`}
-          >
-            {isCollapsed ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            ) : (
-              'Sign Out'
-            )}
-          </Button>
+  <div
+    className={`border-t border-gray-700 pt-4 ${isCollapsed ? 'mt-auto' : ''} relative`}
+    onMouseEnter={() => setHoveredItem('signout')}
+    onMouseLeave={() => setHoveredItem(null)}
+  >
+    <Button
+      onClick={handleSignOut}
+      className={`flex items-center gap-2 w-full ${
+        isCollapsed ? 'justify-center px-2 py-2' : 'justify-start px-4 py-3'
+      } rounded-full text-white hover:bg-red-500/40 transition duration-200`}
+    >
+      <LogOut className="w-5 h-5" />
+      {!isCollapsed && <span className="ml-1">Sign Out</span>}
+    </Button>
 
-          {/* Sign Out hover tooltip for collapsed state */}
-          {isCollapsed && hoveredItem === 'signout' && (
-            <div className="absolute left-16 top-1/2 transform -translate-y-1/2 opacity-100 bg-gray-800 text-white text-sm rounded-lg px-3 py-2 whitespace-nowrap shadow-lg z-50 pointer-events-none">
-              Sign Out
-            </div>
-          )}
-        </div>
-      )}
+    {/* Tooltip when collapsed */}
+    {isCollapsed && hoveredItem === 'signout' && (
+      <div className="absolute left-14 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-sm px-3 py-1 rounded-md shadow-md z-50 pointer-events-none whitespace-nowrap">
+        Sign Out
+      </div>
+    )}
+  </div>
+)}
+
 
       {/* Sign In Button */}
       {!session?.user && (

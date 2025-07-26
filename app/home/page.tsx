@@ -191,6 +191,7 @@ function App() {
       <div className="flex justify-center">
   <main className="relative z-10 space-y-8 max-w-3xl w-full px-4 py-8">
         {/* Toggle Buttons with enhanced styling */}
+        {session.user?.creator && (
         <div className="flex gap-4 justify-center mb-15 mt-15">
           <Button
             className={`px-8 py-3 rounded-full font-semibold shadow-lg transition-all duration-300 text-lg backdrop-blur-lg border border-white/10 ${
@@ -219,7 +220,7 @@ function App() {
             </div>
           </Button>
         </div>
-
+            )}
         {/* Dashboard View with enhanced cards */}
         {page === "Dashboard" && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mb-8">
@@ -285,24 +286,6 @@ function App() {
         {/* Feed View with enhanced styling */}
         {page === "Feed" && (
           <>
-            {/* Enhanced Hero Section */}
-            <div className="w-2xl bg-gradient-to-r from-white/10 via-white/5 to-white/10 backdrop-blur-xl rounded-4xl p-8 border border-white/20 shadow-2xl relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-              
-              <div className="relative z-10">
-                <div className="text-center mb-6">
-                  <div className="p-4 bg-gradient-to-r from-pink-500 to-purple-600 rounded-2xl shadow-lg w-fit mx-auto mb-4 hover:shadow-2xl transition-all duration-300 hover:scale-110 group-hover:rotate-3">
-                    <Sparkles className="w-8 h-8 text-white" />
-                  </div>
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-pink-200 to-purple-200 bg-clip-text text-transparent mb-2 hover:from-pink-300 hover:to-purple-300 transition-all duration-300">
-                    Feed
-                  </h1>
-                  <p className="text-gray-300 text-lg">Your personalized content feed</p>
-                </div>
-              </div>
-            </div>
-
             {/* Creators and their posts with enhanced spacing */}
             <div className="space-y-10 mt-10">
               {filteredCreators && filteredCreators.length > 0 && users && session ? (
@@ -332,21 +315,24 @@ function App() {
                   </div>
                 ))
               ) : (
-                <div className="text-gray-400 italic mt-4 text-center bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                  You aren't subscribed to or don't follow anyone yet!
+                <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 text-center group hover:bg-white/10 transition-all duration-500">
+                <div className="mb-4">
+                  <Sparkles className="w-16 h-16 text-gray-400 mx-auto mb-4 group-hover:text-pink-400 transition-colors duration-300" />
+                  <h3 className="text-xl font-bold text-white mb-2">No Subscriptions or Follows Yet</h3>
+                  <p className="text-gray-400 mb-6">Start exploring creators and subscribe to their content to see it here.</p>
+                  <Link href="/discover">
+                    <Button className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                      Discover Creators
+                    </Button>
+                  </Link>
                 </div>
+              </div>
               )}
             </div>
 
             {/* Enhanced User Subscriptions Section */}
-            {session?.user && (
               <div className="space-y-6">
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold text-white mb-2">Your Subscriptions</h2>
-                  <p className="text-gray-400 mt-2">Content from creators you&apos;re subscribed to</p>
-                  <div className="w-24 h-1 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full mx-auto mt-4"></div>
-                </div>
-                {session.user.subscriptions && session.user.subscriptions.length > 0 ? (
+                {session.user.subscriptions && session.user.subscriptions.length > 0 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {session.user.subscriptions.slice(0, 6).map((subscription) => (
                       <div 
@@ -387,22 +373,9 @@ function App() {
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 text-center group hover:bg-white/10 transition-all duration-500">
-                    <div className="mb-4">
-                      <Sparkles className="w-16 h-16 text-gray-400 mx-auto mb-4 group-hover:text-pink-400 transition-colors duration-300" />
-                      <h3 className="text-xl font-bold text-white mb-2">No Subscriptions Yet</h3>
-                      <p className="text-gray-400 mb-6">Start exploring creators and subscribe to their content to see it here.</p>
-                      <Link href="/discover">
-                        <Button className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                          Discover Creators
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                )}
+                )
+                }
               </div>
-            )}
           </>
         )}
       </main>
