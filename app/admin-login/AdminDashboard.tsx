@@ -96,25 +96,72 @@ export default function AdminDashboard() {
         {tab === "all" ? "All" : tab.charAt(0).toUpperCase() + tab.slice(1)} Creator Applications
       </h2>
       <div className="space-y-4">
-        {applications.length === 0 && <div>No applications found.</div>}
-        {applications.map(app => (
-          <div key={app._id} className="bg-white/10 rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="font-bold">{app.displayName} (@{app.username})</div>
-              <div className="text-gray-300">{app.email}</div>
-              <div className="text-gray-400 mb-2">{app.bio}</div>
-              <div className="text-gray-400 text-sm">Social: {app.socialLinks?.join(", ")}</div>
-              <div className="text-xs text-gray-400 mt-1">Status: {app.status}</div>
-            </div>
-            {tab === "pending" && (
-              <div className="flex gap-2 mt-2 md:mt-0">
-                <button onClick={() => handleAction(app._id, "accept")} className="bg-green-500 text-white px-3 py-1 rounded">Accept</button>
-                <button onClick={() => handleAction(app._id, "reject")} className="bg-red-500 text-white px-3 py-1 rounded">Reject</button>
-              </div>
-            )}
-          </div>
-        ))}
+  {applications.length === 0 && <div>No applications found.</div>}
+  {applications.map(app => (
+    <div
+      key={app._id}
+      className="bg-white/10 rounded-xl p-4 flex flex-col gap-4"
+    >
+      <div>
+        <div className="font-bold text-lg">
+          {app.country} (@{app.handle})
+        </div>
+        <div className="text-gray-300">{app.displayName}</div>
+        <div className="text-gray-400">{app.bio}</div>
+        <div className="text-gray-400 text-sm">Subscription: ${app.subscriptionPrice?.toFixed(2) || 'N/A'}</div>
+        <div className="text-gray-400 text-sm">Full Legal Name: {app.fullLegalName || 'N/A'}</div>
+        <div className="text-gray-400 text-sm">Birth Date: {app.birthDate ? new Date(app.birthDate).toLocaleDateString() : 'N/A'}</div>
+        <div className="text-xs text-gray-400 mt-1">Status: {app.status}</div>
       </div>
+
+      {/* Photos */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
+        {app.profilePic && (
+          <div>
+            <div className="text-xs text-gray-300 mb-1">Profile Pic</div>
+            <img src={app.profilePic} alt="Profile" className="rounded w-full object-cover h-32" />
+          </div>
+        )}
+        {app.idFrontPhoto && (
+          <div>
+            <div className="text-xs text-gray-300 mb-1">ID Front</div>
+            <img src={app.idFrontPhoto} alt="ID Front" className="rounded w-full object-cover h-32" />
+          </div>
+        )}
+        {app.idBackPhoto && (
+          <div>
+            <div className="text-xs text-gray-300 mb-1">ID Back</div>
+            <img src={app.idBackPhoto} alt="ID Back" className="rounded w-full object-cover h-32" />
+          </div>
+        )}
+        {app.selfieWithId && (
+          <div>
+            <div className="text-xs text-gray-300 mb-1">Selfie with ID</div>
+            <img src={app.selfieWithId} alt="Selfie with ID" className="rounded w-full object-cover h-32" />
+          </div>
+        )}
+      </div>
+
+      {tab === "pending" && (
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={() => handleAction(app._id, "accept")}
+            className="bg-green-500 text-white px-3 py-1 rounded"
+          >
+            Accept
+          </button>
+          <button
+            onClick={() => handleAction(app._id, "reject")}
+            className="bg-red-500 text-white px-3 py-1 rounded"
+          >
+            Reject
+          </button>
+        </div>
+      )}
+    </div>
+  ))}
+</div>
+
     </div>
   );
 } 

@@ -11,6 +11,7 @@ import { Camera, X, ZoomIn, ZoomOut } from 'lucide-react';
 import userservice from "../services/userservice";
 import Cropper from 'react-easy-crop';
 import getCroppedImg from '@/lib/utils'
+import { uploadContent } from "@/app/services/uploadmediaservice";
 
 export default function ApplyCreator() {
   return (
@@ -27,12 +28,15 @@ function ApplyCreatorPage() {
   const [success, setSuccess] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(true)
   const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [croppedImage, setCroppedImage] = useState<Blob | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [formData, setFormData] = useState({
+    s3Key: "",
     country: "",
     gender: "",
     profilePic: null as File | null,
@@ -82,7 +86,11 @@ function ApplyCreatorPage() {
     }
     return () => clearInterval(interval);
   }, [success, session, update]);
-
+  useEffect(() => {
+    return () => {
+      previews.forEach((preview) => URL.revokeObjectURL(preview));
+    };
+  }, [previews]);
   if (status === "loading") return null;
   if (!session?.user) {
     if (typeof window !== "undefined") router.replace("/");
@@ -100,7 +108,18 @@ function ApplyCreatorPage() {
       setCropModalOpen(true);
     }
   };
-
+  
+  function handleFileIdPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(e.target.files ?? []);
+    const newFiles = selectedFiles.filter(
+      file => !files.some(f => f.name === file.name && f.size === file.size)
+    );
+    setFiles(prev => [...prev, ...newFiles]);
+    setPreviews(prev => [
+      ...prev,
+      ...newFiles.map(file => URL.createObjectURL(file))
+    ]);
+  }
   const nextStep = () => {
     if (validateCurrentStep()) {
       setCurrentStep(prev => Math.min(prev + 1, totalSteps));
@@ -153,6 +172,7 @@ function ApplyCreatorPage() {
         }
         break;
       case 6:
+        console.log(formData)
         if (!formData.idFrontPhoto || !formData.selfieWithId || !formData.birthDate || !formData.fullLegalName) {
           setError("Please complete all identity verification requirements");
           return false;
@@ -161,7 +181,7 @@ function ApplyCreatorPage() {
     }
     return true;
   };
-
+  
   const handleSubmit = async () => {
     if (!validateCurrentStep()) return;
     
@@ -181,12 +201,24 @@ function ApplyCreatorPage() {
       formDataToSend.append("email", session.user.email || "");
       formDataToSend.append("username", session.user.name || session.user.email || "");
 
-      const res = await fetch("/api/creators/apply", {
-        method: "POST",
-        body: formDataToSend,
-      });
+      const uploadPromises = files.map(async (file) => {
+            const s3Key = await uploadContent(file);
+            if (!s3Key) {
+              console.error("Failed to get s3Key for file:", file.name);
+              return;
+            }
+            formData.s3Key = s3Key
+            const response = await fetch(`/api/creators/apply`, {
+              method: "POST",
+              body: formDataToSend
+            });
       
-      if (!res.ok) throw new Error("Failed to submit application");
+            if (!response.ok) {
+              console.error('Post creation with file failed');
+            }
+          });
+      
+          await Promise.all(uploadPromises);
       setSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -194,7 +226,7 @@ function ApplyCreatorPage() {
       setLoading(false);
     }
   };
-
+  
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -720,7 +752,7 @@ function ApplyCreatorPage() {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => handleFileChange("idFrontPhoto", e.target.files?.[0] || null)}
+                onChange={handleFileIdPhotoChange}
                 className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-500 file:text-white hover:file:bg-pink-600"
               />
               {formData.idFrontPhoto && (
@@ -733,7 +765,7 @@ function ApplyCreatorPage() {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => handleFileChange("idBackPhoto", e.target.files?.[0] || null)}
+                onChange={handleFileIdPhotoChange}
                 className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-500 file:text-white hover:file:bg-gray-600"
               />
               {formData.idBackPhoto && (
@@ -755,7 +787,7 @@ function ApplyCreatorPage() {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => handleFileChange("selfieWithId", e.target.files?.[0] || null)}
+                onChange={handleFileIdPhotoChange}
                 className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-500 file:text-white hover:file:bg-pink-600"
               />
               {formData.selfieWithId && (
