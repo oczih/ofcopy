@@ -101,59 +101,79 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
       </Button>
 
       {/* User Profile Section */}
-      {session?.user && (
-        <div className={`flex flex-col items-center ${isCollapsed ? 'mb-6 mt-8' : 'mb-10 mt-2'} relative transition-all duration-300`}>
-          <div className="relative group">
-  <Link href={`/${session.user.username}`} className="flex items-center space-x-3">
-    <div className="relative w-10 h-10">
-      <Image
-        src={session.user.image || "/default-profile.png"}
-        alt={session.user.name || session.user.username || "User profile image"}
-        fill
-        className="rounded-full border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
-        onLoad={() => setImageLoading(false)}
-        onError={() => setImageLoading(false)}
-      />
-      {imageLoading && (
-        <Skeleton className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 absolute top-0 left-0" />
-      )}
-    </div>
-
-    <div className="opacity-100 transition-opacity duration-300">
-      <div className="text-lg font-semibold text-white truncate max-w-[12rem]">
-        {session.user.name}
+      <div className={`flex flex-col items-center ${isCollapsed ? 'mb-6 mt-8' : 'mb-10 mt-2'} relative transition-all duration-300`}>
+  <div className="relative group">
+    <Link
+      href={session?.user ? `/${session.user.username}` : "#"}
+      className="flex items-center space-x-3 min-h-[40px]"
+    >
+      <div className="relative w-10 h-10">
+        {!session?.user ? (
+          <Skeleton className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700" />
+        ) : session.user.image ? (
+          <>
+            <Image
+              src={session.user.image}
+              alt={session.user.name || session.user.username || "User profile image"}
+              fill
+              className="rounded-full border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
+              onLoad={() => setImageLoading(false)}
+              onError={() => setImageLoading(false)}
+            />
+            {imageLoading && (
+              <Skeleton className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700 absolute top-0 left-0" />
+            )}
+          </>
+        ) : (
+          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-400 text-white font-bold text-lg">
+            {session.user.name?.charAt(0).toUpperCase() || "U"}
+          </div>
+        )}
       </div>
-      <div className="text-sm text-pink-400 truncate max-w-[12rem]">
-        @{session.user.username}
-      </div>
-    </div>
-  </Link>
 
-  {/* Tooltip still appears only when collapsed */}
-  {isCollapsed && (
-    <div className="absolute left-16 top-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-sm rounded-lg px-3 py-2 whitespace-nowrap shadow-lg z-50 pointer-events-none">
-      <div className="font-semibold">{session.user.name}</div>
-      <div className="text-pink-400 text-xs">@{session.user.username}</div>
+      {/* Name and Username */}
+      <div className="opacity-100 transition-opacity duration-300">
+        {!session?.user ? (
+          <div className="space-y-1">
+            <Skeleton className="w-24 h-4 rounded bg-gray-300 dark:bg-gray-700" />
+            <Skeleton className="w-16 h-3 rounded bg-gray-300 dark:bg-gray-700" />
+          </div>
+        ) : (
+          <>
+            <div className="text-lg font-semibold text-white truncate max-w-[12rem]">
+              {session.user.name}
+            </div>
+            <div className="text-sm text-pink-400 truncate max-w-[12rem]">
+              @{session.user.username}
+            </div>
+          </>
+        )}
+      </div>
+    </Link>
+
+    {/* Tooltip */}
+    {isCollapsed && session?.user && (
+      <div className="absolute left-16 top-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-sm rounded-lg px-3 py-2 whitespace-nowrap shadow-lg z-50 pointer-events-none">
+        <div className="font-semibold">{session.user.name}</div>
+        <div className="text-pink-400 text-xs">@{session.user.username}</div>
+      </div>
+    )}
+  </div>
+
+  {/* Followers/Subscribers if creator */}
+  {creator && session?.user && !isCollapsed && (
+    <div className="flex gap-8 mt-4 justify-center items-center opacity-100 transition-opacity duration-300">
+      <div className="flex flex-col items-center">
+        <span className="text-white font-bold text-lg">{creator.followers ?? 0}</span>
+        <span className="text-xs text-gray-400">Followers</span>
+      </div>
+      <div className="flex flex-col items-center">
+        <span className="text-pink-400 font-bold text-lg">{creator.subscribers ?? 0}</span>
+        <span className="text-xs text-gray-400">Subscribers</span>
+      </div>
     </div>
   )}
 </div>
-
-
-          {/* Followers and Subscribers Count for Creators */}
-          {creator && !isCollapsed && (
-            <div className="flex gap-8 mt-4 justify-center items-center opacity-100 transition-opacity duration-300">
-              <div className="flex flex-col items-center">
-                <span className="text-white font-bold text-lg">{creator.followers ?? 0}</span>
-                <span className="text-xs text-gray-400">Followers</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <span className="text-pink-400 font-bold text-lg">{creator.subscribers ?? 0}</span>
-                <span className="text-xs text-gray-400">Subscribers</span>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       <div className={`${isCollapsed ? 'mb-4' : 'mb-8'} transition-all duration-300`}></div>
 
