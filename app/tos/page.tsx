@@ -20,12 +20,12 @@ export default function TermsOfServicePage() {
             <span className="text-gray-400">[Insert Date]</span>
           </div>
           <p>
-            Welcome to CreatorHub, operated by <span className="font-semibold">[Your Legal Entity Name]</span>, a company incorporated in Finland ("we," "us," or "our"). These Terms of Service govern your use of our platform and services. By accessing or using CreatorHub, you agree to these terms.
+            Welcome to Fanslio, operated by <span className="font-semibold">[Your Legal Entity Name]</span>, a company incorporated in Finland ("we," "us," or "our"). These Terms of Service govern your use of our platform and services. By accessing or using Fanslio, you agree to these terms.
           </p>
           <div>
             <h3 className="font-bold text-pink-400 mb-1">1. Eligibility</h3>
             <ul className="list-disc list-inside ml-4 text-gray-300">
-              <li>You must be at least 18 years old to access and use CreatorHub.</li>
+              <li>You must be at least 18 years old to access and use Fanslio.</li>
               <li>By registering, you confirm that you meet this age requirement.</li>
             </ul>
           </div>
@@ -40,7 +40,7 @@ export default function TermsOfServicePage() {
           <div>
             <h3 className="font-bold text-pink-400 mb-1">3. Content Guidelines</h3>
             <ul className="list-disc list-inside ml-4 text-gray-300">
-              <li>CreatorHub allows the upload of user-generated and AI-generated content, including adult content.</li>
+              <li>Fanslio allows the upload of user-generated and AI-generated content, including adult content.</li>
               <li>Content must comply with Finnish law and any applicable international laws.</li>
               <li>Prohibited content includes illegal material, child exploitation, hate speech, or any content violating intellectual property rights.</li>
             </ul>
@@ -48,7 +48,7 @@ export default function TermsOfServicePage() {
           <div>
             <h3 className="font-bold text-pink-400 mb-1">4. AI-Generated Content Disclaimer</h3>
             <ul className="list-disc list-inside ml-4 text-gray-300">
-              <li>Some influencers and content on CreatorHub are AI-generated and represent fictional personas. These personas are not real individuals.</li>
+              <li>Some influencers and content on Fanslio are AI-generated and represent fictional personas. These personas are not real individuals.</li>
             </ul>
           </div>
           <div>
@@ -75,7 +75,7 @@ export default function TermsOfServicePage() {
           <div>
             <h3 className="font-bold text-pink-400 mb-1">8. Disclaimers and Liability</h3>
             <ul className="list-disc list-inside ml-4 text-gray-300">
-              <li>CreatorHub is provided "as is." We do not guarantee uninterrupted service.</li>
+              <li>Fanslio is provided "as is." We do not guarantee uninterrupted service.</li>
               <li>We are not liable for content uploaded by users.</li>
             </ul>
           </div>

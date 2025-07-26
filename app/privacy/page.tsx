@@ -20,7 +20,7 @@ export default function PrivacyPolicyPage() {
             <span className="text-gray-400">[Insert Date]</span>
           </div>
           <p>
-            This Privacy Policy explains how CreatorHub collects, uses, and protects your personal data in compliance with the EU General Data Protection Regulation (GDPR).
+            This Privacy Policy explains how Fanslio collects, uses, and protects your personal data in compliance with the EU General Data Protection Regulation (GDPR).
           </p>
           <div>
             <h3 className="font-bold text-pink-400 mb-1">1. Information We Collect</h3>
@@ -89,7 +89,7 @@ export default function PrivacyPolicyPage() {
           <div>
             <h3 className="font-bold text-pink-400 mb-1">9. Contact</h3>
             <ul className="list-disc list-inside ml-4 text-gray-300">
-              <li>For privacy concerns or data requests, contact: <span className="underline">[insert contact email]</span></li>
+              <li>For privacy concerns or data requests, contact: <span className="underline">ashleygreybiz@gmail.com</span></li>
             </ul>
           </div>
         </div>

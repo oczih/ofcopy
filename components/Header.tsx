@@ -51,7 +51,7 @@ export const Header = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
-                  CreatorHub
+                  Fanslio
                 </h1>
                 <p className="text-xs text-gray-400 -mt-1">Premium Content Platform</p>
               </div>

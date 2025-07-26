@@ -749,7 +749,7 @@ function ApplyCreatorPage() {
                   1. Today's date: {new Date().toLocaleDateString()}<br/>
                   2. Your date of birth<br/>
                   3. Your full legal name<br/>
-                  4. The word "CreatorHub"
+                  4. The word "Fanslio"
                 </p>
               </div>
               <input
@@ -766,13 +766,13 @@ function ApplyCreatorPage() {
             <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
               <h3 className="font-semibold text-white mb-2">⏱️ Review Process</h3>
               <p className="text-sm text-gray-300 mb-2">
-                The CreatorHub team will review your application within <strong>24-48 hours</strong>.
+                The Fanslio team will review your application within <strong>24-48 hours</strong>.
               </p>
               <p className="text-sm text-gray-300 mb-2">
                 You'll receive an email once approved or if additional documentation is needed.
               </p>
               <p className="text-sm text-gray-300">
-                Questions? Contact us at <strong>help@creatorhub.com</strong>
+                Questions? Contact us at <strong>ashleygreybiz@gmail.com</strong>
               </p>
             </div>
           </div>
@@ -797,11 +797,11 @@ function ApplyCreatorPage() {
                   <p>✓ Our team will review your application within 24-48 hours</p>
                   <p>✓ You'll receive an email confirmation once approved</p>
                   <p>✓ If additional documentation is needed, we'll contact you via email</p>
-                  <p>✓ Add <strong>noreply@creatorhub.com</strong> and <strong>help@creatorhub.com</strong> to your safe senders list</p>
+                  <p>✓ Add <strong>noreply@fanslio.com</strong> and <strong>help@fanslio.com</strong> to your safe senders list</p>
                 </div>
               </div>
               <p className="text-gray-300 mb-6">
-                Thank you for your interest in becoming a CreatorHub creator! We're excited to potentially welcome you to our community.
+                Thank you for your interest in becoming a Fanslio creator! We're excited to potentially welcome you to our community.
               </p>
               <Button onClick={() => router.push("/")} className="bg-gradient-to-r from-pink-500 to-purple-600">
                 Back to Home

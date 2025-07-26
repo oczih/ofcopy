@@ -5,17 +5,25 @@ import { CreatorApplication } from '@/app/models/creatormodel';
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
-    const { username, displayName, bio, socialLinks, email, user } = await req.json();
+    const { country, gender, profilePic, handle, displayName, bio, subscriptionPrice, idFrontPhoto
+      , idBackPhoto, selfieWithId, birthDate, fullLegalName
+     } = await req.json();
     if (!username || !displayName || !bio || !email || !user) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     const application = await CreatorApplication.create({
-      username,
+      country,
       displayName,
       bio,
-      socialLinks,
-      email,
-      user
+      gender,
+      profilePic,
+      handle,
+      subscriptionPrice,
+      idFrontPhoto,
+      idBackPhoto,
+      selfieWithId,
+      birthDate,
+      fullLegalName
     });
     return NextResponse.json({ message: 'Application submitted', application }, { status: 201 });
   } catch (err) {
