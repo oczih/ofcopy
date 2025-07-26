@@ -178,9 +178,9 @@ function Landing() {
 
       {/* Animated background elements */}
       <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/30 rounded-full blur-3xl floating-animation"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/30 rounded-full blur-3xl floating-animation stagger-2"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary-glow/20 rounded-full blur-3xl floating-animation stagger-1"></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/30 rounded-full blur-3xl animate-floating-animation"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/30 rounded-full blur-3xl animate-floating-animation delay-200"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary-glow/20 rounded-full blur-3xl animate-floating-animation delay-100"></div>
       </div>
 
       {/* Header */}
@@ -239,16 +239,8 @@ function Landing() {
                 <div>
   <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6">
     <span className="bg-gradient-to-r from-white via-[hsl(var(--primary-glow))] to-[hsl(var(--accent))] bg-clip-text text-transparent">
-      Create.
-    </span>
-    <br />
-    <span className="bg-gradient-to-r from-[hsl(var(--accent))] via-[hsl(var(--primary))] to-white bg-clip-text text-transparent">
-      Connect.
-    </span>
-    <br />
-    <span className="bg-gradient-to-r from-[hsl(var(--primary-glow))] via-white to-[hsl(var(--accent))] bg-clip-text text-transparent">
-      Monetize.
-    </span>
+      Platform where All Creator Earn More & Get Paid Fast.
+      </span>
   </h1>
 
   <p className="text-xl text-[hsl(var(--muted-foreground))] max-w-xl mb-8">
@@ -259,19 +251,19 @@ function Landing() {
   </p>
 </div>
                 <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/signup" passHref>
+                <Link href="/signup" className="hover:bg-white/10 rounded-full">
   <Button variant="gradient" size="xl" className="group">
-    Get Started
+    Join As User
     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
   </Button>
 </Link>             
                   <Link
                     href={"/signup"}
-                    className="group"
+                    className="hover:bg-white/10 rounded-full"
                   >
                     <Button variant="gradient" size="xl" className="group">
-                    <Play className="w-5 h-5" />
-                    Watch Demo
+                      Become Creator
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </Link>
                 </div>
@@ -297,10 +289,10 @@ function Landing() {
 
               <div className="relative slide-in-right">
                 <div className="relative">
-                  <Image
-                    src={heroImage} 
-                    alt="Creators collaborating with AI" 
-                    className="w-full h-auto rounded-2xl shadow-2xl glow-animation"
+                <Image
+                    src={heroImage}
+                    alt="Creators collaborating with AI"
+                    className="w-full h-auto rounded-2xl shadow-2xl animate-glow"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent rounded-2xl"></div>
                 </div>
@@ -353,103 +345,50 @@ function Landing() {
     </section>
 
         {/* CTA Section with Multiple Buttons */}
-        <section className="px-6 py-20">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="gradient-card rounded-3xl p-12 border border-border slide-up">
-              <div className="mb-8">
-                <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                  Ready to <span className="bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">Transform</span> Your Creative Journey?
-                </h2>
-                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                  Join thousands of creators who are already building their communities and earning from their passion.
-                </p>
-              </div>
+        <section className="px-6 py-24">
+  <div className="max-w-6xl mx-auto bg-gradient-to-br from-white via-gray-50 to-slate-100 border border-gray-200 rounded-3xl p-12 md:p-16 text-center md:text-left shadow-xl">
+    
+    <div className="mb-8 space-y-4">
+      <h2 className="text-4xl md:text-5xl font-bold leading-tight">
+        Ready to <span className="bg-gradient-to-r from-blue-500 to-indigo-500 text-transparent bg-clip-text">Transform</span> Your Creative Journey?
+      </h2>
+      <p className="text-lg text-gray-600 max-w-2xl mx-auto md:mx-0">
+        Join thousands of creators already building their communities and earning from their passion.
+      </p>
+    </div>
 
-              <div className="space-y-6">
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/signup" passHref>
-  <Button
-    asChild
-    variant="gradient"
-    size="xl"
-    className="group"
-  >
-    <a>
-      Get Started
-      <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-    </a>
-  </Button>
-</Link>
-<Link href="/signup" passHref>
-  <Button
-    asChild
-    variant="gradient"
-    size="xl"
-    className="group"
-  >
-    <a>
-      Get Started
-      <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-    </a>
-  </Button>
-</Link>
-                </div>
-                
-                <div className="pt-4">
-                <Link href="/signup" passHref>
-  <Button
-    asChild
-    variant="gradient"
-    size="xl"
-    className="group"
-  >
-    <a>
-      Get Started
-      <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-    </a>
-  </Button>
-</Link>
-                </div>
-              </div>
+    <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start mb-8">
+      <Link href="/signup" passHref>
+        <Button variant="default" size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white">
+          Get Started
+          <ArrowRight className="w-5 h-5 ml-2" />
+        </Button>
+      </Link>
+      <Link href="/signup" passHref>
+        <Button variant="outline" size="lg" className="text-indigo-600 border-indigo-600 hover:bg-indigo-50">
+          Watch Demo
+          <Play className="w-5 h-5 ml-2" />
+        </Button>
+      </Link>
+    </div>
 
-              <div className="mt-12 flex items-center justify-center gap-8 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-primary" />
-                  <span>Free to start</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Star className="w-4 h-4 text-accent" />
-                  <span>No setup fees</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary-glow" />
-                  <span>Instant community</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+    <div className="flex flex-wrap justify-center md:justify-start gap-6 text-sm text-gray-500">
+      <div className="flex items-center gap-2">
+        <Zap className="w-4 h-4 text-indigo-500" />
+        Free to start
+      </div>
+      <div className="flex items-center gap-2">
+        <Star className="w-4 h-4 text-yellow-500" />
+        No setup fees
+      </div>
+      <div className="flex items-center gap-2">
+        <Users className="w-4 h-4 text-blue-500" />
+        Instant community
+      </div>
+    </div>
+  </div>
+</section>
 
-        {/* Stats Section */}
-        <section className="px-6 py-20 border-t border-border">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-              {[
-                { number: "50K+", label: "Active Creators", delay: "stagger-1" },
-                { number: "2M+", label: "Monthly Fans", delay: "stagger-2" },
-                { number: "$12M+", label: "Creator Earnings", delay: "stagger-3" },
-                { number: "98%", label: "Satisfaction Rate", delay: "stagger-4" }
-              ].map((stat, index) => (
-                <div key={index} className={`scale-in ${stat.delay}`}>
-                  <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-2">
-                    {stat.number}
-                  </div>
-                  <div className="text-muted-foreground">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* FAQ Section */}
         <section className="px-6 py-20">
