@@ -21,6 +21,7 @@ export default {
       },
       animation: {
         float: "float 6s ease-in-out infinite",
+        scaleIn: "caleIn 0.6s ease-out",
         glow: "glow 2s ease-in-out infinite alternate",
         "slide-in-left": "slideInLeft 0.8s ease-out forwards",
         "slide-in-right": "slideInRight 0.8s ease-out forwards",

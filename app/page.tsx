@@ -82,7 +82,7 @@ const features = [
     title: "Build Your Community",
     description:
       "Connect with fans who appreciate your unique creative style, whether it's AI-generated or traditionally crafted.",
-    delay: "stagger-1",
+    delay: "100",
     hoverBg: "from-pink-500 to-red-500",
     hoverIcon: "text-red-100",
   },
@@ -91,7 +91,7 @@ const features = [
     title: "Multiple Revenue Streams",
     description:
       "Subscriptions, tips, exclusive content sales, and commission-based collaborations.",
-    delay: "stagger-2",
+    delay: "200",
     hoverBg: "from-yellow-400 to-yellow-600",
     hoverIcon: "text-yellow-100",
   },
@@ -100,7 +100,7 @@ const features = [
     title: "Rich Content Support",
     description:
       "Share videos, images, audio, 3D models, and interactive content with your audience.",
-    delay: "stagger-3",
+    delay: "300",
     hoverBg: "from-purple-500 to-indigo-600",
     hoverIcon: "text-indigo-100",
   },
@@ -109,7 +109,7 @@ const features = [
     title: "AI Creator Tools",
     description:
       "Advanced analytics, content optimization, and automated audience engagement for AI creators.",
-    delay: "stagger-1",
+    delay: "100",
     hoverBg: "from-green-400 to-teal-500",
     hoverIcon: "text-teal-100",
   },
@@ -118,7 +118,7 @@ const features = [
     title: "Fan Engagement",
     description:
       "Direct messaging, live streams, polls, and exclusive events to build deeper connections.",
-    delay: "stagger-2",
+    delay: "200",
     hoverBg: "from-pink-400 to-pink-600",
     hoverIcon: "text-pink-100",
   },
@@ -127,7 +127,7 @@ const features = [
     title: "Premium Features",
     description:
       "Advanced customization, priority support, and early access to new platform features.",
-    delay: "stagger-3",
+    delay: "300",
     hoverBg: "from-yellow-300 to-yellow-500",
     hoverIcon: "text-yellow-100",
   }
@@ -214,7 +214,7 @@ function Landing() {
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="space-y-8 slide-up">
                 {/* Product Hunt Feature */}
-                <div className="flex items-center gap-4 scale-in stagger-1">
+                <div className="flex items-center gap-4 animate-scale-in delay-100">
                   <div className="flex items-center gap-3 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-2">
                     <Image
                       src={productHuntFeatured} 
@@ -323,7 +323,7 @@ function Landing() {
             ({ icon: Icon, title, description, delay, hoverBg, hoverIcon }, index) => (
               <div
                 key={index}
-                className={`gradient-card rounded-2xl p-8 border border-border hover:border-primary/50 transition-all duration-300 hover:scale-105 hover:shadow-glow scale-in ${delay}`}
+                className={`gradient-card rounded-2xl p-8 border border-border hover:border-primary/50 transition-all duration-300 hover:scale-105 hover:shadow-glow animate-scaleIn ${delay}`}
               >
                 <div className="flex items-center gap-4 mb-4">
                   <div
@@ -406,7 +406,7 @@ function Landing() {
               {faqData.map((faq, index) => (
                 <div 
                   key={index}
-                  className={`gradient-card rounded-xl border border-border overflow-hidden scale-in stagger-${(index % 4) + 1}`}
+                  className={`gradient-card rounded-xl border border-border overflow-hidden scale-in delay-${((index % 4) + 1) * 100}`}
                 >
                   <Button
                     onClick={() => setOpenFaq(openFaq === index ? null : index)}
