@@ -110,7 +110,7 @@ function Landing() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       {/* Product Hunt Banner */}
       <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-center gap-4 text-sm font-medium">
@@ -139,7 +139,7 @@ function Landing() {
           <div className="flex items-center gap-4">
             <Link href="/login">
               <Button variant="ghost" className="text-gray-700 hover:text-gray-900 hover:bg-gray-100">
-                Sign In
+                Log in
               </Button>
             </Link>
             <Link href="/signup">
@@ -153,7 +153,7 @@ function Landing() {
 
       <main>
         {/* Hero Section */}
-        <section className="px-6 py-16 md:py-24 bg-gradient-to-b from-gray-50 to-white">
+        <section className="px-6 py-16 md:py-24 bg-gradient-to-br from-slate-950/50 via-transparent to-purple-950/50">
           <div className="max-w-7xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="space-y-8">
@@ -181,7 +181,7 @@ function Landing() {
                 </div>
 
                 <div>
-                  <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-6 text-gray-900">
+                  <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-6 text-white">
                     Platform where All Creators{' '}
                     <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                       Earn More
@@ -189,7 +189,7 @@ function Landing() {
                     & Get Paid Fast
                   </h1>
 
-                  <p className="text-xl text-gray-600 max-w-xl mb-8 leading-relaxed">
+                  <p className="text-xl text-white max-w-xl mb-8 leading-relaxed">
                     The ultimate platform for both{' '}
                     <span className="text-purple-600 font-semibold">AI creators</span> and{' '}
                     <span className="text-blue-600 font-semibold">human artists</span> to build communities,
@@ -205,7 +205,7 @@ function Landing() {
                     </Button>
                   </Link>
                   <Link href="/signup">
-                    <Button size="lg" variant="outline" className="border-2 border-gray-300 hover:border-gray-400 text-gray-700 hover:bg-gray-50 px-8 py-3 text-lg">
+                    <Button size="lg" variant="outline" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 text-lg">
                       Become Creator
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Button>

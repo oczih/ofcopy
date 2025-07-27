@@ -175,22 +175,20 @@ export default function LoginPage() {
   };
 
   const handleForgotPassword = () => {
-    // You can implement forgot password functionality here
-    toast.info('Forgot password functionality will be implemented soon.');
+    router.push("/forgot-password")
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#13072c]">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#13072c]">
+       <h1 className="text-3xl font-extrabold text-white mb-4 text-center drop-shadow-lg">Fanslio</h1>
+       <h1 className="text-5xl font-extrabold text-white mb-4 text-center drop-shadow-lg">Log In</h1>
       <div className="w-full max-w-md bg-white/10 rounded-2xl shadow-xl p-8 flex flex-col items-center">
-        <p className="text-sm text-white font-bold mb-6 text-center">
-          Create your free account to become a fan and unlock exclusive content from your favorite creators.
-        </p>
         {/* Login Method Toggle */}
           <div className="flex flex-col gap-3 w-full">
             <button
               onClick={() => handleOAuthSignIn('google')}
               disabled={loading}
-              className="flex items-center gap-2 w-full justify-center py-2 rounded-full bg-white/10 text-white hover:border-white hover:border duration-300 transition disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-2 w-full justify-center py-2 rounded-full bg-white/10 text-white hover:border-white hover:border duration-300 transition-all disabled:opacity-50 cursor-pointer"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -203,7 +201,7 @@ export default function LoginPage() {
             <button
               onClick={() => handleOAuthSignIn('twitter')}
               disabled={loading}
-              className="flex items-center gap-2 w-full justify-center py-2 rounded-full bg-white/10 text-white hover:border-white hover:border duration-300 transition disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-2 w-full justify-center py-2 rounded-full bg-white/10 text-white hover:border-white hover:border duration-300 transition-all disabled:opacity-50 cursor-pointer"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
@@ -291,37 +289,6 @@ export default function LoginPage() {
             </Link>
           </p>
         </div>
-        {/* Resend Verification Link */}
-          <div className="text-center mt-4 w-full">
-            <p className="text-white text-xs">
-              Haven&apos;t verified your email yet?{' '}
-              <button
-                onClick={() => {
-                  if (formData.email) {
-                    fetch('/api/auth/resend-verification', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ email: formData.email })
-                    }).then(res => res.json()).then(data => {
-                      if (data.error) {
-                        toast.error(data.error);
-                      } else {
-                        toast.success('Verification email sent!');
-                      }
-                    }).catch(() => {
-                      toast.error('Failed to resend verification email');
-                    });
-                  } else {
-                    toast.error('Please enter your email address first');
-                  }
-                }}
-                className="text-purple-600 hover:text-purple-500 underline"
-              >
-                Resend verification email
-              </button>
-            </p>
-          </div>
-
       </div>
     </div>
   );

@@ -198,8 +198,9 @@ export default function SignupPage() {
     }
   };
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#13072c]">
-       <h1 className="text-4xl font-extrabold text-white mb-4 text-center drop-shadow-lg">Join CreatorHub</h1>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#13072c] ">
+      <h1 className="text-3xl font-extrabold text-white mb-4 text-center drop-shadow-lg">Fanslio</h1>
+       <h1 className="text-5xl font-extrabold text-white mb-4 text-center drop-shadow-lg">Sign Up</h1>
       <div className="w-full max-w-md bg-white/10 rounded-2xl shadow-xl p-8 flex flex-col items-center">
        
         <p className="text-sm text-white font-bold mb-6 text-center">
@@ -232,7 +233,7 @@ export default function SignupPage() {
             </div>
             <div className="flex items-center my-8 w-full">
             <Separator className="flex-1 h-px bg-white/10" />
-            <span className="mx-4 bg-white/10 px-3 text-white/10 text-xs font-semibold tracking-widest rounded-full shadow-sm">OR</span>
+            <span className="mx-4 bg-white/10 px-3 text-white/30 text-xs font-semibold tracking-widest rounded-full shadow-sm">OR</span>
             <Separator className="flex-1 h-px bg-white/10" />
           </div>
             <form onSubmit={handleEmailSignup} className="space-y-4">
@@ -326,13 +327,14 @@ export default function SignupPage() {
             >
               Privacy Policy
             </button>
+            , and that you are atleast 18 years old.
           </div>
 
           <div className="text-center mt-4">
             <p className="text-gray-400 text-sm">
               Already have an account?&nbsp;
               <Link href="/login" className="text-purple-400 hover:text-purple-300 underline">
-                Sign in
+                Log in
               </Link>
             </p>
           </div>

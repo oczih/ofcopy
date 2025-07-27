@@ -5,7 +5,7 @@ import SessionProviderWrapper from "./SessionProviderWrapper";
 import { Sidebar } from "../components/Sidebar";
 
 export const metadata: Metadata = {
-  title: "CreatorHub",
+  title: "Fanslio",
   description: "Premium content platform for creators and fans.",
 };
 

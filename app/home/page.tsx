@@ -113,8 +113,11 @@ function App() {
   }
   if (!session?.user) {
     
-    if (typeof window !== "undefined") router.replace("/");
-    return null;
+    if (typeof window !== "undefined"){
+      <div>
+        Nothing here!    
+      <button onClick={() => router.replace("/")}>Go Back</button>
+      </div>};
   }
   const followedCreatorIds = new Set([
     ...(session?.user.following?.map(f => f.creatorId.toString()) || []),
