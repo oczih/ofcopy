@@ -87,7 +87,7 @@ function EditPost() {
       await postservice.update(postId, { caption, viewable });
       setSaveMessage('Post updated!');
       setTimeout(() => setSaveMessage(''), 2000);
-      router.push("/")
+      router.push("/home")
     } catch (err) {
       setSaveMessage('Failed to update post.');
     } finally {

@@ -4,7 +4,7 @@ import Post from '@/app/models/postmodel';
 import Creator from '@/app/models/creatormodel';
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-
+import mongoose from 'mongoose';
 const s3 = new S3Client({
   region: "eu-north-1",
   credentials: {
@@ -87,44 +87,49 @@ export async function PUT(req: NextRequest) {
   const username = req.nextUrl.searchParams.get('username');
   const { postId, liker, comment, unlike } = await req.json();
 
-    if (!username || !postId) {
-      return NextResponse.json({ error: 'Missing username or postId' }, { status: 400 });
-    }
+  if (!username || !postId) {
+    return NextResponse.json({ error: 'Missing username or postId' }, { status: 400 });
+  }
 
-    if (liker && !liker.userId) {
-      return NextResponse.json({ error: 'Missing userId in liker' }, { status: 400 });
-    }
+  if (liker && !liker.userId) {
+    return NextResponse.json({ error: 'Missing userId in liker' }, { status: 400 });
+  }
 
-    const creator = await Creator.findOne({ username }).populate('posts');
-    if (!creator) {
-      return NextResponse.json({ error: 'Creator not found' }, { status: 404 });
-}
+  const creator = await Creator.findOne({ username }).populate('posts');
+  if (!creator) {
+    return NextResponse.json({ error: 'Creator not found' }, { status: 404 });
+  }
+
   try {
     let updatedPost;
 
-if (comment) {
-  updatedPost = await Post.findByIdAndUpdate(
-    postId,
-    { $push: { comments: comment } },
-    { new: true }
-  );
-} else if (liker) {
+    // Ensure userId is a valid ObjectId
+    const userObjectId = liker?.userId ? new mongoose.Types.ObjectId(liker.userId) : null;
+
+    if (comment) {
+      updatedPost = await Post.findByIdAndUpdate(
+        postId,
+        { $push: { comments: comment } },
+        { new: true }
+      );
+    } else if (liker) {
       if (unlike) {
-        // Remove like
+        // REMOVE like
         updatedPost = await Post.findByIdAndUpdate(
           postId,
-          { $pull: { likes: { userId: liker.userId } } },
+          { $pull: { likes: { userId: userObjectId } } },
           { new: true }
         );
       } else {
-        // Add like if not exists
+        // ADD like if not already liked
         updatedPost = await Post.findOneAndUpdate(
-          { _id: postId, 'likes.userId': { $ne: liker.userId } },
-          { $push: { likes: { userId: liker.userId } } },
+          { _id: postId, 'likes.userId': { $ne: userObjectId } },
+          { $push: { likes: { userId: userObjectId } } },
           { new: true }
         );
+
         if (!updatedPost) {
-          // User already liked, return existing post
+          // Already liked — just return the existing post
           updatedPost = await Post.findById(postId);
         }
       }
@@ -132,9 +137,10 @@ if (comment) {
       return NextResponse.json({ error: 'No valid update fields' }, { status: 400 });
     }
 
-    // Re-fetch creator's posts with signed URLs
+    // Re-fetch creator’s posts with signed URLs
+    const freshCreator = await Creator.findOne({ username }).populate('posts');
     const postsWithSignedUrls = await Promise.all(
-      (creator.posts || []).map(async (post: any) => {
+      (freshCreator.posts || []).map(async (post: any) => {
         if (!post.s3Key) return post;
         try {
           const command = new GetObjectCommand({
@@ -142,20 +148,22 @@ if (comment) {
             Key: post.s3Key,
           });
           const signedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
+
           return {
             ...post.toObject(),
             signedUrl,
             ...(post._id.toString() === postId ? updatedPost.toObject() : {}),
           };
         } catch (err) {
-          console.error("Failed to get signed URL for post:", post._id, err);
+          console.error('Failed to get signed URL for post:', post._id, err);
           return post.toObject();
         }
       })
     );
+
     return NextResponse.json({ posts: postsWithSignedUrls.slice().reverse() });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Failed to update post' }, { status: 500 });
   }
-} 
+}

@@ -215,7 +215,7 @@ const verificationTokenSchema = new mongoose.Schema({
     type: { type: String, enum: ['email_verification', 'password_reset'], required: true }
   });
   
-export const VerificationToken = mongoose.models.VerificationToken || mongoose.model('VerificationToken', verificationTokenSchema);
+export const VerificationToken = mongoose.models?.VerificationToken || mongoose.model('VerificationToken', verificationTokenSchema);
 
   
 const OFUser = mongoose.models?.OFUser || model<UserDocument>('OFUser', userSchema);

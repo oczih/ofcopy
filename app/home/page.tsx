@@ -53,7 +53,6 @@ function App() {
     }
   }, [status]);
   
-  console.log(users);
   
   
   useEffect(() => {
@@ -122,9 +121,11 @@ function App() {
     ...(session?.user.subscriptions?.map(s => s.creatorId.toString()) || [])
   ]);
   
-  const filteredCreators = creators?.filter(creator => followedCreatorIds.has(creator.id.toString()));
-  
-  console.log(creators);
+  const filteredCreators = creators?.filter(creator => {
+    const isFollowed = followedCreatorIds.has(creator.id.toString());
+    const isOwnCreator = session?.user?.id === creator.user.toString(); // Check if user owns this creator
+    return isFollowed || isOwnCreator;
+  });
   if(loading){
     return (
       <div className="flex items-center justify-center h-full">
@@ -281,7 +282,6 @@ function App() {
         </div>
       </div>
   )}
-
 
         {/* Feed View with enhanced styling */}
         {page === "Feed" && (

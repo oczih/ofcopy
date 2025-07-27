@@ -67,6 +67,16 @@ export interface Comment {
   username?: string;
   userId?: string;
 }
+export type MediaPost = Post & {
+  title: string;
+  description?: string;
+  isPublic: boolean;
+  subscriberOnly?: boolean;
+  price?: number;
+  thumbnailUrl?: string;
+  duration?: number;
+  tags?: string[];
+};
 export interface Like {
   userId: string
 }

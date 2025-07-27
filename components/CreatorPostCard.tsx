@@ -43,13 +43,17 @@ export function CreatorPostCard({
   const [commentText, setCommentText] = useState("");
   const [sending, setSending] = useState(false);
   const [showEmojis, setShowEmojis] = useState(false);
-  const [likes, setLikes] = useState(post.likes.length ?? 0);
+  const [likes, setLikes] = useState(post.likes ?? []);
+  console.log("likes:", JSON.stringify(likes, null, 2));
   const [comments, setComments] = useState(post.comments ?? []);
   const [showcomment, setShowComments] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false);
   const [imageLoading, setImageLoading] = useState(true)
   const handleLike = async (post: Post) => {
+    console.log("Here are the likes:", post.likes)
+    console.log(post.likes.some(like => like.userId.toString() === session.user?.id))
     if(post.likes.some(like => like.userId.toString() === session.user?.id)){
+      console.log("Before: ", post.likes)
       try {
         const res = await fetch(`/api/media?username=${creator.username}`, {
           method: 'PUT',
@@ -64,7 +68,10 @@ export function CreatorPostCard({
         if (res.ok) {
           const data = await res.json();
           const updated = data.posts.find((p: Post) => p._id === post._id);
-          if (updated) setLikes(updated.likes);
+          if (updated) {
+            setLikes(updated.likes ?? []);
+            console.log("After: ", updated.likes);
+          }
         } else {
           alert('Failed to unlike post');
         }
@@ -74,30 +81,33 @@ export function CreatorPostCard({
       }
     }
     else {
-    try {
-      const res = await fetch(`/api/media?username=${creator.username}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          postId: post._id,
-          liker: { userId: session.user?.id }
-        })
-      });
-  
-      if (res.ok) {
-        const data = await res.json();
-        const updated = data.posts.find((p: Post) => p._id === post._id);
-        if (updated) setLikes(updated.likes ?? []);
-      } else {
+      try {
+        const res = await fetch(`/api/media?username=${creator.username}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            postId: post._id,
+            liker: { userId: session.user?.id }
+          })
+        });
+      
+        if (res.ok) {
+          const data = await res.json();
+          const updated = data.posts.find((p: Post) => p._id === post._id);
+          console.log("Like API response updated.likes:", updated?.likes);
+          if (updated) setLikes(updated.likes ?? []);
+        } else {
+          alert('Failed to like post');
+        }
+      } catch (error) {
+        console.error(error);
         alert('Failed to like post');
       }
-    } catch (error) {
-      console.error(error);
-      alert('Failed to like post');
-    }
   }
   };
-  
+  const isLikedByCurrentUser = likes.some(
+    (like) => like.userId.toString() === session.user?.id?.toString()
+  );
   const handleToggleComment = () => {
     setCommentOpen((open) => !open);
   };
@@ -190,17 +200,17 @@ export function CreatorPostCard({
           variant="ghost"
           onClick={handleModalOpen}
           size="icon"
-          className="text-gray-400 hover:text-pink-400"
+          className="text-gray-400 hover:text-pink-400 cursor-pointer"
         >
           <MoreHorizontal className="w-5 h-5" />
         </Button>
 
 {/* Animated Dropdown for Post Options */}
 <div className="relative">
-  
-{modalOpen && user.creator && (
+
+{modalOpen && session.user?.creator && (
   <div
-    className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-95 opacity-0 animate-fade-in z-30 cursor-pointer"
+    className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-95 opacity-100 animate-fade-in z-30 cursor-pointer"
   >
     <Link href={`/post/${post._id}/edit`}>
       <Button variant="ghost" className="w-full justify-start text-left hover:bg-gray-100 dark:hover:bg-slate-600 cursor-pointer">
@@ -228,7 +238,7 @@ export function CreatorPostCard({
       
         {modalOpen && !user.creator && (
           <div
-          className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-95 opacity-0 animate-fade-in z-30"
+          className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-100 opacity-100 animate-fade-in z-30"
         >
           <Link href={`/${creator.username}`}>
             <Button variant="ghost" className="w-full justify-start text-left">
@@ -320,23 +330,24 @@ export function CreatorPostCard({
       <Button
             variant="ghost"
             size="icon"
-            className="text-gray-400 hover:text-pink-400"
+            className="text-gray-400 hover:text-pink-400 cursor-pointer"
             onClick={() => handleLike(post)}
           >
             <Heart
-              className={`w-5 h-5 ${
-                post.likes.some(like => like.userId.toString() === session.user?.id)
-                  ? "text-pink-400 fill-pink-400"
-                  : "text-gray-400"
-              }`}
-            />
+  className={`w-5 h-5 ${
+    
+    isLikedByCurrentUser
+      ? "text-pink-400 fill-pink-400"
+      : "text-gray-400"
+  }`}
+/>
           </Button>
-        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-400" onClick={handleToggleComment}>
+        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-400 hover:bg-grey cursor-pointer" onClick={handleToggleComment}>
           <MessageCircle className="w-5 h-5" />
         </Button>
       </div>
       <div className="flex gap-3 text-xs text-gray-400 items-center">
-        <span>{post.likes.length} Likes</span>
+        <span>{likes.length} Likes</span>
         <span
           className="hover:underline"
         >

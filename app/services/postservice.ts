@@ -26,7 +26,7 @@ const update = async (id: string, newData: Partial<Post>): Promise<{ creator: Po
     try {
         console.log('Updating post:', id, newData);
         const response = await axios.put(`${API_URL}/${id}`, newData);
-        return response.data;
+        return response.data.post;
 
     }catch(error){
         console.error('Error updating post:', error);

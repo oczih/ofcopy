@@ -14,6 +14,7 @@ export default {
         background: "var(--color-background)",
         foreground: "var(--color-foreground)",
         primary: "var(--color-primary)",
+        
         "primary-glow": "var(--color-primary-glow)",
         accent: "var(--color-accent)",
         "muted-foreground": "var(--color-muted-foreground)",
