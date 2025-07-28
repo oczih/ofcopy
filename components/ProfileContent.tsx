@@ -2,12 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Creator, MediaPost } from '@/app/types';
-import { TreesIcon } from 'lucide-react';
+import { Creator, MediaPost, Post } from '@/app/types';
+import { MoreHorizontal, TreesIcon } from 'lucide-react';
 import Image from 'next/image';
 import SubscribeModal from '@/components/SubscribeModal';
 import creatorservice from '@/app/services/creatorservice';
 import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from './ui/button';
+import { Avatar, AvatarImage } from '@radix-ui/react-avatar';
+import { AvatarFallback } from './ui/avatar';
+import postservice from '@/app/services/postservice';
 
 function Modal({ open, onClose, title, children }: { open: boolean, onClose: () => void, title: string, children: React.ReactNode }) {
   if (!open) return null;
@@ -30,25 +34,25 @@ function Modal({ open, onClose, title, children }: { open: boolean, onClose: () 
 
 export default function ProfileContent({ 
     user, 
-    posts, 
     purchasedContent, 
     totalSpent, 
     relationshipStatus, 
     isOwnProfile, 
     canViewContent 
   }: UserProfileData) {
-    const handleOpenModal = () => {
-      
-    }
     const [modalOpen, setModalOpen] = useState(false)
     const [creator, setCreator] = useState<Creator | null>(null);
     const [imageLoading, setImageLoading] = useState(true);
     const [subscriptionStep, setSubscriptionStep] = useState<'select' | 'pay'>('select');
+    const [isCreator, setIsCreator] = useState(false)
     useEffect(() => {
       async function fetchCreator() {
         const creators = await creatorservice.get()
         const correct = creators.creators.find(c => c.user === user.id || c.user?.id === user.id)
-        setCreator(correct)
+        if(correct){
+          setCreator(correct)
+          setIsCreator(true)
+        }
       }
     
       if (user?.id) fetchCreator()
@@ -106,20 +110,20 @@ export default function ProfileContent({
                   {isOwnProfile ? (
                     <Link 
                       href="/myprofile/edit" 
-                      className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                      className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
                     >
                       Edit Profile
                     </Link>
                   ) : (
                     <>
                       {relationshipStatus === 'none' && (
-                        <button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+                        <button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform">
                           Follow
                         </button>
                       )}
                       {user && relationshipStatus !== 'subscriber' && (
                         <button 
-                        className="bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                        className="bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
                         onClick={() => setModalOpen(true)}
                         >
                           Subscribe
@@ -157,36 +161,36 @@ export default function ProfileContent({
   )}
 
           {/* Content Tabs */}
-          <ContentTabs 
-            posts={posts}
-            purchasedContent={purchasedContent}
-            isCreator={user.isCreator}
-            isOwnProfile={isOwnProfile}
-            canViewContent={canViewContent}
-          />
+          {creator && (
+            <ContentTabs
+              purchasedContent={purchasedContent}
+              creator={creator}
+              isOwnProfile={isOwnProfile}
+              canViewContent={canViewContent}
+            />
+          )}
         </div>
       </div>
     );
   }
   
-  function ContentTabs({ 
-    posts, 
+  function ContentTabs({  
     purchasedContent, 
-    isCreator, 
+    creator, 
     isOwnProfile, 
     canViewContent 
   }: {
-    posts: MediaPost[];
     purchasedContent: MediaPost[];
-    isCreator: boolean;
+    creator: Creator;
     isOwnProfile: boolean;
     canViewContent: boolean;
   }) {
-    const [activeTab, setActiveTab] = useState(isCreator ? 'posts' : 'purchased');
+    const [activeTab, setActiveTab] = useState(creator ? 'posts' : 'purchased');
   
     const tabs = [
-      ...(isCreator ? [{ id: 'posts', label: 'Posts & Media', count: posts.length }] : []),
-      { id: 'purchased', label: 'Purchased Content', count: purchasedContent.length },
+      ...(creator ? [{ id: 'posts', label: 'Posts', count: creator.posts.length }] : []),
+      ...(canViewContent ? [{ id: 'media', label: 'Media', count: creator.posts.some(p => p.signedUrl) ? creator.posts.filter(p => p.signedUrl).length : 0 }] : []),
+      ...(!creator ? [{id: 'purchased', label: 'Purchased Content', count: purchasedContent.length}] : []),
       ...(isOwnProfile ? [{ id: 'likes', label: 'Likes', count: 0 }] : []),
     ];
   
@@ -217,10 +221,13 @@ export default function ProfileContent({
         {/* Tab Content */}
         <div className="p-6">
           {activeTab === 'posts' && (
-            <PostsGrid posts={posts} canViewContent={canViewContent} />
+            <PostsGrid creator={creator} canViewContent={canViewContent} />
           )}
           {activeTab === 'purchased' && (
             <PostsGrid posts={purchasedContent} canViewContent={true} />
+          )}
+          {activeTab === 'media' && (
+            <MediaGrid creator={creator} canViewContent={canViewContent}  />
           )}
           {activeTab === 'likes' && (
             <div className="text-center text-gray-400 py-12">
@@ -232,9 +239,43 @@ export default function ProfileContent({
       </div>
     );
   }
+  function MediaGrid({
+    creator,
+    canViewContent
+  }: {
+    canViewContent: boolean;
+    creator?: Creator;
+  }) {
+    return (
+      <div className='grid grid-cols-1 gap-6'>
+          {creator?.posts.map(
+            (p) => (
+              /* <div>
+                <Image
+                key=[]
+                src={p.signedUrl}
+                alt={post.caption}
+                fill
+                style={{ objectFit: 'contain' }}
+                sizes="(max-width: 1200px) 100vw, 1200px"
+                />
+              </div> */ 
+            )
+          )}
+      </div>
+    )
+  }
+  function PostsGrid({
+    canViewContent,
+    creator,
+  }: {
+    canViewContent: boolean;
+    creator?: Creator;
+    posts?: MediaPost[];
+  }) {
+    const postList = creator?.posts || [];
   
-  function PostsGrid({ posts, canViewContent }: { posts: MediaPost[]; canViewContent: boolean }) {
-    if (posts.length === 0) {
+    if (postList.length === 0) {
       return (
         <div className="text-center text-gray-400 py-12">
           <div className="text-6xl mb-4">📱</div>
@@ -244,31 +285,124 @@ export default function ProfileContent({
     }
   
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {posts.map((post) => (
-          <PostCard key={post._id} post={post} canViewContent={canViewContent} />
+      <div className={`grid grid-cols-1 gap-6`}>
+        {postList.map((post) => (
+          <PostCard key={post._id} post={post} creator={creator} canViewContent={canViewContent} />
         ))}
       </div>
     );
   }
   
-  function PostCard({ post, canViewContent }: { post: MediaPost; canViewContent: boolean }) {
-    const shouldBlur = !canViewContent && !post.isPublic;
-    
+  
+  function PostCard({ post, canViewContent, creator }: { post: Post; canViewContent: boolean, creator: Creator }) {
+    const shouldBlur = !canViewContent
+    const [imageLoading, setImageLoading] = useState(true)
+    const [modalOpen, setModalOpen] = useState(false)
+    const handleModalOpen = () => {
+      
+      setModalOpen((open) => !open)
+    }
+    const handleDeletePost = (id: string) => {
+      try {
+        postservice.deletePost(id)}
+        catch(error){
+          console.error(error)
+          alert('Failed to delete post')
+        }
+    }
+    const handleRepostContent = () => {
+      
+    };
     return (
-      <div className="bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/20 hover:border-white/40 transition-all duration-300 group hover:transform hover:scale-105 hover:shadow-2xl">
+      <div className="bg-white/10 backdrop-blur-sm max-w-3xl w-full rounded-2xl overflow-hidden border border-white/20 hover:border-white/40 transition-all duration-300 group hover:transform hover:shadow-2xl">
+            <header className="flex items-center gap-4 px-5 py-4 border-b border-white/10 bg-gradient-to-r from-slate-900/80 to-purple-900/80">
+    <div className="flex items-center gap-3 flex-1 min-w-0">
+  <Link href={`/${creator.username}`}>
+    <Avatar className="w-12 h-12">
+      <AvatarImage src={creator.avatar} alt={creator.name || creator.username} />
+      <AvatarFallback>{creator.name?.[0] || creator.username?.[0]}</AvatarFallback>
+    </Avatar>
+  </Link>
+
+  <div className="min-w-0">
+    <Link href={`/${creator.username}`}>
+    <div className="font-semibold text-white truncate">{creator.name}</div>
+    <div className="text-xs text-gray-400 truncate">@{creator.username}</div>
+    </Link>
+  </div>
+</div>
+      
+      <div className="flex flex-col items-end gap-1 text-xs text-gray-400">
+        <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+        <Button
+          variant="ghost"
+          onClick={handleModalOpen}
+          size="icon"
+          className="text-gray-400 hover:text-pink-400 cursor-pointer"
+        >
+          <MoreHorizontal className="w-5 h-5" />
+        </Button>
+
+{/* Animated Dropdown for Post Options */}
+<div className="relative">
+
+{modalOpen && canViewContent && (
+  <div
+    className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-95 opacity-100 animate-fade-in z-30 cursor-pointer"
+  >
+    <Link href={`/post/${post._id}/edit`}>
+      <Button variant="ghost" className="w-full justify-start text-left hover:bg-gray-100 dark:hover:bg-slate-600 cursor-pointer">
+        Edit Post
+      </Button>
+    </Link>
+    <Button
+      variant="ghost"
+      onClick={handleRepostContent}
+      className="w-full justify-start text-left hover:bg-gray-100 dark:hover:bg-slate-600 cursor-pointer"
+    >
+      Repost Content
+    </Button>
+    <Button
+      variant="ghost"
+      onClick={() => handleDeletePost(post._id)}
+      className="w-full justify-start text-left text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
+    >
+      Delete Post
+    </Button>
+  </div>
+)}
+
+</div>
+      
+        {modalOpen && !canViewContent && (
+          <div
+          className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-100 opacity-100 animate-fade-in z-30"
+        >
+          <Link href={`/${creator.username}`}>
+            <Button variant="ghost" className="w-full justify-start text-left">
+              Go to creator profile
+            </Button>
+          </Link>
+
+        </div>
+        ) }
+      </div>
+    </header>
         <div className="aspect-square relative overflow-hidden">
           {post.type?.startsWith('image') ? (
-            <img
-              src={canViewContent ? `/api/media/get-media?key=${encodeURIComponent(post.s3Key)}` : '/blurred.png'}
-              alt={post.title}
-              className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-110 ${
-                shouldBlur ? 'blur-lg' : ''
-              }`}
-            />
+            <Image
+            src={post.signedUrl}
+            alt={post.caption}
+            fill
+            onLoad={() => setImageLoading(false)}
+            onError={() => setImageLoading(false)}
+            style={{ objectFit: 'contain' }}
+            sizes="(max-width: 1200px) 100vw, 1200px"
+            className={`transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"}`}
+          />
           ) : post.type?.startsWith('video') ? (
             <video
-              src={canViewContent ? `/api/media/get-media?key=${encodeURIComponent(post.s3Key)}` : ''}
+              src={canViewContent ? post.signedUrl : ''}
               className={`w-full h-full object-cover ${shouldBlur ? 'blur-lg' : ''}`}
               poster="/video-placeholder.png"
             />

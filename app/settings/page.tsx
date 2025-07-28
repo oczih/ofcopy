@@ -37,7 +37,7 @@ function SettingsApp() {
 
   if (status === "loading") return null;
   if (!session?.user) {
-    if (typeof window !== "undefined") router.replace("/");
+    if (typeof window !== "undefined") router.replace("/login");
     return null;
   }
 

@@ -8,6 +8,9 @@ import User from '@/app/models/usermodel';
 import Purchase from '@/app/models/purchasemodel';
 import AppWrapper from '@/components/AppWrapper';
 import ProfileContent from '@/components/ProfileContent';
+import creatorservice from '../services/creatorservice';
+import { useEffect, useState } from 'react';
+import { Creator } from '../types';
 
 const RESERVED_ROUTES = [
   'discover', 'messages', 'settings', 'subscriptions', 'notifications', 'api', 'components',
@@ -29,24 +32,18 @@ export default async function UserProfilePage({ params }: { params: { username: 
   if (!user) notFound();
 
   const isOwnProfile = session?.user?.username === user.username;
-  if (!session && !user.isCreator) redirect('/signup');
 
-  let posts = [];
   let purchasedContent = [];
   let totalSpent = 0;
   let relationshipStatus = 'none';
   let canViewContent = isOwnProfile;
-
-  if (user.isCreator) {
-    posts = await Media.find({ creatorId: user._id }).sort({ createdAt: -1 });
-
+  if (user.creator) {
     if (!isOwnProfile && session?.user?.id) {
       relationshipStatus = await getUserRelationshipStatus(session.user.id, user._id.toString());
       totalSpent = await getTotalSpentOnCreator(session.user.id, user._id.toString());
       canViewContent = ['subscriber', 'follower'].includes(relationshipStatus);
     }
   }
-
   if (session?.user?.id) {
     const purchases = await Purchase.find({ userId: session.user.id }).populate('mediaId');
     purchasedContent = purchases.map((p: any) => p.mediaId).filter(Boolean);
@@ -56,7 +53,7 @@ export default async function UserProfilePage({ params }: { params: { username: 
     <AppWrapper>
       <ProfileContent
         user={JSON.parse(JSON.stringify(user))}
-        posts={JSON.parse(JSON.stringify(posts))}
+        
         purchasedContent={JSON.parse(JSON.stringify(purchasedContent))}
         totalSpent={totalSpent}
         relationshipStatus={relationshipStatus}
