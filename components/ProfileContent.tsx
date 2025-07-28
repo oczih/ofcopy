@@ -1,8 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { MediaPost } from '@/app/types';
+import { Creator, MediaPost } from '@/app/types';
+import { TreesIcon } from 'lucide-react';
+import Image from 'next/image';
+import SubscribeModal from '@/components/SubscribeModal';
+import creatorservice from '@/app/services/creatorservice';
+import { Skeleton } from "@/components/ui/skeleton"
+
+function Modal({ open, onClose, title, children }: { open: boolean, onClose: () => void, title: string, children: React.ReactNode }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-8 w-full max-w-lg relative animate-scale-in">
+        <button
+          className="absolute top-3 right-3 text-gray-400 hover:text-pink-400"
+          onClick={onClose}
+          aria-label="Close"
+        >
+          ✕
+        </button>
+        <h2 className="text-2xl font-bold text-white mb-4 text-center">{title}</h2>
+        <div className="text-gray-300 text-sm max-h-[60vh] overflow-y-auto">{children}</div>
+      </div>
+    </div>
+  );
+}
 
 export default function ProfileContent({ 
     user, 
@@ -13,6 +37,23 @@ export default function ProfileContent({
     isOwnProfile, 
     canViewContent 
   }: UserProfileData) {
+    const handleOpenModal = () => {
+      
+    }
+    const [modalOpen, setModalOpen] = useState(false)
+    const [creator, setCreator] = useState<Creator | null>(null);
+    const [imageLoading, setImageLoading] = useState(true);
+    const [subscriptionStep, setSubscriptionStep] = useState<'select' | 'pay'>('select');
+    useEffect(() => {
+      async function fetchCreator() {
+        const creators = await creatorservice.get()
+        const correct = creators.creators.find(c => c.user === user.id || c.user?.id === user.id)
+        setCreator(correct)
+      }
+    
+      if (user?.id) fetchCreator()
+    }, [user])
+  console.log("Creator", creator)
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
         <div className="max-w-6xl mx-auto px-4 py-8">
@@ -21,12 +62,28 @@ export default function ProfileContent({
             <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
               {/* Profile Image */}
               <div className="relative">
-                <img
-                  src={user.image || '/default-avatar.png'}
-                  alt={user.name || user.username}
-                  className="w-32 h-32 lg:w-40 lg:h-40 rounded-full object-cover border-4 border-gradient-to-r from-pink-400 to-purple-400 shadow-2xl"
-                />
-                {user.isCreator && (
+              {!creator ? (
+          <Skeleton className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700" />
+        ) : creator.image ? (
+          <>
+            <Image
+              src={creator.image}
+              alt={creator.image || creator.username || "User profile image"}
+              fill
+              className="rounded-full border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
+              onLoad={() => setImageLoading(false)}
+              onError={() => setImageLoading(false)}
+            />
+            {imageLoading && (
+              <Skeleton className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700 absolute top-0 left-0" />
+            )}
+          </>
+        ) : (
+          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-400 text-white font-bold text-lg">
+            {creator.name?.charAt(0).toUpperCase() || "U"}
+          </div>
+        )}
+                {creator && (
                   <div className="absolute -bottom-2 -right-2 bg-pink-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
                     Creator
                   </div>
@@ -40,8 +97,8 @@ export default function ProfileContent({
                 </h1>
                 <p className="text-xl text-purple-200 mb-4">@{user.username}</p>
                 
-                {user.bio && (
-                  <p className="text-gray-300 mb-6 max-w-2xl">{user.bio}</p>
+                {creator?.bio && (
+                  <p className="text-gray-300 mb-6 max-w-2xl">{creator?.bio}</p>
                 )}
   
                 {/* Action Buttons */}
@@ -60,15 +117,17 @@ export default function ProfileContent({
                           Follow
                         </button>
                       )}
-                      {user.isCreator && relationshipStatus !== 'subscriber' && (
-                        <button className="bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+                      {user && relationshipStatus !== 'subscriber' && (
+                        <button 
+                        className="bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                        onClick={() => setModalOpen(true)}
+                        >
                           Subscribe
                         </button>
                       )}
                     </>
                   )}
                 </div>
-  
                 {/* Stats */}
                 {!isOwnProfile && user.isCreator && (
                   <div className="mt-6 flex gap-6 text-center lg:text-left">
@@ -89,7 +148,14 @@ export default function ProfileContent({
               </div>
             </div>
           </div>
-  
+          {modalOpen && creator && (
+    <SubscribeModal 
+      open={modalOpen} 
+      onClose={() => setModalOpen(false)} 
+      creator={creator} 
+    />
+  )}
+
           {/* Content Tabs */}
           <ContentTabs 
             posts={posts}
@@ -254,3 +320,4 @@ export default function ProfileContent({
       </div>
     );
   }
+ 

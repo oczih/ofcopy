@@ -66,6 +66,7 @@ export interface UserDocument {
   emailVerificationToken: string;
   emailVerificationExpires: Date;
   lastVerificationEmailSentAt: Date;
+  lastPasswordResetSentAt: Date;
 }
 
 
@@ -197,6 +198,7 @@ const userSchema = new Schema<UserDocument>({
     type: Date,
     default: null
   },
+  lastPasswordResetSentAt: { type: Date, default: null },
 }, { timestamps: true });
 
 userSchema.set('toJSON', {

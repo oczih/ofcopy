@@ -10,7 +10,7 @@ interface CreatorCardProps {
 
 export const CreatorCard = ({ creator }: CreatorCardProps) => {
   return (
-    <div className="group bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl p-6 border border-white/20 hover:border-pink-500/30 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-pink-500/20 relative overflow-hidden animate-scale-in">
+    <div className="group bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl p-6 border border-white/20 hover:border-pink-500/30 transition-all duration-200 hover:scale-101 hover:shadow-2xl hover:shadow-pink-500/20 relative overflow-hidden animate-scale-in">
       {/* Animated background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-purple-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-3xl"></div>
       

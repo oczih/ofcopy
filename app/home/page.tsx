@@ -163,7 +163,7 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: session.user.email }),
+        body: JSON.stringify({ email: session?.user.email }),
       });
 
       const data = await response.json();
@@ -335,9 +335,9 @@ function App() {
 
             {/* Enhanced User Subscriptions Section */}
               <div className="space-y-6">
-                {session.user.subscriptions && session.user.subscriptions.length > 0 && (
+                {session?.user.subscriptions && session?.user.subscriptions.length > 0 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {session.user.subscriptions.slice(0, 6).map((subscription) => (
+                    {session?.user.subscriptions.slice(0, 6).map((subscription) => (
                       <div 
                         key={subscription.creatorId} 
                         className="group bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden hover:bg-white/10 transition-all hover:scale-[1.02] shadow-2xl hover:shadow-pink-500/10 duration-300"
