@@ -1,5 +1,4 @@
-// ✅ Server Component
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { connectDB } from '@/lib/mongoose';
 import Media from '@/app/models/mediamodel';
 import { getServerSession } from 'next-auth';
@@ -8,9 +7,7 @@ import User from '@/app/models/usermodel';
 import Purchase from '@/app/models/purchasemodel';
 import AppWrapper from '@/components/AppWrapper';
 import ProfileContent from '@/components/ProfileContent';
-import creatorservice from '../services/creatorservice';
-import { useEffect, useState } from 'react';
-import { Creator } from '../types';
+import CreatorModel from '@/app/models/creatormodel'; // Assuming this is your creator model
 
 const RESERVED_ROUTES = [
   'discover', 'messages', 'settings', 'subscriptions', 'notifications', 'api', 'components',
@@ -22,7 +19,6 @@ const RESERVED_ROUTES = [
 
 export default async function UserProfilePage({ params }: { params: { username: string } }) {
   await connectDB();
-
   const session = await getServerSession(authOptions);
   const username = params.username.toLowerCase();
 
@@ -30,20 +26,37 @@ export default async function UserProfilePage({ params }: { params: { username: 
 
   const user = await User.findOne({ username });
   if (!user) notFound();
-
+  console.log("useri: ",user)
   const isOwnProfile = session?.user?.username === user.username;
 
-  let purchasedContent = [];
+  let relationshipStatus: 'subscriber' | 'follower' | 'none' = 'none';
   let totalSpent = 0;
-  let relationshipStatus = 'none';
-  let canViewContent = isOwnProfile;
+  let purchasedContent = [];
+  let creator = null;
+
   if (user.creator) {
-    if (!isOwnProfile && session?.user?.id) {
-      relationshipStatus = await getUserRelationshipStatus(session.user.id, user._id.toString());
-      totalSpent = await getTotalSpentOnCreator(session.user.id, user._id.toString());
-      canViewContent = ['subscriber', 'follower'].includes(relationshipStatus);
+    creator = await CreatorModel.findOne({ user: user._id });
+  
+    const viewerId = session?.user?.id;
+  
+    // Determine relationship regardless of whose profile it is
+    if (creator && viewerId) {
+      const isSubscriber = Array.isArray(creator.subscriptions) &&
+        creator.subscriptions.some(sub => sub.userId?.toString() === viewerId);
+  
+      const isFollower = Array.isArray(creator.followers) &&
+        creator.followers.some(fol => fol.userId?.toString() === viewerId);
+  
+      if (isSubscriber) {
+        relationshipStatus = 'subscriber';
+      } else if (isFollower) {
+        relationshipStatus = 'follower';
+      }
+  
+      totalSpent = await getTotalSpentOnCreator(viewerId, creator._id.toString());
     }
   }
+
   if (session?.user?.id) {
     const purchases = await Purchase.find({ userId: session.user.id }).populate('mediaId');
     purchasedContent = purchases.map((p: any) => p.mediaId).filter(Boolean);
@@ -53,23 +66,16 @@ export default async function UserProfilePage({ params }: { params: { username: 
     <AppWrapper>
       <ProfileContent
         user={JSON.parse(JSON.stringify(user))}
-        
         purchasedContent={JSON.parse(JSON.stringify(purchasedContent))}
         totalSpent={totalSpent}
         relationshipStatus={relationshipStatus}
         isOwnProfile={isOwnProfile}
-        canViewContent={canViewContent}
       />
     </AppWrapper>
   );
-}
-
-async function getUserRelationshipStatus(viewerId: string, creatorId: string) {
-  return 'subscriber'; // replace with your own logic
 }
 
 async function getTotalSpentOnCreator(viewerId: string, creatorId: string) {
   const purchases = await Purchase.find({ userId: viewerId, creatorId });
   return purchases.reduce((sum: number, p: { amount: number }) => sum + p.amount, 0);
 }
-

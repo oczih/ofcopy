@@ -41,7 +41,12 @@ export type Notification = {
   date: Date,
   seen: boolean
 }
-
+export interface Follower {
+  userId: string;
+  username: string;
+  userImage?: string;
+  followingDate: Date;
+}
 export type Subscription = {
   creatorId: string;
   creatorName: string;

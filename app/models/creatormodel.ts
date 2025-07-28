@@ -5,8 +5,14 @@ export interface Subscription {
   username: string;
   userImage?: string;
   subscribedAt: Date;
+  subscriptionPrice: number;
 }
-
+export interface Follower {
+  userId: mongoose.Types.ObjectId;
+  username: string;
+  userImage?: string;
+  followingDate: Date;
+}
 export interface CreatorDocument extends mongoose.Document {
   username: string;
   _id: string;
@@ -18,10 +24,10 @@ export interface CreatorDocument extends mongoose.Document {
   oauthProvider?: string;
   oauthId?: string;
   lastUsernameChange?: Date;
-  subscribers?: number;
   price?: number;
   category?: string;
-  subscription?: Subscription[];
+  subscriptions?: Subscription[];
+  followers: Follower[];
   user: Types.ObjectId;  // Link to OFUser
   posts?: PostDocument[];  // Virtual populated posts
 }
@@ -41,14 +47,20 @@ const creatorSchema = new Schema<CreatorDocument>({
   oauthProvider: { type: String },
   oauthId: { type: String },
   lastUsernameChange: { type: Date, default: '' },
-  subscribers: { type: Number, default: 0 },
   price: { type: Number, default: 9.99 },
   category: { type: String, default: 'General' },
-  subscription: [{
+  subscriptions: [{
     userId: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true },
     username: { type: String, required: true },
     userImage: { type: String },
-    subscribedAt: { type: Date, default: Date.now }
+    subscribedAt: { type: Date, default: Date.now },
+    subscriptionPrice: {type: Number, required: true}
+  }],
+  followers: [{
+    userId: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true },
+    username: { type: String, required: true },
+    userImage: { type: String },
+    followedAt: { type: Date, default: Date.now }
   }],
   user: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true }
 }, {
