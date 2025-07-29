@@ -69,7 +69,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       const body = await request.json();
       const {
         name, username, password, email,
-        age,
+        age, image
       } = body;
   
       const user = await Creator.findById(id);
@@ -99,7 +99,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       if (password !== undefined) user.password = password;
       if (email !== undefined) user.email = email;
       if (age !== undefined) user.age = age;
-  
+      if (image !== undefined) user.image = image;
       await user.save();
   
       return NextResponse.json({ user });
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, username, password, email, age } = body;
+    const { name, username, password, email, age, image } = body;
 
     // Basic validation
     if (!name || !username || !password || !email) {
@@ -138,6 +138,7 @@ export async function POST(request: NextRequest) {
       password,
       email,
       age,
+      image,
       lastUsernameChange: new Date(0), // Set to epoch for new users
     });
 

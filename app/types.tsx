@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 export type User = {
     id: string,
     avatar: string;
@@ -11,6 +13,7 @@ export type User = {
     lastUsernameChange: Date
     isUsernameChangeBlocked: boolean
     accessToken?: string
+    oauthProvider: string;
     subscriptions?: Subscription[]
     notifications?: Notification[]
     creator?: boolean
@@ -22,14 +25,25 @@ export type User = {
     lastVerificationEmailSentAt: Date;
     lastPasswordResetSentAt: Date;
   }
-  
+  export interface Subscriber {
+    userId: mongoose.Types.ObjectId;
+    username: string;
+    userImage?: string;
+    subscribedAt: Date;
+    subscriptionPrice: number;
+    status: 'active' | 'cancelled' | 'expired';
+    nextBillingDate?: Date;
+    autoRenew: boolean;
+  }
+
 export type Creator = {
     id: string;
     name: string;
     username: string;
-    avatar: string;
-    subscribers: number;
-    followers: number
+    image: string;
+    bio: string;
+    subscribers: Subscriber[];
+    followers: Follower[]
     isSubscribed: boolean;
     price: number;
     category: string;
@@ -45,7 +59,7 @@ export interface Follower {
   userId: string;
   username: string;
   userImage?: string;
-  followingDate: Date;
+  followedAt: Date;
 }
 export type Subscription = {
   creatorId: string;
@@ -110,6 +124,7 @@ declare module "next-auth" {
     hasAccess?: boolean;
     email?: string;
     lastUsernameChange?: Date;
+    oauthProvider: string;
     isUsernameChangeBlocked?: boolean;
     accessToken?: string;
     subscriptions?: Subscription[] 
@@ -118,7 +133,7 @@ declare module "next-auth" {
     following?: Following[]
     comments?: Comment[];
     name?: string;
-    image?: string;
+    avatar?: string;
     emailVerified: boolean;
     emailVerificationToken: string;
     emailVerificationExpires: Date;

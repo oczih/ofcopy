@@ -138,7 +138,7 @@ export const authOptions: NextAuthOptions = {
             email: fallbackEmail,
             username: uniqueUsername,
             name: user.name,
-            image: user.image,
+            avatar: user.avatar,
             oauthProvider: "twitter",
             oauthId: twitterId,
             emailVerified: true, // OAuth emails are pre-verified
@@ -229,7 +229,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = user._id.toString();
         session.user.username = user.username;
         session.user.email = user.email;
-        session.user.image = user.image;
+        session.user.avatar = user.avatar;
         session.user.name = user.name;
         session.user.age = user.age;
         session.user.googleId = user.googleId;

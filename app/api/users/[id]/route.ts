@@ -89,7 +89,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       password,
       email,
       age,
-      following // Accept following updates from client
+      following,
+      avatar // Accept following updates from client
     } = body;
 
     const user = await OFUser.findById(id);
@@ -119,7 +120,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (password !== undefined) user.password = password;
     if (email !== undefined) user.email = email;
     if (age !== undefined) user.age = age;
-
+    if (avatar !== undefined) user.avatar = avatar;
     // Update following array if provided
     if (following !== undefined) {
       user.following = following;

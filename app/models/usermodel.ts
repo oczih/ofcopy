@@ -48,7 +48,7 @@ export interface UserDocument {
   email: string
   name: string
   googleId: string | null,
-  image?: string;
+  avatar?: string;
   oauthProvider?: string;
   oauthId?: string;
   hasAccess?: boolean;
@@ -94,7 +94,7 @@ const userSchema = new Schema<UserDocument>({
     type: String,
     default: null,
   },
-  image: { type: String },
+  avatar: { type: String },
   oauthProvider: { type: String },
   oauthId: { type: String },
   hasAccess: {

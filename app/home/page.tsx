@@ -252,7 +252,7 @@ function App() {
         )}
         
 
-        {!session?.user?.emailVerified && showBanner && (
+        {!session?.user?.emailVerified && showBanner && session?.user.oauthProvider === "credentials" &&  (
       <div className="flex justify-center z-30 px-4">
         <div className="w-full max-w-md bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-lg relative overflow-hidden group text-sm">
           <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-cyan-500/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -262,7 +262,7 @@ function App() {
             <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-2" />
             <h1 className="text-base font-semibold text-white mb-1">Check Your Email</h1>
             <p className="text-gray-300">
-              We've sent a link to <strong className="text-pink-400">{session.user.email}</strong>
+              We've sent a link to <strong className="text-pink-400">{session?.user.email}</strong>
             </p>
           </div>
           

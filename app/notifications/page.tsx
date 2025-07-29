@@ -13,7 +13,6 @@ const notificationMessages: Record<Notification["type"], (n: Notification) => st
   like: () => "Someone liked your post!",
   newfollower: () => "You have a new follower!",
 };
-
 function Notifications() {
   const { data: session } = useSession();
   const user = session?.user as User | undefined;

@@ -109,10 +109,10 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
       <div className="relative w-10 h-10">
         {!session?.user ? (
           <Skeleton className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700" />
-        ) : session.user.image ? (
+        ) : session.user.avatar ? (
           <>
             <Image
-              src={session.user.image}
+              src={session.user.avatar}
               alt={session.user.name || session.user.username || "User profile image"}
               fill
               className="rounded-full border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
@@ -163,11 +163,11 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
   {creator && session?.user && !isCollapsed && (
     <div className="flex gap-8 mt-4 justify-center items-center opacity-100 transition-opacity duration-300">
       <div className="flex flex-col items-center">
-        <span className="text-white font-bold text-lg">{creator.followers ?? 0}</span>
+        <span className="text-white font-bold text-lg">{creator.followers.length ?? 0}</span>
         <span className="text-xs text-gray-400">Followers</span>
       </div>
       <div className="flex flex-col items-center">
-        <span className="text-pink-400 font-bold text-lg">{creator.subscribers ?? 0}</span>
+        <span className="text-pink-400 font-bold text-lg">{creator.subscribers.length ?? 0}</span>
         <span className="text-xs text-gray-400">Subscribers</span>
       </div>
     </div>

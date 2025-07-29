@@ -368,7 +368,7 @@ export function CreatorPostCard({
                 <div key={comment.commentId || idx} className="flex items-start gap-3 bg-slate-800/60 rounded-lg p-3">
                   <div className="flex items-center gap-2 min-w-0">
                       <Avatar className="w-8 h-8">
-                        <AvatarImage src={userObj?.image || ''} alt={userObj?.name || userObj?.username || 'User'} />
+                        <AvatarImage src={userObj?.avatar || ''} alt={userObj?.name || userObj?.username || 'User'} />
                         <AvatarFallback>{userObj?.name?.[0] || userObj?.username?.[0] || 'U'}</AvatarFallback>
                       </Avatar>
                       <span className="text-xs text-pink-300 font-semibold truncate">{comment.username}</span>
@@ -386,9 +386,9 @@ export function CreatorPostCard({
         </div>
         {/* Comment Input */}
         <div className="flex w-full items-start gap-3">
-              {session?.user?.image && (
+              {session?.user?.avatar && (
                 <Avatar className="w-8 h-8 mt-1">
-                  <AvatarImage src={session.user.image} alt={session.user.name || 'User'} />
+                  <AvatarImage src={session.user.avatar} alt={session.user.name || 'User'} />
                   <AvatarFallback>{session.user.name?.[0] || 'U'}</AvatarFallback>
                 </Avatar>
               )}

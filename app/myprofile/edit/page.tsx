@@ -1,36 +1,61 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Sidebar } from '@/components/Sidebar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import AppWrapper from '@/components/AppWrapper';
-import { useSession } from 'next-auth/react';
+import { SessionProvider, useSession } from 'next-auth/react';
+import Cropper from 'react-easy-crop';
+import { ZoomIn, ZoomOut, X } from 'lucide-react';
+import getCroppedImg from '@/lib/utils'
+import userservice from '@/app/services/userservice';
+import { getDownloadUrl, uploadContent } from '@/app/services/uploadmediaservice';
 
 export default function EditProfilePage() {
     return (
         <AppWrapper>
+          <SessionProvider>
             <EditProfile/>
+            </SessionProvider>
         </AppWrapper>
     )
 }
 
 function EditProfile() {
-  const { data: session } = useSession()
-  const [profilePic, setProfilePic] = useState(session?.user?.image || '/default-profile.png'); // Placeholder image
+  const { data: session } = useSession()  
+  const [profilePic, setProfilePic] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState(null);
-
-  function handleFileChange(e) {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      const previewURL = URL.createObjectURL(file);
-      setProfilePic(previewURL);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [croppedImage, setCroppedImage] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  console.log("profpic", profilePic)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  useEffect(() => {
+    if (session?.user?.avatar) {
+      setProfilePic(session.user.avatar);
+    } else if (session?.user?.name) {
+      setProfilePic(null); // Will show placeholder fallback
     }
+  }, [session]);
+  const handleFileChange = (key: string, file: File | null) => {
+    if (file) {
+      setSelectedImage(file);
+      setCropModalOpen(true);
+    }
+  };
+  function blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   }
-
   const links = [
     {
       title: 'Profile Info',
@@ -52,37 +77,37 @@ function EditProfile() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
       <div className="flex max-w-5xl mx-auto px-4 py-12 gap-8">
-        <Sidebar />
 
         <main className="flex-1 flex flex-col items-center gap-8">
           <h1 className="text-3xl font-bold text-white">Edit Profile</h1>
 
           {/* Profile Picture Section */}
           <div className="flex flex-col items-center">
-            <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-pink-500 shadow-lg mb-3">
-              <Image
-                src={profilePic}
-                alt="Profile Picture"
-                fill
-                className="object-cover z-10"
+            
+          <label htmlFor="profilePicUpload" className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-pink-500 shadow-lg mb-3 cursor-pointer">
+              <input
+                id="profilePicUpload"
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleFileChange("profilePic", e.target.files?.[0] || null)}
+                className="hidden"
               />
-              <label className="absolute bottom-0 right-0 bg-pink-500 p-1 rounded-full cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="white"
-                  className="w-5 h-5"
-                >
-                  <path d="M5 20h14a1 1 0 0 0 1-1v-8h-3.586l-2.707-2.707a1 1 0 0 0-1.414 0L9.586 11H5v8a1 1 0 0 0 1 1zm14-12h-3.586l-2.707-2.707a1 1 0 0 0-1.414 0L9.586 8H5V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v4z" />
-                </svg>
-              </label>
-            </div>
+              
+              {croppedImage ? (
+                <Image src={croppedImage} alt="Profile Picture" fill className="object-cover z-10" />
+              ) : profilePic ? (
+                <Image src={profilePic} width={500} height={500}  alt="Profile Picture" className="object-cover z-10" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-700 text-white text-3xl">
+                  {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
+                </div>
+              )}
+
+              
+            </label>
+
+              
+            
             <span className="text-gray-300 text-sm">Click icon to change photo</span>
           </div>
 
@@ -97,7 +122,7 @@ function EditProfile() {
                   <h2 className="text-xl font-semibold">{link.title}</h2>
                   <p className="text-sm text-gray-300">{link.description}</p>
                   <Link href={link.href}>
-                    <Button className="bg-gradient-to-r from-pink-500 to-purple-600 text-white mt-2">
+                    <Button className="bg-gradient-to-r from-pink-500 to-purple-600 text-white mt-2  cursor-pointer">
                       Edit {link.title}
                     </Button>
                   </Link>
@@ -105,6 +130,117 @@ function EditProfile() {
               </Card>
             ))}
           </div>
+          {cropModalOpen && selectedImage && (
+      <>
+        <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm" />
+
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="bg-gradient-to-br from-purple-900/95 to-slate-900/95 p-8 rounded-3xl shadow-2xl max-w-lg w-full border border-white/20">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h3 className="text-xl font-bold text-white">Crop Your Photo</h3>
+            <p className="text-gray-300 text-sm">Adjust your profile picture</p>
+          </div>
+          <button
+            onClick={() => setCropModalOpen(false)}
+            className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="relative w-full h-80 rounded-xl overflow-hidden mb-6 bg-black/20 border border-white/10">
+          <Cropper
+            image={URL.createObjectURL(selectedImage)}
+            crop={crop}
+            zoom={zoom}
+            aspect={1}
+            onCropChange={setCrop}
+            onZoomChange={setZoom}
+            onCropComplete={(_, areaPixels) => setCroppedAreaPixels(areaPixels)}
+          />
+        </div>
+
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-gray-300">Zoom</span>
+            <span className="text-sm text-white font-medium">{Math.round(zoom * 100)}%</span>
+          </div>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setZoom(Math.max(1, zoom - 0.1))}
+              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <input
+              type="range"
+              min={1}
+              max={3}
+              step={0.1}
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="flex-1 h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
+            />
+            <button
+              onClick={() => setZoom(Math.min(3, zoom + 0.1))}
+              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex space-x-3">
+          <button
+            className="flex-1 px-6 py-3 rounded-xl text-sm font-medium bg-white/10 text-white hover:bg-white/20 cursor-pointer"
+            onClick={() => setCropModalOpen(false)}
+          >
+            Cancel
+          </button>
+          <button
+              className="flex-1 px-6 py-3 rounded-xl cursor-pointer text-sm font-medium bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700"
+              onClick={async () => {
+                try {
+                  if (!session?.user?.id) throw new Error("User ID not found");
+
+                  // 1. Get cropped image as a Blob
+                  const croppedBlob = await getCroppedImg(
+                    URL.createObjectURL(selectedImage),
+                    croppedAreaPixels
+                  );
+
+                  // 2. Convert Blob to File (to reuse existing uploadContent logic)
+                  const croppedFile = new File([croppedBlob], "avatar.jpg", { type: "image/jpeg" });
+
+                  // 3. Upload to S3
+                  const s3Key = await uploadContent(croppedFile);
+
+                  // 4. Construct public S3 URL (via your backend or using known format)
+                  const avatarUrl = await getDownloadUrl(s3Key); // or `https://yourbucket.s3.amazonaws.com/${s3Key}`
+
+                  // 5. Save avatar URL to user profile
+                  const res = await userservice.update(session.user.id, {
+                    avatar: avatarUrl,
+                  });
+                  console.log(res)
+                  // 6. Update frontend state
+                  setCroppedImage(avatarUrl);
+                  setProfilePic(avatarUrl);
+                  setCropModalOpen(false);
+                } catch (err) {
+                  console.error("Failed to update user avatar:", err);
+                }
+              }}
+            >
+              Apply Changes
+            </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
         </main>
       </div>
     </div>

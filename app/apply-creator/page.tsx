@@ -12,6 +12,7 @@ import userservice from "../services/userservice";
 import Cropper from 'react-easy-crop';
 import getCroppedImg from '@/lib/utils'
 import { uploadContent } from "@/app/services/uploadmediaservice";
+import Image from "next/image";
 
 export default function ApplyCreator() {
   return (
@@ -202,23 +203,29 @@ function ApplyCreatorPage() {
       formDataToSend.append("username", session.user.name || session.user.email || "");
 
       const uploadPromises = files.map(async (file) => {
-            const s3Key = await uploadContent(file);
-            if (!s3Key) {
-              console.error("Failed to get s3Key for file:", file.name);
-              return;
-            }
-            formData.s3Key = s3Key
-            const response = await fetch(`/api/creators/apply`, {
-              method: "POST",
-              body: formDataToSend
-            });
+        const s3Key = await uploadContent(file);
       
-            if (!response.ok) {
-              console.error('Post creation with file failed');
-            }
-          });
+        if (!s3Key) {
+          console.error("Failed to get s3Key for file:", file.name);
+          return;
+        }
       
-          await Promise.all(uploadPromises);
+        const formDataToSend = new FormData();
+        formDataToSend.append("s3Key", s3Key);
+        formDataToSend.append("fileName", file.name);
+        // Add any other fields needed for your /apply endpoint
+      
+        const response = await fetch(`/api/creators/apply`, {
+          method: "POST",
+          body: formDataToSend,
+        });
+      
+        if (!response.ok) {
+          console.error('Post creation with file failed');
+        }
+      });
+      
+      await Promise.all(uploadPromises);
       setSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -581,7 +588,7 @@ function ApplyCreatorPage() {
                     className="relative w-40 h-40 flex items-center justify-center rounded-full bg-white/10 border-2 border-dashed cursor-pointer hover:bg-white/20 transition"
                   >
                     {formData.profilePic ? (
-                      <img
+                      <Image
                         src={URL.createObjectURL(formData.profilePic)}
                         alt="Profile preview"
                         className="w-full h-full rounded-full object-cover"

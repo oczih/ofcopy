@@ -1,17 +1,20 @@
 import mongoose, { Schema, model, Types } from "mongoose";
 import Post, {PostDocument} from "./postmodel"; // Assuming you have PostDocument exported
-export interface Subscription {
+export interface Subscriber {
   userId: mongoose.Types.ObjectId;
   username: string;
   userImage?: string;
   subscribedAt: Date;
   subscriptionPrice: number;
+  status: 'active' | 'cancelled' | 'expired';
+  nextBillingDate?: Date;
+  autoRenew: boolean;
 }
 export interface Follower {
   userId: mongoose.Types.ObjectId;
   username: string;
   userImage?: string;
-  followingDate: Date;
+  followedAt: Date;
 }
 export interface CreatorDocument extends mongoose.Document {
   username: string;
@@ -19,6 +22,7 @@ export interface CreatorDocument extends mongoose.Document {
   name: string;
   email: string;
   password: string;
+  bio: string;
   googleId: string | null;
   image?: string;
   oauthProvider?: string;
@@ -26,7 +30,7 @@ export interface CreatorDocument extends mongoose.Document {
   lastUsernameChange?: Date;
   price?: number;
   category?: string;
-  subscriptions?: Subscription[];
+  subscriptions?: Subscriber[];
   followers: Follower[];
   user: Types.ObjectId;  // Link to OFUser
   posts?: PostDocument[];  // Virtual populated posts
@@ -48,13 +52,17 @@ const creatorSchema = new Schema<CreatorDocument>({
   oauthId: { type: String },
   lastUsernameChange: { type: Date, default: '' },
   price: { type: Number, default: 9.99 },
+  bio: {type: String, default: ''},
   category: { type: String, default: 'General' },
   subscriptions: [{
     userId: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true },
     username: { type: String, required: true },
     userImage: { type: String },
     subscribedAt: { type: Date, default: Date.now },
-    subscriptionPrice: {type: Number, required: true}
+    subscriptionPrice: { type: Number, required: true },
+    status: { type: String, enum: ['active', 'cancelled', 'expired'], required: true },
+    nextBillingDate: { type: Date, default: null },
+    autoRenew: { type: Boolean, default: true }
   }],
   followers: [{
     userId: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true },

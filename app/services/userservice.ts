@@ -22,22 +22,13 @@ const getOne = async (id: string): Promise<{ user: User }> => {
     }
 }
 const update = async (id: string, newData: Partial<User>): Promise<{ user: User }> => {
-    try {
-        console.log('Updating user:', id, newData);
-        const response = await axios.put(`${API_URL}/${id}`, newData);
-        return response.data;
-
-    }catch(error){
-        console.error('Error updating user:', error);
-        throw error;
-    }
-}
+    const response = await axios.put(`${API_URL}/${id}`, newData);
+    return response.data; // { user: updatedUser }
+  };
 
 // eslint-disable-next-line import/no-anonymous-default-export
 export default {
     update,
     getOne,
     get,
-    followCreator,
-    unfollowCreator
 }

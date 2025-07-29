@@ -52,7 +52,7 @@ export default function ProfileContent({
   const [imageLoading, setImageLoading] = useState(true);
   const [isCreator, setIsCreator] = useState(false);
   const [currentUser, setCurrentUser] = useState<User>(user);
-
+  const [isFollowing, setIsFollowing] = useState(false)
   useEffect(() => {
     async function fetchCreator() {
       const creators = await creatorservice.get();
@@ -60,11 +60,13 @@ export default function ProfileContent({
       if (found) {
         setCreator(found);
         setIsCreator(true);
+        // Update isFollowing here:
+        const following = currentUser.following.some(f => f.creatorId === found.id);
+        setIsFollowing(following);
       }
     }
     if (user?.id) fetchCreator();
-  }, [user]);
-
+  }, [user, currentUser.following]);
   const handleFollow = async (creator: Creator, user: User) => {
     if (!creator || !user) return;
 
@@ -75,14 +77,16 @@ export default function ProfileContent({
       await creatorservice.followCreator(creator.id);
       setCurrentUser({
         ...currentUser,
-        following: [...currentUser.following, { creatorId: creator.id }],
+        following: [...currentUser.following, { 
+          creatorId: creator.id, creatorName: creator.name, creatorUsername: creator.username, followingDate: new Date
+         }],
       });
       console.log('Follow successful');
     } catch (err) {
       console.error('Error following creator:', err);
     }
   };
-
+  console.log("Creator: ", creator)
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -93,10 +97,10 @@ export default function ProfileContent({
             <div className="relative w-40 h-40 rounded-full overflow-hidden">
               {!creator ? (
                 <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700" />
-              ) : creator.avatar ? (
+              ) : creator.image? (
                 <>
                   <Image
-                    src={creator.avatar}
+                    src={creator.image}
                     alt={creator.username || "User profile image"}
                     fill
                     className="rounded-full border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
@@ -110,11 +114,6 @@ export default function ProfileContent({
               ) : (
                 <div className="w-40 h-40 flex items-center justify-center rounded-full bg-gray-400 text-white font-bold text-6xl">
                   {creator.name?.charAt(0).toUpperCase() || "U"}
-                </div>
-              )}
-              {creator && (
-                <div className="absolute -bottom-2 -right-2 bg-pink-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
-                  Creator
                 </div>
               )}
             </div>
@@ -131,14 +130,28 @@ export default function ProfileContent({
               )}
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
+              <div className="flex flex-wrap gap-5 justify-center lg:justify-start">
                 {isOwnProfile ? (
+                  <div className='flex flex-row gap-2'>
                   <Link 
                     href="/myprofile/edit" 
                     className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
                   >
                     Edit Profile
                   </Link>
+                  <Link 
+                  href="/insights" 
+                  className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
+                >
+                  Insights
+                  </Link>
+                  <Link 
+                  href="/settings/creator/promotions" 
+                  className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
+                >
+                  Promote
+                  </Link>
+                  </div>
                 ) : (
                   <>
                     {relationshipStatus === 'none' && creator && (
@@ -146,7 +159,7 @@ export default function ProfileContent({
                         onClick={() => handleFollow(creator, currentUser)}
                         className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
                       >
-                        {currentUser.following.some(c => c.creatorId === creator.id) ? 'Following' : 'Follow'}
+                        {isFollowing ? 'Following' : 'Follow'}
                       </Button>
                     )}
                     {user && relationshipStatus !== 'subscriber' && (
@@ -219,9 +232,13 @@ export default function ProfileContent({
     const [activeTab, setActiveTab] = useState(creator ? 'posts' : 'purchased');
   
     const tabs = [
-      ...([{ id: 'posts', label: 'Posts', count: creator.posts.length }]),
-      ...(relationshipStatus !== 'none' ? [{ id: 'media', label: 'Media', count: creator.posts.filter(p => p.signedUrl).length }] : []),
-      ...(!creator ? [{id: 'purchased', label: 'Purchased Content', count: purchasedContent.length}] : []),
+      { id: 'posts', label: 'Posts', count: creator.posts.length },
+      ...(relationshipStatus !== 'none'
+        ? [{ id: 'media', label: 'Media', count: creator.posts.filter(p => p.signedUrl).length }]
+        : []),
+      ...((relationshipStatus === 'subscriber' || relationshipStatus === 'follower') && !isOwnProfile
+        ? [{ id: 'purchased', label: 'Purchased Content', count: purchasedContent.length }]
+        : []),
       ...(isOwnProfile ? [{ id: 'likes', label: 'Likes', count: 0 }] : []),
     ];
   
@@ -233,7 +250,7 @@ export default function ProfileContent({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 px-6 py-4 font-semibold transition-all duration-200 ${
+              className={`flex-1 px-6 py-4 font-semibold transition-all duration-200 cursor-pointer ${
                 activeTab === tab.id
                   ? 'bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-white border-b-2 border-pink-400'
                   : 'text-gray-300 hover:text-white hover:bg-white/5'
