@@ -34,6 +34,15 @@ const getById = async (id: string): Promise<{ creator: Creator }> => {
         throw error;
     }
 }
+
+export async function followCreator(creatorId: string) {
+    return axios.post(`${API_URL}/${creatorId}/follow`);
+  }
+  
+  export async function unfollowCreator(creatorId: string) {
+    return axios.delete(`${API_URL}/${creatorId}/follow`);
+  }
+
 const update = async (id: string, newData: Partial<Creator>): Promise<{ creator: Creator }> => {
     try {
         console.log('Updating creator:', id, newData);
@@ -50,5 +59,7 @@ const update = async (id: string, newData: Partial<Creator>): Promise<{ creator:
 export default {
     update,
     get,
-    getById
+    getById,
+    followCreator,
+    unfollowCreator
 }

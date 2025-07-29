@@ -12,7 +12,6 @@ const get = async (): Promise<User[]> => {
     }
 }
 
-
 const getOne = async (id: string): Promise<{ user: User }> => {
     try {
         const response = await axios.get(`${API_URL}/${id}`);
@@ -38,5 +37,7 @@ const update = async (id: string, newData: Partial<User>): Promise<{ user: User 
 export default {
     update,
     getOne,
-    get
+    get,
+    followCreator,
+    unfollowCreator
 }

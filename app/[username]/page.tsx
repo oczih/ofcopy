@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { connectDB } from '@/lib/mongoose';
 import Media from '@/app/models/mediamodel';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-client';
 import User from '@/app/models/usermodel';
 import Purchase from '@/app/models/purchasemodel';
@@ -16,12 +16,15 @@ const RESERVED_ROUTES = [
   'lib', 'ui', 'auth', 'creators', 'stats', 'media',
   'users', 'upload',
 ];
-
-export default async function UserProfilePage({ params }: { params: { username: string } }) {
+interface Params {
+  username: string;
+}
+export default async function UserProfilePage({ params }: { params: Promise<Params>}) {
+  const resolvedParams = await params;
+  const username = resolvedParams.username.toLowerCase();
   await connectDB();
   const session = await getServerSession(authOptions);
-  const username = params.username.toLowerCase();
-
+ 
   if (RESERVED_ROUTES.includes(username)) notFound();
 
   const user = await User.findOne({ username });

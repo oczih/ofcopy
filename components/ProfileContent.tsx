@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Creator, MediaPost, Post } from '@/app/types';
+import { Creator, Following, MediaPost, Post, User } from '@/app/types';
 import { MoreHorizontal, TreesIcon } from 'lucide-react';
 import Image from 'next/image';
 import SubscribeModal from '@/components/SubscribeModal';
@@ -13,6 +13,7 @@ import { Avatar, AvatarImage } from '@radix-ui/react-avatar';
 import { AvatarFallback } from './ui/avatar';
 import postservice from '@/app/services/postservice';
 import { PostCard } from './PostCard';
+import userservice from '@/app/services/userservice';
 
 function Modal({ open, onClose, title, children }: { open: boolean, onClose: () => void, title: string, children: React.ReactNode }) {
   if (!open) return null;
@@ -33,151 +34,176 @@ function Modal({ open, onClose, title, children }: { open: boolean, onClose: () 
   );
 }
 
-const handleFollow = (creator, user) => {
 
-}
+
+
+
 
 
 export default function ProfileContent({ 
-    user, 
-    purchasedContent, 
-    totalSpent, 
-    relationshipStatus, 
-    isOwnProfile, 
-  }: UserProfileData) {
-    const [modalOpen, setModalOpen] = useState(false)
-    const [creator, setCreator] = useState<Creator | null>(null);
-    const [imageLoading, setImageLoading] = useState(true);
-    const [subscriptionStep, setSubscriptionStep] = useState<'select' | 'pay'>('select');
-    const [isCreator, setIsCreator] = useState(false)
-    useEffect(() => {
-      async function fetchCreator() {
-        const creators = await creatorservice.get()
-        const correct = creators.creators.find(c => c.user === user.id || c.user?.id === user.id)
-        if(correct){
-          setCreator(correct)
-          setIsCreator(true)
-        }
+  user, 
+  purchasedContent, 
+  totalSpent, 
+  relationshipStatus, 
+  isOwnProfile, 
+}: UserProfileData) {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [creator, setCreator] = useState<Creator | null>(null);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [isCreator, setIsCreator] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User>(user);
+
+  useEffect(() => {
+    async function fetchCreator() {
+      const creators = await creatorservice.get();
+      const found = creators.creators.find(c => c.user === user.id || c.user?.id === user.id);
+      if (found) {
+        setCreator(found);
+        setIsCreator(true);
       }
-    
-      if (user?.id) fetchCreator()
-    }, [user])
-  console.log("Creator", creator)
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          {/* Profile Header */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 mb-8 border border-white/20">
-            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
-              {/* Profile Image */}
-              <div className="relative">
+    }
+    if (user?.id) fetchCreator();
+  }, [user]);
+
+  const handleFollow = async (creator: Creator, user: User) => {
+    if (!creator || !user) return;
+
+    try {
+      const alreadyFollowing = currentUser.following.some(f => f.creatorId === creator.id);
+      if (alreadyFollowing) return;
+
+      await creatorservice.followCreator(creator.id);
+      setCurrentUser({
+        ...currentUser,
+        following: [...currentUser.following, { creatorId: creator.id }],
+      });
+      console.log('Follow successful');
+    } catch (err) {
+      console.error('Error following creator:', err);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* Profile Header */}
+        <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 mb-8 border border-white/20">
+          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
+            {/* Profile Image */}
+            <div className="relative w-40 h-40 rounded-full overflow-hidden">
               {!creator ? (
-          <Skeleton className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700" />
-        ) : creator.image ? (
-          <>
-            <Image
-              src={creator.image}
-              alt={creator.image || creator.username || "User profile image"}
-              fill
-              className="rounded-full border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
-              onLoad={() => setImageLoading(false)}
-              onError={() => setImageLoading(false)}
-            />
-            {imageLoading && (
-              <Skeleton className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700 absolute top-0 left-0" />
-            )}
-          </>
-        ) : (
-          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-400 text-white font-bold text-lg">
-            {creator.name?.charAt(0).toUpperCase() || "U"}
-          </div>
-        )}
-                {creator && (
-                  <div className="absolute -bottom-2 -right-2 bg-pink-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
-                    Creator
-                  </div>
-                )}
-              </div>
-  
-              {/* Profile Info */}
-              <div className="flex-1 text-center lg:text-left">
-                <h1 className="text-4xl font-bold text-white mb-2">
-                  {user.name || user.username}
-                </h1>
-                <p className="text-xl text-purple-200 mb-4">@{user.username}</p>
-                
-                {creator?.bio && (
-                  <p className="text-gray-300 mb-6 max-w-2xl">{creator?.bio}</p>
-                )}
-  
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
-                  {isOwnProfile ? (
-                    <Link 
-                      href="/myprofile/edit" 
-                      className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
-                    >
-                      Edit Profile
-                    </Link>
-                  ) : (
-                    <>
-                      {relationshipStatus === 'none' && (
-                        <Button onClick={() => handleFollow} className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform">
-                          {user.following.some(c:  => c.creatorId === creator?.id) ? Following : Follow }
-                        </Button>
-                      )}
-                      {user && relationshipStatus !== 'subscriber' && (
-                        <button 
+                <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700" />
+              ) : creator.avatar ? (
+                <>
+                  <Image
+                    src={creator.avatar}
+                    alt={creator.username || "User profile image"}
+                    fill
+                    className="rounded-full border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
+                    onLoad={() => setImageLoading(false)}
+                    onError={() => setImageLoading(false)}
+                  />
+                  {imageLoading && (
+                    <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700 absolute top-0 left-0" />
+                  )}
+                </>
+              ) : (
+                <div className="w-40 h-40 flex items-center justify-center rounded-full bg-gray-400 text-white font-bold text-6xl">
+                  {creator.name?.charAt(0).toUpperCase() || "U"}
+                </div>
+              )}
+              {creator && (
+                <div className="absolute -bottom-2 -right-2 bg-pink-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
+                  Creator
+                </div>
+              )}
+            </div>
+
+            {/* Profile Info */}
+            <div className="flex-1 text-center lg:text-left">
+              <h1 className="text-4xl font-bold text-white mb-2">
+                {user.name || user.username}
+              </h1>
+              <p className="text-xl text-purple-200 mb-4">@{user.username}</p>
+
+              {creator?.bio && (
+                <p className="text-gray-300 mb-6 max-w-2xl">{creator.bio}</p>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
+                {isOwnProfile ? (
+                  <Link 
+                    href="/myprofile/edit" 
+                    className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
+                  >
+                    Edit Profile
+                  </Link>
+                ) : (
+                  <>
+                    {relationshipStatus === 'none' && creator && (
+                      <Button
+                        onClick={() => handleFollow(creator, currentUser)}
+                        className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
+                      >
+                        {currentUser.following.some(c => c.creatorId === creator.id) ? 'Following' : 'Follow'}
+                      </Button>
+                    )}
+                    {user && relationshipStatus !== 'subscriber' && (
+                      <button 
                         className="bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
                         onClick={() => setModalOpen(true)}
-                        >
-                          Subscribe
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-                {/* Stats */}
-                {!isOwnProfile && user.isCreator && (
-                  <div className="mt-6 flex gap-6 text-center lg:text-left">
-                    <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                      <div className="text-sm text-gray-300">Status</div>
-                      <div className="text-lg font-semibold text-white capitalize">
-                        {relationshipStatus}
-                      </div>
-                    </div>
-                    <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                      <div className="text-sm text-gray-300">Total Spent</div>
-                      <div className="text-lg font-semibold text-green-400">
-                        ${totalSpent.toFixed(2)}
-                      </div>
-                    </div>
-                  </div>
+                      >
+                        Subscribe
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
+
+              {/* Stats */}
+              {!isOwnProfile && user.isCreator && (
+                <div className="mt-6 flex gap-6 text-center lg:text-left">
+                  <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
+                    <div className="text-sm text-gray-300">Status</div>
+                    <div className="text-lg font-semibold text-white capitalize">
+                      {relationshipStatus}
+                    </div>
+                  </div>
+                  <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
+                    <div className="text-sm text-gray-300">Total Spent</div>
+                    <div className="text-lg font-semibold text-green-400">
+                      ${totalSpent.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-          {modalOpen && creator && (
-    <SubscribeModal 
-      open={modalOpen} 
-      onClose={() => setModalOpen(false)} 
-      creator={creator} 
-    />
-  )}
+        </div>
 
-          {/* Content Tabs */}
-          {creator && (
-            <ContentTabs
+        {modalOpen && creator && (
+          <SubscribeModal 
+            open={modalOpen} 
+            onClose={() => setModalOpen(false)} 
+            creator={creator} 
+          />
+        )}
+
+        {/* Content Tabs */}
+        {creator && (
+          <ContentTabs
             purchasedContent={purchasedContent}
             creator={creator}
             isOwnProfile={isOwnProfile}
             relationshipStatus={relationshipStatus}
           />
-          )}
-        </div>
+        )}
       </div>
-    );
-  }
+    </div>
+  );
+}
+
   
   function ContentTabs({  
     purchasedContent, 
@@ -251,10 +277,18 @@ export default function ProfileContent({
     relationshipStatus: 'subscriber' | 'follower' | 'none';
     creator?: Creator;
   }) {
+    const allPosts = creator?.posts || [];
+  
+    // Filter posts based on relationship status
+    const visiblePosts = allPosts.filter((post) => {
+      if (relationshipStatus === 'subscriber') return true;
+      if (relationshipStatus === 'follower') return post.viewableFor === 'followers';
+      return post.viewableFor === 'followers';
+    });
     return (
       <div className="grid grid-cols-1 gap-6">
-        {creator?.posts.map((p) => (
-          <div key={p.id} className="relative w-full h-60"> {/* fixed key here and set height for next/image */}
+        {visiblePosts.map((p) => (
+          <div key={p._id} className="relative w-full h-60"> {/* fixed key here and set height for next/image */}
             <Image
               src={p.signedUrl}
               alt={p.caption || "Media post"}

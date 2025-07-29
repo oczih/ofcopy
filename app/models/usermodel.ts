@@ -122,7 +122,7 @@ const userSchema = new Schema<UserDocument>({
   },
   lastUsernameChange: {
     type: Date,
-    default: '',
+    default: null,
   },
   subscriptions: [{
     creatorId: {
@@ -164,7 +164,7 @@ const userSchema = new Schema<UserDocument>({
   }],
   following: [{
     creatorId: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'Creator',
       required: true
     },
@@ -182,8 +182,13 @@ const userSchema = new Schema<UserDocument>({
     date: {
       type: Date,
       required: true
+    },
+    seen: {
+      type: Boolean,
+      default: false,
     }
   }],
+  
   comments: [
     {
       commentId: { type: String, required: true },
