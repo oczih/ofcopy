@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MoreHorizontal, Eye, EyeOff, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { MoreHorizontal, Eye, EyeOff, CheckCircle, AlertCircle, X, Heart, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from "@/components/ui/separator";
@@ -9,7 +9,8 @@ import { signIn } from "next-auth/react";
 import { toast } from 'react-hot-toast';
 import { useRouter } from "next/navigation";
 import postservice from '@/app/services/postservice'; // adjust path accordingly
-import { Creator, MediaPost, Post } from '@/app/types';
+import { Creator, MediaPost, Post, User } from '@/app/types';
+import { Skeleton } from './ui/skeleton';
 
 // Signup Modal Component
 function SignupModal({ open, onClose, creatorName }: { open: boolean, onClose: () => void, creatorName: string }) {
@@ -339,18 +340,21 @@ function SignupModal({ open, onClose, creatorName }: { open: boolean, onClose: (
 export function PostCard({
   post,
   creator,
-  relationshipStatus,
+  status,
+  viewingUser
 }: {
-  post: MediaPost;
+  post: Post;
   creator: Creator;
-  relationshipStatus: 'subscriber' | 'follower' | 'none';
+  status: 'subscriber' | 'follower' | 'none';
+  viewingUser: User
 }) {
   const [imageLoading, setImageLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [signupModalOpen, setSignupModalOpen] = useState(false);
-  const shouldBlur = relationshipStatus === 'none';
-  const showCaption = relationshipStatus === 'subscriber' || relationshipStatus === 'follower';
-  const isOwner = relationshipStatus === 'subscriber'; // Replace with actual owner check if needed
+  const [likes, setLikes] = useState(post.likes ?? []);
+  const shouldBlur = status === 'none';
+  const showCaption = status === 'subscriber' || status === 'follower';
+  const isOwner = status === 'subscriber'; // Replace with actual owner check if needed
   const handleModalOpen = () => setModalOpen((open) => !open);
 
   const handleDeletePost = async (id: string) => {
@@ -368,11 +372,72 @@ export function PostCard({
   };
 
   const handleUnlockClick = () => {
-    if (relationshipStatus === 'none') {
+    if (status === 'none') {
       setSignupModalOpen(true);
     }
   };
-
+  const handleLike = async (post: Post) => {
+    console.log("Here are the likes:", post.likes)
+    console.log(post.likes.some(like => like.userId.toString() === viewingUser.id))
+    if(post.likes.some(like => like.userId.toString() === viewingUser.id)){
+      console.log("Before: ", post.likes)
+      try {
+        const res = await fetch(`/api/media?username=${creator.username}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            postId: post._id,
+            liker: { userId: viewingUser.id },
+            unlike: true
+          }),
+        });
+    
+        if (res.ok) {
+          const data = await res.json();
+          const updated = data.posts.find((p: Post) => p._id === post._id);
+          if (updated) {
+            setLikes(updated.likes ?? []);
+            console.log("After: ", updated.likes);
+          }
+        } else {
+          alert('Failed to unlike post');
+        }
+      } catch (error) {
+        console.error(error);
+        alert('Failed to unlike post');
+      }
+    }
+    else {
+      try {
+        const res = await fetch(`/api/media?username=${creator.username}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            postId: post._id,
+            liker: { userId: viewingUser.id }
+          })
+        });
+      
+        if (res.ok) {
+          const data = await res.json();
+          const updated = data.posts.find((p: Post) => p._id === post._id);
+          console.log("Like API response updated.likes:", updated?.likes);
+          if (updated) setLikes(updated.likes ?? []);
+        } else {
+          alert('Failed to like post');
+        }
+      } catch (error) {
+        console.error(error);
+        alert('Failed to like post');
+      }
+  }
+  };
+  const isLikedByCurrentUser = likes.some(
+    (like) => like.userId.toString() === viewingUser.id?.toString()
+  );
+  const handleToggleComment = () => {
+    setCommentOpen((open) => !open);
+  };
   return (
     <>
       <div className="bg-white/10 backdrop-blur-sm max-w-3xl w-full rounded-2xl overflow-hidden border border-white/20 hover:border-white/40 transition-all duration-300 group hover:transform hover:shadow-2xl">
@@ -434,6 +499,11 @@ export function PostCard({
 
         {/* MEDIA SECTION */}
         <div className="aspect-square relative overflow-hidden">
+        {imageLoading && (
+          <Skeleton
+          className="w-full h-full rounded-none bg-gray-200 dark:bg-gray-700"
+        />  
+        )}
           {post.type?.startsWith('image') ? (
             <Image
               src={post.signedUrl}
@@ -485,13 +555,99 @@ export function PostCard({
 
         {/* CONTENT INFO */}
         <div className="p-4">
-          <h3 className={`font-semibold text-white mb-2 ${shouldBlur ? 'blur-sm select-none' : ''}`}>
-            {post.title}
-          </h3>
+      <div className="px-5 py-3 space-y-1">
+        <div className="text-white text-sm">{post.caption}</div>
+        <div className="text-xs text-gray-500">{new Date(post.createdAt).toLocaleString()}</div>
+      </div>
 
-          {showCaption && post.caption && (
-            <p className="text-sm text-gray-300 mb-3">{post.caption}</p>
+    {/* Footer */}
+    <div className="flex items-center justify-between px-5 py-3 border-t border-white/10 bg-slate-950/80">
+      <div className="flex gap-2">
+      <Button
+            variant="ghost"
+            size="icon"
+            className="text-gray-400 hover:text-pink-400 cursor-pointer"
+            onClick={() => handleLike(post)}
+          >
+            <Heart
+  className={`w-5 h-5 ${
+    
+    isLikedByCurrentUser
+      ? "text-pink-400 fill-pink-400"
+      : "text-gray-400"
+  }`}
+/>
+          </Button>
+        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-400 hover:bg-grey cursor-pointer" onClick={handleToggleComment}>
+          <MessageCircle className="w-5 h-5" />
+        </Button>
+      </div>
+      <div className="flex gap-3 text-xs text-gray-400 items-center">
+        <span>{likes.length} Likes</span>
+        <span
+          className="hover:underline"
+        >
+          {comments.length} Comments
+        </span>
+      </div>
+    </div>
+
+    {/* Comments Section */}
+    {(commentOpen || showcomment) && (
+      <div className="w-full px-5 pb-4 mt-5 mb-5 space-y-4 animate-fade-in-fast">
+        {/* Comments List */}
+        <div className="space-y-2">
+          {comments && comments.length > 0 ? (
+            comments.map((comment: Comment, idx) => {
+              const userObj = rightUser(comment);
+              return (
+                <div key={comment.commentId || idx} className="flex items-start gap-3 bg-slate-800/60 rounded-lg p-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={userObj?.avatar || ''} alt={userObj?.name || userObj?.username || 'User'} />
+                        <AvatarFallback>{userObj?.name?.[0] || userObj?.username?.[0] || 'U'}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs text-pink-300 font-semibold truncate">{comment.username}</span>
+                    </div>
+                  <div className="flex-1 flex flex-col min-w-0">
+                    <span className="text-white text-sm break-words">{comment.text}</span>
+                    <span className="text-xs text-gray-400 mt-1">{comment.createdAt ? new Date(comment.createdAt).toLocaleString() : ''}</span>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="text-gray-400 italic">No comments yet.</div>
           )}
+        </div>
+        {/* Comment Input */}
+        <div className="flex w-full items-start gap-3">
+              {session?.user?.avatar && (
+                <Avatar className="w-8 h-8 mt-1">
+                  <AvatarImage src={session.user.avatar} alt={session.user.name || 'User'} />
+                  <AvatarFallback>{session.user.name?.[0] || 'U'}</AvatarFallback>
+                </Avatar>
+              )}
+              <textarea
+                className="flex-1 rounded-lg border border-white/20 bg-slate-900 text-white p-2 resize-none transition-all duration-200 hover:border-white focus:border-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+                rows={2}
+                placeholder="Add a comment..."
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                disabled={sending}
+              />
+              <Button
+                size="sm"
+                className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold px-4 py-1 rounded-full shadow mt-1"
+                onClick={handleSendComment}
+                disabled={sending || !commentText.trim()}
+              >
+                {sending ? "Sending..." : "Send"}
+              </Button>
+            </div>
+
+      </div>
+    )}
 
           <div className="flex items-center justify-between text-sm text-gray-400">
             <span>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ''}</span>

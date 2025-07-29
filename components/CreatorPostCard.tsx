@@ -106,7 +106,7 @@ export function CreatorPostCard({
   }
   };
   const isLikedByCurrentUser = likes.some(
-    (like) => like.userId.toString() === session.user?.id?.toString()
+    (like) => like.userId.toString() === session?.user?.id?.toString()
   );
   const handleToggleComment = () => {
     setCommentOpen((open) => !open);

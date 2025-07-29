@@ -13,7 +13,12 @@ export interface Subscription {
   nextBillingDate?: Date;
   autoRenew: boolean;
 }
-
+export interface Purchase {
+  price: number; 
+  creatorId: mongoose.Types.ObjectId
+  postId: string;
+  date: Date;
+}
 // Following interface (reference only)
 export interface Following {
   creatorId: mongoose.Types.ObjectId;
@@ -57,6 +62,7 @@ export interface UserDocument {
   membership?: boolean;
   lastUsernameChange?: Date;
   subscriptions: Subscription[];
+  purchases: Purchase[];
   following: Following[];
   messages: Message[];
   notifications: Notification[];
@@ -124,6 +130,25 @@ const userSchema = new Schema<UserDocument>({
     type: Date,
     default: null,
   },
+  purchases: [{
+    price: {
+      type: Number
+    },
+    creatorId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Creator',
+      required: true
+    },
+    postId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Post',
+      required: true
+    },
+    date: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   subscriptions: [{
     creatorId: {
       type: Schema.Types.ObjectId,

@@ -14,6 +14,9 @@ import { AvatarFallback } from './ui/avatar';
 import postservice from '@/app/services/postservice';
 import { PostCard } from './PostCard';
 import userservice from '@/app/services/userservice';
+import { useRouter } from 'next/navigation';
+import { CreatorPostCard } from './CreatorPostCard';
+import { useSession } from 'next-auth/react';
 
 function Modal({ open, onClose, title, children }: { open: boolean, onClose: () => void, title: string, children: React.ReactNode }) {
   if (!open) return null;
@@ -41,51 +44,99 @@ function Modal({ open, onClose, title, children }: { open: boolean, onClose: () 
 
 
 export default function ProfileContent({ 
-  user, 
+  userViewed, 
+  viewingUser,
   purchasedContent, 
   totalSpent, 
-  relationshipStatus, 
   isOwnProfile, 
 }: UserProfileData) {
   const [modalOpen, setModalOpen] = useState(false);
   const [creator, setCreator] = useState<Creator | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
   const [isCreator, setIsCreator] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User>(user);
-  const [isFollowing, setIsFollowing] = useState(false)
+  const [currentUser, setCurrentUser] = useState<User>(viewingUser);
+  const [status, setStatus] = useState<'subscriber' | 'follower' | 'none'>('none');
+  
+  console.log("status", creator?.followers)
   useEffect(() => {
     async function fetchCreator() {
       const creators = await creatorservice.get();
-      const found = creators.creators.find(c => c.user === user.id || c.user?.id === user.id);
+      // Find creator where userViewed.id matches either c.user or c.user.id
+      const found = creators.creators.find(
+        c => c.user === userViewed.id || c.user?.id === userViewed.id
+      );
       if (found) {
         setCreator(found);
         setIsCreator(true);
-        // Update isFollowing here:
-        const following = currentUser.following.some(f => f.creatorId === found.id);
-        setIsFollowing(following);
+      } else {
+        setCreator(null);
+        setIsCreator(false);
       }
     }
-    if (user?.id) fetchCreator();
-  }, [user, currentUser.following]);
-  const handleFollow = async (creator: Creator, user: User) => {
-    if (!creator || !user) return;
+    if (userViewed?.id) fetchCreator();
+  }, [userViewed]);
 
-    try {
-      const alreadyFollowing = currentUser.following.some(f => f.creatorId === creator.id);
-      if (alreadyFollowing) return;
-
-      await creatorservice.followCreator(creator.id);
-      setCurrentUser({
-        ...currentUser,
-        following: [...currentUser.following, { 
-          creatorId: creator.id, creatorName: creator.name, creatorUsername: creator.username, followingDate: new Date
-         }],
-      });
-      console.log('Follow successful');
-    } catch (err) {
-      console.error('Error following creator:', err);
+  useEffect(() => {
+    if (!creator?.id || !viewingUser.id) {
+      setStatus('none');
+      return;
     }
-  };
+  
+    const isSubscriber = Array.isArray(creator.subscribers) &&
+      creator.subscribers.some((sub: any) => sub.userId === viewingUser.id);
+  
+    const isFollower = Array.isArray(creator.followers) &&
+      creator.followers.some((fol: any) => fol.userId === viewingUser.id);
+  
+    if (isSubscriber) {
+      setStatus('subscriber');
+    } else if (isFollower) {
+      setStatus('follower');
+    } else {
+      setStatus('none');
+    }
+  }, [creator, viewingUser]);
+  
+  
+
+
+    console.log(status)
+    const handleFollow = async (creator: Creator) => {
+      if (!creator) return;
+    
+      try {
+        const alreadyFollowing = viewingUser.following.some(f => f.creatorId === creator.id);
+        if (alreadyFollowing) return;
+    
+        await creatorservice.followCreator(creator.id);
+        setCurrentUser({
+          ...currentUser,
+          following: [...currentUser.following, { 
+            creatorId: creator.id, creatorName: creator.name, creatorUsername: creator.username, followingDate: new Date()
+          }],
+        });
+        setStatus('follower');
+      } catch (err) {
+        console.error('Error following creator:', err);
+      }
+    };
+  
+const handleUnfollow = async (creator: Creator) => {
+  if (!creator || !viewingUser) return;
+
+  try {
+    await creatorservice.unfollowCreator(creator.id);
+
+    setCurrentUser({
+      ...currentUser,
+      following: currentUser.following.filter(f => f.creatorId !== creator.id),
+    });
+
+    setStatus('none');
+  } catch (err) {
+    console.error('Error unfollowing creator:', err);
+  }
+};
   console.log("Creator: ", creator)
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
@@ -95,13 +146,13 @@ export default function ProfileContent({
           <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
             {/* Profile Image */}
             <div className="relative w-40 h-40 rounded-full overflow-hidden">
-              {!creator ? (
+              {!userViewed ? (
                 <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700" />
-              ) : creator.image? (
+              ) : creator?.image || userViewed.image? (
                 <>
                   <Image
-                    src={creator.image}
-                    alt={creator.username || "User profile image"}
+                    src={creator?.image || userViewed?.image}
+                    alt={userViewed.username || "User profile image"}
                     fill
                     className="rounded-full border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
                     onLoad={() => setImageLoading(false)}
@@ -113,7 +164,7 @@ export default function ProfileContent({
                 </>
               ) : (
                 <div className="w-40 h-40 flex items-center justify-center rounded-full bg-gray-400 text-white font-bold text-6xl">
-                  {creator.name?.charAt(0).toUpperCase() || "U"}
+                  {creator?.name?.charAt(0).toUpperCase() || userViewed.name?.charAt(0).toUpperCase() || "U"}
                 </div>
               )}
             </div>
@@ -121,9 +172,9 @@ export default function ProfileContent({
             {/* Profile Info */}
             <div className="flex-1 text-center lg:text-left">
               <h1 className="text-4xl font-bold text-white mb-2">
-                {user.name || user.username}
+                {creator?.name || creator?.username || userViewed.name || userViewed.username}
               </h1>
-              <p className="text-xl text-purple-200 mb-4">@{user.username}</p>
+              <p className="text-xl text-purple-200 mb-4">@{creator?.username || userViewed.username}</p>
 
               {creator?.bio && (
                 <p className="text-gray-300 mb-6 max-w-2xl">{creator.bio}</p>
@@ -154,15 +205,18 @@ export default function ProfileContent({
                   </div>
                 ) : (
                   <>
-                    {relationshipStatus === 'none' && creator && (
+                  {status === 'none' && userViewed.creator && (
+                        <Button onClick={() => handleFollow(creator)}  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform">Follow</Button>
+                      )}
+                    {status === 'follower' && creator && (
                       <Button
-                        onClick={() => handleFollow(creator, currentUser)}
+                        onClick={() => handleUnfollow(creator)}
                         className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
                       >
-                        {isFollowing ? 'Following' : 'Follow'}
+                        Following
                       </Button>
                     )}
-                    {user && relationshipStatus !== 'subscriber' && (
+                    {viewingUser && status !== 'subscriber' && (
                       <button 
                         className="bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
                         onClick={() => setModalOpen(true)}
@@ -175,12 +229,12 @@ export default function ProfileContent({
               </div>
 
               {/* Stats */}
-              {!isOwnProfile && user.isCreator && (
+              {!creator && (
                 <div className="mt-6 flex gap-6 text-center lg:text-left">
                   <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
                     <div className="text-sm text-gray-300">Status</div>
                     <div className="text-lg font-semibold text-white capitalize">
-                      {relationshipStatus}
+                      {userViewed.status}
                     </div>
                   </div>
                   <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
@@ -209,7 +263,8 @@ export default function ProfileContent({
             purchasedContent={purchasedContent}
             creator={creator}
             isOwnProfile={isOwnProfile}
-            relationshipStatus={relationshipStatus}
+            status={status}
+            viewingUser={viewingUser}
           />
         )}
       </div>
@@ -222,26 +277,28 @@ export default function ProfileContent({
     purchasedContent, 
     creator, 
     isOwnProfile, 
-    relationshipStatus,
+    status,
+    viewingUser
   }: {
     purchasedContent: MediaPost[];
     creator: Creator;
     isOwnProfile: boolean;
-    relationshipStatus: 'subscriber' | 'follower' | 'none';
+    status: 'subscriber' | 'follower' | 'none';
+    viewingUser: User
   }) {
     const [activeTab, setActiveTab] = useState(creator ? 'posts' : 'purchased');
-  
+    console.log(creator)
     const tabs = [
-      { id: 'posts', label: 'Posts', count: creator.posts.length },
-      ...(relationshipStatus !== 'none'
-        ? [{ id: 'media', label: 'Media', count: creator.posts.filter(p => p.signedUrl).length }]
+      { id: 'posts', label: 'Posts', count: creator?.posts?.length || 0 },
+      ...(status !== 'none'
+        ? [{ id: 'media', label: 'Media', count: creator?.posts?.filter(p => p.signedUrl).length || 0 }]
         : []),
-      ...((relationshipStatus === 'subscriber' || relationshipStatus === 'follower') && !isOwnProfile
+      ...((status === 'subscriber' || status === 'follower') && !isOwnProfile
         ? [{ id: 'purchased', label: 'Purchased Content', count: purchasedContent.length }]
         : []),
       ...(isOwnProfile ? [{ id: 'likes', label: 'Likes', count: 0 }] : []),
     ];
-  
+    
     return (
       <div className="bg-white/10 backdrop-blur-lg rounded-3xl border border-white/20 overflow-hidden">
         {/* Tab Headers */}
@@ -269,13 +326,13 @@ export default function ProfileContent({
         {/* Tab Content */}
         <div className="p-6">
           {activeTab === 'posts' && (
-            <PostsGrid creator={creator} relationshipStatus={relationshipStatus} />
+            <PostsGrid creator={creator} status={status} viewingUser={viewingUser} />
           )}
           {activeTab === 'purchased' && (
-            <PostsGrid creator={creator} relationshipStatus={relationshipStatus} />
+            <PurchasedPostsGrid creator={creator} status={status} viewingUser={viewingUser} />
           )}
           {activeTab === 'media' && (
-            <MediaGrid creator={creator} relationshipStatus={relationshipStatus}  />
+            <MediaGrid creator={creator} status={status}  />
           )}
           {activeTab === 'likes' && (
             <div className="text-center text-gray-400 py-12">
@@ -287,64 +344,172 @@ export default function ProfileContent({
       </div>
     );
   }
+
+  function PurchasedPostsGrid ({
+    creator,
+    status,
+    viewingUser
+  }: {
+    status: 'subscriber' | 'follower' | 'none';
+    creator?: Creator;
+    viewingUser: User;
+  }) {
+    const [users, setUsers] = useState<User[] | null>(null);
+    
+    const allPosts = creator?.posts || [];
+    useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const fetchedUsers = await userservice.get();
+        setUsers(fetchedUsers);
+      } catch (error) {
+        console.error("Couldn't fetch data: ", error);
+      }
+    };
+    fetchData();
+  }, []);
+  const { data: session} = useSession();
+  if (!creator) return null;
+    // Filter posts based on relationship status
+    const visiblePosts = allPosts.filter((post) =>
+      viewingUser.purchases?.some((purchase) => purchase.postId === post._id)
+    );
+    const isCreator = viewingUser.id === creator.user;
+    const isFollower = viewingUser.following?.some(f => f.creatorId.toString() === creator.id);
+    const isSubscriber = !!viewingUser.subscriptions?.some(s => s.creatorId.toString() === creator.id);
+    
+    return (
+      <div>
+        {visiblePosts.length === 0 && (
+          <div className='flex flex-col items-center'>
+              <h1 className="text-2xl font-bold text-white mb-2">
+                  You haven't purchased anything from this person yet!
+                </h1>
+          </div>
+        )}
+        
+        {visiblePosts.map((post) => (
+          <CreatorPostCard
+            key={post._id}
+            post={post}
+            creator={creator}
+            isCreator={isCreator}
+            isFollower={isFollower}
+            isSubscriber={isSubscriber}
+            session={session}
+            users={users.users}
+          />
+        ))}
+      </div>
+    );
+  }
   function MediaGrid({
     creator,
-    relationshipStatus
+    status,
   }: {
-    relationshipStatus: 'subscriber' | 'follower' | 'none';
+    status: 'subscriber' | 'follower' | 'none';
     creator?: Creator;
   }) {
     const allPosts = creator?.posts || [];
   
     // Filter posts based on relationship status
     const visiblePosts = allPosts.filter((post) => {
-      if (relationshipStatus === 'subscriber') return true;
-      if (relationshipStatus === 'follower') return post.viewableFor === 'followers';
+      if (status === 'subscriber') return true;
+      if (status === 'follower') return post.viewableFor === 'followers';
       return post.viewableFor === 'followers';
     });
+    const [loadedImages, setLoadedImages] = useState<{ [key: string]: boolean }>({});
+
+  const handleImageLoad = (postId: string) => {
+    setLoadedImages((prev) => ({ ...prev, [postId]: true }));
+  };
     return (
-      <div className="grid grid-cols-1 gap-6">
-        {visiblePosts.map((p) => (
-          <div key={p._id} className="relative w-full h-60"> {/* fixed key here and set height for next/image */}
-            <Image
-              src={p.signedUrl}
-              alt={p.caption || "Media post"}
-              fill
-              style={{ objectFit: "contain" }}
-              sizes="(max-width: 1200px) 100vw, 1200px"
-            />
-          </div>
-        ))}
+      <div className="grid grid-cols-3 gap-1">
+        {visiblePosts.map((p) => {
+          const isLoaded = loadedImages[p._id];
+  
+          return (
+            <div
+              key={p._id}
+              className="relative w-full aspect-square overflow-hidden"
+            >
+              {/* Blurred Background Layer */}
+              <Image
+                src={p.signedUrl!}
+                alt="blurred background"
+                fill
+                className="object-cover blur-lg scale-110 brightness-50"
+              />
+  
+              {/* Skeleton while loading */}
+              {!isLoaded && (
+              <Skeleton className="absolute inset-0 w-full h-full rounded-none bg-gray-200 dark:bg-gray-700 z-20" />
+            )}
+  
+              {/* Foreground Image */}
+              <Image
+                src={p.signedUrl!}
+                alt={p.caption || 'Media post'}
+                fill
+                className="object-contain z-10 transition-opacity duration-300"
+                onLoadingComplete={() => handleImageLoad(p._id)}
+              />
+            </div>
+          );
+        })}
       </div>
     );
   }
+  
   function PostsGrid({
     creator,
-    relationshipStatus,
+    status,
+    viewingUser
   }: {
     creator?: Creator;
-    relationshipStatus: 'subscriber' | 'follower' | 'none';
+    status: 'subscriber' | 'follower' | 'none';
+    viewingUser: User;
   }) {
+    const [users, setUsers] = useState<User[] | null>(null);
+    const { data: session} = useSession();
+    useEffect(() => {
+      const fetchData = async () => {
+        try {
+          const fetchedUsers = await userservice.get();
+          setUsers(fetchedUsers);
+        } catch (error) {
+          console.error("Couldn't fetch data: ", error);
+        }
+      };
+      fetchData();
+    }, []);
     if (!creator) return null;
-  
+    
     const allPosts = creator.posts || [];
-  
+    
     // Filter posts based on relationship status
     const visiblePosts = allPosts.filter((post) => {
-      if (relationshipStatus === 'subscriber') return true;
-      if (relationshipStatus === 'follower') return post.viewableFor === 'followers';
+      if (status === 'subscriber') return true;
+      if (status === 'follower') return post.viewableFor === 'followers';
       return post.viewableFor === 'followers'; // show blurred for public
     });
-  
+    const isCreator = viewingUser.id === creator.user;
+    const isFollower = viewingUser.following?.some(f => f.creatorId.toString() === creator.id);
+    const isSubscriber = !!viewingUser.subscriptions?.some(s => s.creatorId.toString() === creator.id);
+    
     return (
       <div className="grid grid-cols-1 gap-6">
         {visiblePosts.map((post) => (
-          <PostCard
-            key={post._id}
-            post={post}
-            creator={creator}
-            relationshipStatus={relationshipStatus}
-          />
+          <CreatorPostCard
+          key={post._id}
+          post={post}
+          creator={creator}
+          isCreator={isCreator}
+          isFollower={isFollower}
+          isSubscriber={isSubscriber}
+          session={session}
+          users={users?.users}
+        />
         ))}
       </div>
     );

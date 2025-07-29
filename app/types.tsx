@@ -24,6 +24,7 @@ export type User = {
     emailVerificationExpires: Date;
     lastVerificationEmailSentAt: Date;
     lastPasswordResetSentAt: Date;
+    purchases: Purchase[];
   }
   export interface Subscriber {
     userId: mongoose.Types.ObjectId;
@@ -35,7 +36,12 @@ export type User = {
     nextBillingDate?: Date;
     autoRenew: boolean;
   }
-
+  export interface Purchase {
+    price: number; 
+    creatorId: mongoose.Types.ObjectId
+    postId: string;
+    date: Date;
+  }
 export type Creator = {
     id: string;
     name: string;
@@ -112,7 +118,8 @@ export type Post = {
   comments: Comment[];            // Replace with proper Comment type if you have it
   signedUrl?: string;         // Optional signed URL added at runtime (not stored in DB)
   width?: number;             // Optional image width
-  height?: number;            // Optional image height
+  height?: number;
+  price: number;            // Optional image height
 };
 declare module "next-auth" {
   interface User {
@@ -139,6 +146,7 @@ declare module "next-auth" {
     emailVerificationExpires: Date;
     lastVerificationEmailSentAt: Date;
     lastPasswordResetSentAt: Date;
+    purchase: Purchase[];
   }
 
   interface Session {

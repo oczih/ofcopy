@@ -139,13 +139,17 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
           </div>
         ) : (
           <>
-            <div className="text-lg font-semibold text-white truncate max-w-[12rem]">
-              {session.user.name}
-            </div>
-            <div className="text-sm text-pink-400 truncate max-w-[12rem]">
-              @{session.user.username}
-            </div>
-          </>
+          { isCollapsed ? (
+            ""
+              ) : (
+              <div>
+                <div className="text-lg font-semibold text-white truncate max-w-[12rem]">
+                {session.user.name}
+              </div>
+              <div className="text-sm text-pink-400 truncate max-w-[12rem]">
+                @{session.user.username}
+              </div>
+              </div>)}</>
         )}
       </div>
     </Link>
