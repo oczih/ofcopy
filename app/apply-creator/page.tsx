@@ -457,7 +457,7 @@ function ApplyCreatorPage() {
               <p className="text-gray-300">This helps us understand our creator community</p>
             </div>
             <div className="grid grid-cols-1 gap-3">
-              {["Male", "Female", "Non-binary", "Other", "Prefer not to say"].map((option) => (
+              {["Male", "Female", "Other", "Prefer not to say"].map((option) => (
                 <button
                   key={option}
                   onClick={() => handleInputChange("gender", option)}

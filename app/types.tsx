@@ -6,6 +6,7 @@ export type User = {
     username: string
     password: string
     email: string,
+    bio?: string;
     name: string,
     googleId: string | null
     membership?: boolean
@@ -16,6 +17,7 @@ export type User = {
     oauthProvider: string;
     subscriptions?: Subscription[]
     notifications?: Notification[]
+    location?: string;
     creator?: boolean
     following: Following[];
     comments: Comment[];
@@ -42,6 +44,12 @@ export type User = {
     postId: string;
     date: Date;
   }
+  export  enum Gender {
+    Male = 'Male',
+    Female = 'Female',
+    Other = 'Other',
+    PreferNotToSay = 'PreferNotToSay'
+  }
 export type Creator = {
     id: string;
     name: string;
@@ -51,6 +59,7 @@ export type Creator = {
     subscribers: Subscriber[];
     followers: Follower[]
     isSubscribed: boolean;
+    gender: Gender;
     price: number;
     category: string;
     posts: Post[];
@@ -128,6 +137,8 @@ declare module "next-auth" {
     age?: number;
     googleId?: string;
     membership?: boolean;
+    bio?: string;
+    location: string;
     hasAccess?: boolean;
     email?: string;
     lastUsernameChange?: Date;

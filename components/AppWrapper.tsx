@@ -6,7 +6,7 @@ export default function AppWrapper({ children }: { children: React.ReactNode }) 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-hidden">
+    <div className="min-h-screen w-full bg-[#3b0364] relative overflow-hidden">
       {/* Enhanced animated background elements that respond to sidebar */}
       <div className={`fixed inset-0 -z-10 opacity-30 pointer-events-none transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-72'}`}>
         {/* Primary animated orbs */}

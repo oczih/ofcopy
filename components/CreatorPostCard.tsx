@@ -44,16 +44,14 @@ export function CreatorPostCard({
   const [sending, setSending] = useState(false);
   const [showEmojis, setShowEmojis] = useState(false);
   const [likes, setLikes] = useState(post.likes ?? []);
-  console.log("likes:", JSON.stringify(likes, null, 2));
   const [comments, setComments] = useState(post.comments ?? []);
   const [showcomment, setShowComments] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false);
   const [imageLoading, setImageLoading] = useState(true)
   const handleLike = async (post: Post) => {
-    console.log("Here are the likes:", post.likes)
-    console.log(post.likes.some(like => like.userId.toString() === session.user?.id))
+
     if(post.likes.some(like => like.userId.toString() === session.user?.id)){
-      console.log("Before: ", post.likes)
+
       try {
         const res = await fetch(`/api/media?username=${creator.username}`, {
           method: 'PUT',
@@ -173,15 +171,16 @@ export function CreatorPostCard({
         alert('Failed to delete post')
       }
   }
+  console.log("Creatoriu;", creator)
   return (
   <div className="bg-white/5 rounded-2xl shadow-xl border border-white/10 p-0 overflow-hidden max-w-3xl w-full mx-auto animate-fade-in">
     {/* Header */}
-  
+    
     <header className="flex items-center gap-4 px-5 py-4 border-b border-white/10 bg-gradient-to-r from-slate-900/80 to-purple-900/80">
     <div className="flex items-center gap-3 flex-1 min-w-0">
   <Link href={`/${creator.username}`}>
     <Avatar className="w-12 h-12">
-      <AvatarImage src={creator.avatar} alt={creator.name || creator.username} />
+      <AvatarImage src={creator.image} alt={creator.name || creator.username} />
       <AvatarFallback>{creator.name?.[0] || creator.username?.[0]}</AvatarFallback>
     </Avatar>
   </Link>

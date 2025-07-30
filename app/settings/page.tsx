@@ -42,7 +42,7 @@ function SettingsApp() {
   }
 
   const mainTabs = [
-    { id: "creator", label: "Become a Creator", href: "/apply" },
+    { id: "creator", label: "Become a Creator", href: "/apply-creator" },
     { id: "account", label: "Account" },
     { id: "payments", label: "Payment & Subscriptions" },
     { id: "legal", label: "Privacy & Terms" },
@@ -139,7 +139,7 @@ function SettingsApp() {
               <button
                 key={tab.id}
                 onClick={() => handleTabClick(tab.id)}
-                className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 text-left hover:bg-white/10 transition-all duration-300 group"
+                className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 text-left hover:bg-white/10 transition-all duration-300 group cursor-pointer"
               >
                 <div className="flex items-center justify-between">
                   <div>

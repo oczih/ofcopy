@@ -85,7 +85,7 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
     setIsCollapsed(newCollapsedState);
     onCollapseChange?.(newCollapsedState);
   };
-
+  console.log("Userri:", session?.user)
 
   return (
     <aside className={`${isCollapsed ? 'w-20' : 'w-72'} h-screen fixed left-0 top-0 z-30 bg-gradient-to-b from-slate-900/80 via-purple-900/70 to-slate-900/90 backdrop-blur-xl border-r border-white/10 shadow-2xl p-6 flex flex-col transition-all duration-300 ease-in-out`}>

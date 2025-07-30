@@ -16,6 +16,12 @@ export interface Follower {
   userImage?: string;
   followedAt: Date;
 }
+enum Gender {
+  Male = 'Male',
+  Female = 'Female',
+  Other = 'Other',
+  PreferNotToSay = 'PreferNotToSay'
+}
 export interface CreatorDocument extends mongoose.Document {
   username: string;
   _id: string;
@@ -27,6 +33,7 @@ export interface CreatorDocument extends mongoose.Document {
   image?: string;
   oauthProvider?: string;
   oauthId?: string;
+  gender: Gender;
   lastUsernameChange?: Date;
   price?: number;
   category?: string;
@@ -38,7 +45,7 @@ export interface CreatorDocument extends mongoose.Document {
 
 const creatorSchema = new Schema<CreatorDocument>({
   name: { type: String, required: true },
-  username: { type: String, unique: true },
+  username: { type: String, unique: true, required: true },
   password: { type: String },
   email: {
     type: String,
@@ -50,9 +57,10 @@ const creatorSchema = new Schema<CreatorDocument>({
   image: { type: String },
   oauthProvider: { type: String },
   oauthId: { type: String },
-  lastUsernameChange: { type: Date, default: '' },
+  lastUsernameChange: { type: Date, default: null },
   price: { type: Number, default: 9.99 },
   bio: {type: String, default: ''},
+  gender: { type: String, enum: Object.values(Gender), required: true },
   category: { type: String, default: 'General' },
   subscriptions: [{
     userId: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true },

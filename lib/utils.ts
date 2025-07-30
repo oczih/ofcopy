@@ -8,7 +8,7 @@ export function cn(...inputs: ClassValue[]) {
 
 
 
-export default async function agetCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob> {
+export default async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob> {
   const image = new Image();
   image.src = imageSrc; 
   await new Promise((resolve) => {

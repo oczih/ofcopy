@@ -4,8 +4,8 @@ const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/posts`;
 
 const get = async (): Promise<Post[]> => {
     try {
-        const reponse = await axios.get(API_URL)
-        return reponse.data
+        const response = await axios.get(API_URL)
+        return response.data
     }catch(error){
         console.error('Error fetching users:', error)
         throw error

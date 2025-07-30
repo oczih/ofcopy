@@ -5,6 +5,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import OFUser from "@/app/models/usermodel";
 import { connectDB } from "@/lib/mongoose";
 import bcrypt from "bcryptjs";
+import { use } from "react";
 
 async function generateUniqueUsername(baseUsername: string): Promise<string> {
   let username = baseUsername.toLowerCase().replace(/\s+/g, "_");
@@ -113,7 +114,7 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             username: uniqueUsername,
             name: user.name,
-            image: user.image,
+            avatar: user.image,
             oauthProvider: "google",
             oauthId: providerId,
             emailVerified: true, // OAuth emails are pre-verified
@@ -241,8 +242,9 @@ export const authOptions: NextAuthOptions = {
         session.user.notifications = user.notifications || [];
         session.user.following = user.following || [];
         session.user.creator = isCreator;
+        session.user.bio = user.bio
         session.user.emailVerified = user.emailVerified;
-      
+        session.user.location = user.location
       } else {
         console.log("[Session] No user found in database");
       }

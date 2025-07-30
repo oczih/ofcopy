@@ -49,9 +49,11 @@ export interface Notification {
 export interface UserDocument {
     _id: string;
   username: string;
-  password: string
-  email: string
-  name: string
+  password: string;
+  email: string;
+  name: string;
+  bio?: string;
+  location?: string;
   googleId: string | null,
   avatar?: string;
   oauthProvider?: string;
@@ -95,7 +97,8 @@ const userSchema = new Schema<UserDocument>({
       "Email is invalid",
     ],
   },
-
+  bio: {type: String},
+  location: {type: String},
   googleId: {
     type: String,
     default: null,

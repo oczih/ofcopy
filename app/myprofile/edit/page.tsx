@@ -13,7 +13,8 @@ import { ZoomIn, ZoomOut, X } from 'lucide-react';
 import getCroppedImg from '@/lib/utils'
 import userservice from '@/app/services/userservice';
 import { getDownloadUrl, uploadContent } from '@/app/services/uploadmediaservice';
-
+import creatorservice from '@/app/services/creatorservice';
+import { Skeleton } from "@/components/ui/skeleton";
 export default function EditProfilePage() {
     return (
         <AppWrapper>
@@ -33,14 +34,30 @@ function EditProfile() {
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  console.log("profpic", profilePic)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [imageLoading, setImageLoading] = useState(true);
+  console.log("SESSARI", session?.user)
   useEffect(() => {
-    if (session?.user?.avatar) {
-      setProfilePic(session.user.avatar);
-    } else if (session?.user?.name) {
-      setProfilePic(null); // Will show placeholder fallback
-    }
+    const fetchCreator = async () => {
+      if (session?.user?.creator) {
+        try {
+          const creators = await creatorservice.get(); // now awaited
+          const rightCreator = creators.creators.find(c => c.user === session.user.id);
+          console.log("Creatorit", creators)
+          console.log("rightcreator", rightCreator)
+          setProfilePic(session.user.avatar|| null);
+        } catch (err) {
+          console.error("Failed to fetch creator data:", err);
+          setProfilePic(null);
+        }
+      } else if (session?.user) {
+        setProfilePic(session?.user.avatar);
+      } else if (session?.user?.name) {
+        setProfilePic(null); // Will show fallback
+      }
+    };
+  
+    fetchCreator();
   }, [session]);
   const handleFileChange = (key: string, file: File | null) => {
     if (file) {
@@ -75,7 +92,7 @@ function EditProfile() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
+    <div>
       <div className="flex max-w-5xl mx-auto px-4 py-12 gap-8">
 
         <main className="flex-1 flex flex-col items-center gap-8">
@@ -85,26 +102,40 @@ function EditProfile() {
           <div className="flex flex-col items-center">
             
           <label htmlFor="profilePicUpload" className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-pink-500 shadow-lg mb-3 cursor-pointer">
-              <input
-                id="profilePicUpload"
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleFileChange("profilePic", e.target.files?.[0] || null)}
-                className="hidden"
-              />
-              
-              {croppedImage ? (
-                <Image src={croppedImage} alt="Profile Picture" fill className="object-cover z-10" />
-              ) : profilePic ? (
-                <Image src={profilePic} width={500} height={500}  alt="Profile Picture" className="object-cover z-10" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-700 text-white text-3xl">
-                  {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
-                </div>
+            <input
+              id="profilePicUpload"
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleFileChange("profilePic", e.target.files?.[0] || null)}
+              className="hidden"
+            />
+            <div className="relative w-full h-full">
+              {/* Custom loading skeleton with animation */}
+              {imageLoading && (
+                
+                 <Skeleton className="w-full h-full rounded-none bg-gray-200 dark:bg-gray-700"></Skeleton>
               )}
 
-              
-            </label>
+              {/* Show the image (it loads behind the loading state) */}
+              {(croppedImage || profilePic) && (
+                <Image
+                  src={croppedImage || profilePic}
+                  alt="Profile Picture"
+                  fill
+                  className="object-cover rounded-full z-10"
+                  onLoad={() => setImageLoading(false)}
+                  onError={() => setImageLoading(false)}
+                />
+              )}
+
+              {/* Show fallback initials only if there's no image and not loading */}
+              {!imageLoading && !croppedImage && !profilePic && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-700 text-white text-3xl rounded-full z-10">
+                  {session?.user?.name?.charAt(0).toUpperCase() || "U"}
+                </div>
+              )}
+            </div>
+          </label>
 
               
             
@@ -122,7 +153,7 @@ function EditProfile() {
                   <h2 className="text-xl font-semibold">{link.title}</h2>
                   <p className="text-sm text-gray-300">{link.description}</p>
                   <Link href={link.href}>
-                    <Button className="bg-gradient-to-r from-pink-500 to-purple-600 text-white mt-2  cursor-pointer">
+                    <Button className="bg-gradient-to-r from-pink-500 to-purple-600 text-white mt-2 cursor-pointer">
                       Edit {link.title}
                     </Button>
                   </Link>
@@ -211,7 +242,7 @@ function EditProfile() {
                   );
 
                   // 2. Convert Blob to File (to reuse existing uploadContent logic)
-                  const croppedFile = new File([croppedBlob], "avatar.jpg", { type: "image/jpeg" });
+                  const croppedFile = new File([croppedBlob], `${session.user.id}_avatar.jpg`, { type: "image/jpeg" });
 
                   // 3. Upload to S3
                   const s3Key = await uploadContent(croppedFile);

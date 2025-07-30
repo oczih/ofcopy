@@ -12,7 +12,7 @@ const s3 = new S3Client({
     secretAccessKey: process.env.AWS_SECRET_KEY!,
   },
 });
-console.log("Creators:", await creatorservice.get())
+
 
 
 export async function GET(req: NextRequest) {
@@ -29,7 +29,10 @@ export async function GET(req: NextRequest) {
 
       const postsWithSignedUrls = await Promise.all(
         creator.posts.map(async (post) => {
-          if (!post.s3Key) return post;
+          if (!post.s3Key) {
+            console.warn(`Missing s3Key for post ID: ${post._id}`);
+            return post;
+          }
 
           const command = new GetObjectCommand({
             Bucket: process.env.AWS_BUCKET_NAME!,
@@ -57,15 +60,15 @@ export async function GET(req: NextRequest) {
 
 
 export async function POST(req: NextRequest) {
-  const { filename, fileType } = await req.json();
+  const { s3Key, fileType } = await req.json();
 
   const command = new PutObjectCommand({
     Bucket: process.env.AWS_BUCKET_NAME!,
-    Key: filename,
+    Key: s3Key,
     ContentType: fileType,
   });
 
   const signedUrl = await getSignedUrl(s3, command, { expiresIn: 60 });
 
-  return NextResponse.json({ url: signedUrl });
+  return NextResponse.json({ url: signedUrl, key: s3Key });
 }
