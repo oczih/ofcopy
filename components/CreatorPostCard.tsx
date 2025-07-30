@@ -235,12 +235,12 @@ export function CreatorPostCard({
 
 </div>
       
-        {modalOpen && !user.creator && (
+        {modalOpen && !user?.creator && (
           <div
           className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-100 opacity-100 animate-fade-in z-30"
         >
           <Link href={`/${creator.username}`}>
-            <Button variant="ghost" className="w-full justify-start text-left">
+            <Button variant="ghost" className="w-full justify-start text-left cursor-pointer">
               Go to creator profile
             </Button>
           </Link>

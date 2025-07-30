@@ -15,6 +15,7 @@ import userservice from '@/app/services/userservice';
 import { getDownloadUrl, uploadContent } from '@/app/services/uploadmediaservice';
 import creatorservice from '@/app/services/creatorservice';
 import { Skeleton } from "@/components/ui/skeleton";
+import { Creator } from '@/app/types';
 export default function EditProfilePage() {
     return (
         <AppWrapper>
@@ -36,6 +37,7 @@ function EditProfile() {
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [imageLoading, setImageLoading] = useState(true);
+  const [creator, setCreator] = useState<Creator | null>(null)
   console.log("SESSARI", session?.user)
   useEffect(() => {
     const fetchCreator = async () => {
@@ -45,7 +47,8 @@ function EditProfile() {
           const rightCreator = creators.creators.find(c => c.user === session.user.id);
           console.log("Creatorit", creators)
           console.log("rightcreator", rightCreator)
-          setProfilePic(session.user.avatar|| null);
+          setProfilePic(rightCreator.image|| null);
+          setCreator(rightCreator)
         } catch (err) {
           console.error("Failed to fetch creator data:", err);
           setProfilePic(null);
@@ -251,10 +254,12 @@ function EditProfile() {
                   const avatarUrl = await getDownloadUrl(s3Key); // or `https://yourbucket.s3.amazonaws.com/${s3Key}`
 
                   // 5. Save avatar URL to user profile
-                  const res = await userservice.update(session.user.id, {
+                  await userservice.update(session.user.id, {
                     avatar: avatarUrl,
                   });
-                  console.log(res)
+                  if (session.user.creator && creator?.id) {
+                    await creatorservice.update(creator.id, { image: avatarUrl });
+                  }
                   // 6. Update frontend state
                   setCroppedImage(avatarUrl);
                   setProfilePic(avatarUrl);

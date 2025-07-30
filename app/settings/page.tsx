@@ -134,12 +134,12 @@ function SettingsApp() {
             <p className="text-gray-400">Manage your account and preferences</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="flex flex-col gap-3">
             {mainTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => handleTabClick(tab.id)}
-                className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 text-left hover:bg-white/10 transition-all duration-300 group cursor-pointer"
+                className="bg-white/5 backdrop-blur-xl rounded-2xl hover:outline hover:outline-white p-6 text-left hover:bg-white/10 transition-all duration-300 group cursor-pointer"
               >
                 <div className="flex items-center justify-between">
                   <div>

@@ -106,7 +106,7 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
       href={session?.user ? `/${session.user.username}` : "#"}
       className="flex items-center space-x-3 min-h-[40px]"
     >
-      <div className="relative w-10 h-10">
+      <div className={`relative w-10 h-10 ${isCollapsed ? "mx-auto" : ""}`}>
         {!session?.user ? (
           <Skeleton className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700" />
         ) : session.user.avatar ? (
@@ -118,6 +118,7 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
               className="rounded-full border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
               onLoad={() => setImageLoading(false)}
               onError={() => setImageLoading(false)}
+              unoptimized
             />
             {imageLoading && (
               <Skeleton className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700 absolute top-0 left-0" />

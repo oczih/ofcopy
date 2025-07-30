@@ -457,7 +457,7 @@ function ApplyCreatorPage() {
               <p className="text-gray-300">This helps us understand our creator community</p>
             </div>
             <div className="grid grid-cols-1 gap-3">
-              {["Male", "Female", "Other", "Prefer not to say"].map((option) => (
+              {["Female", "Male", "Other", "Prefer not to say"].map((option) => (
                 <button
                   key={option}
                   onClick={() => handleInputChange("gender", option)}
@@ -853,16 +853,7 @@ function ApplyCreatorPage() {
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-hidden`}>
-      {/* Animated background elements */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
-      </div>
-      
-      
-      
+    <div className="min-h-screen w-full bg-[#3b0364]">
       <div className="flex max-w-7xl mx-auto px-6 py-8 gap-8 relative z-10">
         <main className="flex-1 flex items-center justify-center">
           <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl max-w-2xl w-full animate-fade-in overflow-hidden s">
