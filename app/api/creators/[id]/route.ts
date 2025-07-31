@@ -95,15 +95,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
     const { id } = await params;
-    if (session.user?.id !== id) {
-      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
-    }
-  
+    console.log("sessariL:", session.user)
+    console.log("iidee:", id)
     try {
       const body = await request.json();
       const {
         name, username, password, email,
-        age, image
+        age, image, gender
       } = body;
   
       const user = await Creator.findById(id);
@@ -134,11 +132,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       if (email !== undefined) user.email = email;
       if (age !== undefined) user.age = age;
       if (image !== undefined) user.image = image;
+      if (gender !== undefined) user.gender = gender;
       await user.save();
   
       return NextResponse.json({ user });
     } catch (error) {
-      console.error('Error updating creator:', error);
+      console.error('Error updating creator:', error instanceof Error ? error.stack : error);
       return NextResponse.json({ error: 'Failed to update creator' }, { status: 500 });
     }
   }

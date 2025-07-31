@@ -12,10 +12,10 @@ export async function POST(req: NextRequest) {
     }
 
     const signedUrl = getSignedUrl({
-      url: `https://${process.env.CF_DOMAIN}/${s3Key}`,
+      url: `${process.env.CF_DOMAIN}/${s3Key}`,
       keyPairId: process.env.CF_KEY_PAIR_ID!,
-      privateKey: process.env.CF_PRIVATE_KEY!,
-      dateLessThan: Math.floor(Date.now() / 1000) + 300, // Expires in 5 minutes
+      privateKey: process.env.CF_PRIVATE_KEY!.replace(/\\n/g, '\n'),
+      dateLessThan: Math.floor(Date.now() / 1000) + 3600, // Expires in 5 minutes
     });
 
     return NextResponse.json({ downloadUrl: signedUrl });

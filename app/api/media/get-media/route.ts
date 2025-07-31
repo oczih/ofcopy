@@ -29,10 +29,10 @@ export async function GET(req: NextRequest) {
           }
 
           const signedUrl = getSignedUrl({
-            url: `https://${process.env.CF_DOMAIN}/${post.s3Key}`,
-            dateLessThan: Math.floor(Date.now() / 1000) + 300,
+            url: `${process.env.CF_DOMAIN}/${post.s3Key}`,
+            dateLessThan: Math.floor(Date.now() / 1000) + 3600,
             keyPairId: process.env.CF_KEY_PAIR_ID!,
-            privateKey: process.env.CF_PRIVATE_KEY!,
+            privateKey: process.env.CF_PRIVATE_KEY!.replace(/\\n/g, '\n'),
           });
 
           return {

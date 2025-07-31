@@ -60,7 +60,7 @@ const creatorSchema = new Schema<CreatorDocument>({
   lastUsernameChange: { type: Date, default: null },
   price: { type: Number, default: 9.99 },
   bio: {type: String, default: ''},
-  gender: { type: String, enum: Object.values(Gender), required: true },
+  gender: { type: String, enum: Object.values(Gender) },
   category: { type: String, default: 'General' },
   subscriptions: [{
     userId: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true },

@@ -38,7 +38,6 @@ function EditProfile() {
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [imageLoading, setImageLoading] = useState(true);
   const [creator, setCreator] = useState<Creator | null>(null)
-  console.log("SESSARI", session?.user)
   useEffect(() => {
     const fetchCreator = async () => {
       if (session?.user?.creator) {

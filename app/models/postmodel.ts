@@ -26,7 +26,6 @@ export interface PostDocument extends Document {
 const postSchema = new Schema<PostDocument>({
   creator: { type: Schema.Types.ObjectId, ref: 'Creator', required: true },
   s3Key: { type: String },  // no required
-  type: { type: String },
   caption: { type: String },  // no required
   likes: [
     { userId: {type: Schema.Types.ObjectId, ref: 'OFUser', required: true} }
@@ -44,7 +43,8 @@ const postSchema = new Schema<PostDocument>({
   width: { type: Number },
   height: { type: Number },
   price: { type: Number },
-});
+  
+}, { timestamps: true });
 
 const Post = mongoose.models?.Post || model<PostDocument>('Post', postSchema);
 

@@ -30,21 +30,29 @@ async function getSignedUrl(fileName: string, contentType: string): Promise<Sign
 }
 
 async function uploadFileToS3(file: File, signedUrl: string): Promise<void> {
-  await axios.put(signedUrl, file, {
-    headers: {
-      "Content-Type": file.type,
-    },
-    onUploadProgress: (progressEvent) => {
-      if (progressEvent.total) {
-        const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-        console.log(`Upload progress: ${progress}%`);
-      }
-    },
-  });
+  try {
+    await axios.put(signedUrl, file, {
+      headers: { "Content-Type": file.type },
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total) {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          console.log(`Upload progress: ${progress}%`);
+        }
+      },
+    });
+  } catch (error) {
+    console.error("Upload failed", error);
+    throw error;
+  }
+}
+
+function sanitizeFileName(name: string): string {
+  return name.replace(/\s+/g, "-").toLowerCase();
 }
 
 export async function uploadContent(file: File): Promise<string> {
-  const { uploadUrl, key } = await getSignedUrl(file.name, file.type);
+  const sanitizedFileName = sanitizeFileName(file.name);
+  const { uploadUrl, key } = await getSignedUrl(sanitizedFileName, file.type);
   await uploadFileToS3(file, uploadUrl);
   console.log("Key:",key)
   return key;

@@ -25,8 +25,9 @@ import heroImage from "@/assets/hero-image.jpg";
 import aiCreator from "@/assets/ai-creator.png";
 import humanCreator from "@/assets/human-creator.png";
 import productHuntFeatured from "@/assets/product-hunt-featured.png";
-import { SessionProvider } from "next-auth/react";
+import { SessionProvider, useSession } from "next-auth/react";
 import FeaturesSection from "@/components/FeaturesSection";
+import { useRouter } from "next/navigation";
 
 const faqData = [
   {
@@ -142,13 +143,17 @@ export default function LandingPage() {
 }
 
 function Landing() {
+  const router = useRouter()
+  const {data: session} = useSession();
   const [mounted, setMounted] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
+  if (session?.user) {
+    
+  
   if (!mounted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -159,7 +164,9 @@ function Landing() {
       </div>
     );
   }
-
+  if (typeof window !== "undefined"){
+    router.push("/home")};
+ }
   return (
     <motion.div 
       initial={{ filter: "blur(5px)" }}
