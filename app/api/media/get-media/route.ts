@@ -1,17 +1,11 @@
 import creatorservice from "@/app/services/creatorservice";
-import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl as getCloudFrontSignedUrl } from "@aws-sdk/cloudfront-signer";
+import { getSignedUrl } from "@aws-sdk/cloudfront-signer";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-client";
 import { Creator } from "@/app/types";
-const s3 = new S3Client({
-  region: "eu-north-1",
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY!,
-    secretAccessKey: process.env.AWS_SECRET_KEY!,
-  },
-});
 
 
 
@@ -34,12 +28,12 @@ export async function GET(req: NextRequest) {
             return post;
           }
 
-          const command = new GetObjectCommand({
-            Bucket: process.env.AWS_BUCKET_NAME!,
-            Key: post.s3Key,
+          const signedUrl = getSignedUrl({
+            url: `https://${process.env.CF_DOMAIN}/${post.s3Key}`,
+            dateLessThan: Math.floor(Date.now() / 1000) + 300,
+            keyPairId: process.env.CF_KEY_PAIR_ID!,
+            privateKey: process.env.CF_PRIVATE_KEY!,
           });
-
-          const signedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
 
           return {
             ...post,
@@ -62,13 +56,13 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const { s3Key, fileType } = await req.json();
 
-  const command = new PutObjectCommand({
-    Bucket: process.env.AWS_BUCKET_NAME!,
-    Key: s3Key,
-    ContentType: fileType,
-  });
 
-  const signedUrl = await getSignedUrl(s3, command, { expiresIn: 60 });
+  const signedUrl = getCloudFrontSignedUrl({
+    url: `https://${process.env.CF_DOMAIN}/${s3Key}`,
+    keyPairId: process.env.CF_KEY_PAIR_ID!,
+    privateKey: process.env.CF_PRIVATE_KEY!,
+    dateLessThan: Math.floor(Date.now() / 1000) + 300,
+  });
 
   return NextResponse.json({ url: signedUrl, key: s3Key });
 }

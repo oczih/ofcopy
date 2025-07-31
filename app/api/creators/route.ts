@@ -8,8 +8,8 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import s3 from '@/lib/s3Client'; // your configured S3 client
 import { Post } from '@/app/types';
-async function addSignedUrlsToPosts(posts: Post) {
-  return Promise.all(posts.map(async (post: Post) => {  
+async function addSignedUrlsToPosts(posts: Post[]) {
+  return Promise.all(posts.map(async (post) => {  
     if (!post.s3Key) return post;
     try {
       const command = new GetObjectCommand({
@@ -23,7 +23,7 @@ async function addSignedUrlsToPosts(posts: Post) {
       };
     } catch (err) {
       console.error("Failed to get signed URL for post:", post._id, err);
-      return post.toObject();
+      return typeof post.toObject === 'function' ? post.toObject() : post;
     }
   }));
 }
