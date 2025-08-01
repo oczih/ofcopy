@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 export type User = {
     id: string,
-    avatar: string;
+    avatarKey?: string;
     username: string
     password: string
     email: string,
@@ -151,7 +151,7 @@ declare module "next-auth" {
     following?: Following[]
     comments?: Comment[];
     name?: string;
-    avatar?: string;
+    avatarKey?: string;
     emailVerified: boolean;
     emailVerificationToken: string;
     emailVerificationExpires: Date;

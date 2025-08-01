@@ -18,6 +18,9 @@ import { useRouter } from 'next/navigation';
 import { CreatorPostCard } from './CreatorPostCard';
 import { useSession } from 'next-auth/react';
 
+
+
+
 function Modal({ open, onClose, title, children }: { open: boolean, onClose: () => void, title: string, children: React.ReactNode }) {
   if (!open) return null;
   return (
@@ -75,7 +78,53 @@ export default function ProfileContent({
     }
     if (userViewed?.id) fetchCreator();
   }, [userViewed]);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarError, setAvatarError] = useState(false);
+  const { data: session} = useSession();
+  useEffect(() => {
+    const fetchAvatarUrl = async () => {
+      if (session?.user?.avatarKey) {
+        try {
+          setImageLoading(true);
+          setAvatarError(false);
+          
+          const key = session.user.avatarKey.replace(/^\/+/, ''); // remove leading slash
+          const res = await fetch("/api/media/download-url", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ s3Key: key }),
+          });
+          
+          console.log("res:", res)
+          
+          if (!res.ok) {
+            throw new Error(`Failed to fetch avatar URL: ${res.status}`);
+          }
+          
+          const data = await res.json();
+          
+          // Validate that we got a proper URL
+          if (data.downloadUrl && (data.downloadUrl.startsWith('http://') || data.downloadUrl.startsWith('https://'))) {
+            setAvatarUrl(data.downloadUrl);
+          } else {
+            console.error('Invalid avatar URL received:', data.downloadUrl);
+            setAvatarError(true);
+          }
+        } catch (error) {
+          console.error('Error fetching avatar URL:', error);
+          setAvatarError(true);
+        } finally {
+          setImageLoading(false);
+        }
+      } else {
+        setImageLoading(false);
+      }
+    };
 
+    fetchAvatarUrl();
+  }, [session?.user?.avatarKey]);
   useEffect(() => {
     if (!creator?.id || !viewingUser.id) {
       setStatus('none');
@@ -148,10 +197,10 @@ const handleUnfollow = async (creator: Creator) => {
             <div className="relative w-40 h-40 rounded-full overflow-hidden">
               {!userViewed ? (
                 <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700" />
-              ) : creator?.image || userViewed.image? (
+              ) : avatarUrl || creator?.image || userViewed.image? (
                 <>
                   <Image
-                    src={creator?.image || userViewed?.image}
+                    src={avatarUrl || creator?.image || userViewed?.image}
                     alt={userViewed.username || "User profile image"}
                     fill
                     className="rounded-full border-pink-500/40 shadow-lg transition-all duration-300 object-cover"

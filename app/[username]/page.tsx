@@ -64,7 +64,7 @@ export default async function UserProfilePage({ params }: { params: Promise<Para
     const purchases = await Purchase.find({ userId: session.user.id }).populate('mediaId');
     purchasedContent = purchases.map((p: any) => p.mediaId).filter(Boolean);
   }
-
+  
   return (
     <AppWrapper>
       <ProfileContent

@@ -88,7 +88,7 @@ export const CreatorCard = ({ creator }: CreatorCardProps) => {
           <Link href={`/${creator.username}`}>
           <Button 
             variant="outline" 
-            className="w-full border-2 border-white/20 text-white hover:bg-white/10 hover:border-pink-500/50 rounded-full py-3 font-medium transition-all duration-300 hover:scale-105"
+            className="w-full border-2 border-white/20 text-white hover:bg-white/10 hover:border-pink-500/50 rounded-full py-3 font-medium transition-all duration-300 hover:scale-105 cursor-pointer"
           >
             View Profile
           </Button>

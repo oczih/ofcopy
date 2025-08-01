@@ -55,7 +55,7 @@ export interface UserDocument {
   bio?: string;
   location?: string;
   googleId: string | null,
-  avatar?: string;
+  avatarKey?: string;
   oauthProvider?: string;
   oauthId?: string;
   hasAccess?: boolean;
@@ -103,7 +103,7 @@ const userSchema = new Schema<UserDocument>({
     type: String,
     default: null,
   },
-  avatar: { type: String },
+  avatarKey: { type: String },
   oauthProvider: { type: String },
   oauthId: { type: String },
   hasAccess: {

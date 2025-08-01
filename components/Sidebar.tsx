@@ -33,7 +33,8 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
-
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarError, setAvatarError] = useState(false);
   const menuItems = [
     { id: "feed", label: "Home Feed", icon: Home, color: "pink", href: "/home" },
     { id: "discover", label: "Discover", icon: Compass, color: "purple", href: "/discover" },
@@ -62,7 +63,50 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
     };
     fetchCreator();
   }, [session?.user?.id]);
+  useEffect(() => {
+    const fetchAvatarUrl = async () => {
+      if (session?.user?.avatarKey) {
+        try {
+          setImageLoading(true);
+          setAvatarError(false);
+          
+          const key = session.user.avatarKey.replace(/^\/+/, ''); // remove leading slash
+          const res = await fetch("/api/media/download-url", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ s3Key: key }),
+          });
+          
+          console.log("res:", res)
+          
+          if (!res.ok) {
+            throw new Error(`Failed to fetch avatar URL: ${res.status}`);
+          }
+          
+          const data = await res.json();
+          
+          // Validate that we got a proper URL
+          if (data.downloadUrl && (data.downloadUrl.startsWith('http://') || data.downloadUrl.startsWith('https://'))) {
+            setAvatarUrl(data.downloadUrl);
+          } else {
+            console.error('Invalid avatar URL received:', data.downloadUrl);
+            setAvatarError(true);
+          }
+        } catch (error) {
+          console.error('Error fetching avatar URL:', error);
+          setAvatarError(true);
+        } finally {
+          setImageLoading(false);
+        }
+      } else {
+        setImageLoading(false);
+      }
+    };
 
+    fetchAvatarUrl();
+  }, [session?.user?.avatarKey]);
   const getButtonStyles = (isActive: boolean) => {
     if (isActive) {
       return `bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg hover:shadow-xl`;
@@ -85,7 +129,43 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
     setIsCollapsed(newCollapsedState);
     onCollapseChange?.(newCollapsedState);
   };
+  const renderAvatar = () => {
+    if (imageLoading) {
+      return <Skeleton className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700" />;
+    }
 
+    if (!session?.user) {
+      return <Skeleton className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700" />;
+    }
+
+    // If we have a valid avatar URL and no error, show the image
+    if (avatarUrl && !avatarError && avatarUrl.startsWith('http')) {
+      return (
+        <Image
+          src={avatarUrl}
+          alt={session.user.name || session.user.username || "User profile image"}
+          fill
+          className="rounded-full border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
+          onError={() => setAvatarError(true)}
+          unoptimized
+        />
+      );
+    }
+
+    // Fallback: show user initials or default avatar
+    const initials = session.user.name 
+      ? session.user.name.split(' ').map(n => n[0]).join('').toUpperCase()
+      : session.user.username 
+        ? session.user.username[0].toUpperCase()
+        : 'U';
+
+    return (
+      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+        {initials}
+      </div>
+    );
+  };
+  
   return (
     <aside className={`${isCollapsed ? 'w-20' : 'w-72'} h-screen fixed left-0 top-0 z-30 bg-gradient-to-b from-slate-900/80 via-purple-900/70 to-slate-900/90 backdrop-blur-xl border-r border-white/10 shadow-2xl p-6 flex flex-col transition-all duration-300 ease-in-out`}>
       
@@ -101,33 +181,10 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
       {/* User Profile Section */}
       <div className={`flex flex-col items-center ${isCollapsed ? 'mb-6 mt-8' : 'mb-10 mt-2'} relative transition-all duration-300`}>
   <div className="relative group">
-    <Link
-      href={session?.user ? `/${session.user.username}` : "#"}
-      className="flex items-center space-x-3 min-h-[40px]"
-    >
+
       <div className={`relative w-10 h-10 ${isCollapsed ? "mx-auto" : ""}`}>
-        {!session?.user ? (
-          <Skeleton className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700" />
-        ) : session.user.avatar ? (
-          <>
-            <Image
-              src={session.user.avatar}
-              alt={session.user.name || session.user.username || "User profile image"}
-              fill
-              className="rounded-full border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
-              onLoad={() => setImageLoading(false)}
-              onError={() => setImageLoading(false)}
-              unoptimized
-            />
-            {imageLoading && (
-              <Skeleton className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700 absolute top-0 left-0" />
-            )}
-          </>
-        ) : (
-          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-400 text-white font-bold text-lg">
-            {session.user.name?.charAt(0).toUpperCase() || "U"}
-          </div>
-        )}
+        <div>
+        {renderAvatar()}
       </div>
 
       {/* Name and Username */}
@@ -152,7 +209,7 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
               </div>)}</>
         )}
       </div>
-    </Link>
+    </div>
 
     {/* Tooltip */}
     {isCollapsed && session?.user && (
