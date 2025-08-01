@@ -171,7 +171,6 @@ export function CreatorPostCard({
         alert('Failed to delete post')
       }
   }
-  console.log("Creatoriu;", creator)
   return (
   <div className="bg-white/5 rounded-2xl shadow-xl border border-white/10 p-0 overflow-hidden max-w-3xl w-full mx-auto animate-fade-in">
     {/* Header */}

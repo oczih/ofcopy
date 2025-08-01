@@ -20,6 +20,12 @@ import { useSession } from 'next-auth/react';
 
 
 
+const resolveImageUrl = (src: string | null | undefined): string | null => {
+  if (!src) return null;
+  if (src.startsWith('http://') || src.startsWith('https://')) return src;
+  if (src.startsWith('/')) return src;
+  return '/' + src; // Add leading slash if missing
+};
 
 function Modal({ open, onClose, title, children }: { open: boolean, onClose: () => void, title: string, children: React.ReactNode }) {
   if (!open) return null;
@@ -87,8 +93,8 @@ export default function ProfileContent({
         try {
           setImageLoading(true);
           setAvatarError(false);
-          
-          const key = session.user.avatarKey.replace(/^\/+/, ''); // remove leading slash
+  
+          const key = session?.user?.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
           const res = await fetch("/api/media/download-url", {
             method: "POST",
             headers: {
@@ -96,24 +102,17 @@ export default function ProfileContent({
             },
             body: JSON.stringify({ s3Key: key }),
           });
-          
-          console.log("res:", res)
-          
-          if (!res.ok) {
-            throw new Error(`Failed to fetch avatar URL: ${res.status}`);
-          }
-          
+  
           const data = await res.json();
-          
-          // Validate that we got a proper URL
-          if (data.downloadUrl && (data.downloadUrl.startsWith('http://') || data.downloadUrl.startsWith('https://'))) {
+  
+          if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
             setAvatarUrl(data.downloadUrl);
           } else {
-            console.error('Invalid avatar URL received:', data.downloadUrl);
+            console.error("Invalid download URL:", data.downloadUrl);
             setAvatarError(true);
           }
         } catch (error) {
-          console.error('Error fetching avatar URL:', error);
+          console.error("Error fetching avatar URL:", error);
           setAvatarError(true);
         } finally {
           setImageLoading(false);
@@ -122,9 +121,10 @@ export default function ProfileContent({
         setImageLoading(false);
       }
     };
-
+  
     fetchAvatarUrl();
   }, [session?.user?.avatarKey]);
+  
   useEffect(() => {
     if (!creator?.id || !viewingUser.id) {
       setStatus('none');
@@ -186,7 +186,6 @@ const handleUnfollow = async (creator: Creator) => {
     console.error('Error unfollowing creator:', err);
   }
 };
-  console.log("Creator: ", creator)
   return (
     <div>
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -200,13 +199,13 @@ const handleUnfollow = async (creator: Creator) => {
               ) : avatarUrl || creator?.image || userViewed.image? (
                 <>
                   <Image
-                    src={avatarUrl || creator?.image || userViewed?.image}
-                    alt={userViewed.username || "User profile image"}
-                    fill
-                    className="rounded-full border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
-                    onLoad={() => setImageLoading(false)}
-                    onError={() => setImageLoading(false)}
-                  />
+  src={resolveImageUrl(avatarUrl || creator?.image || userViewed?.image)}
+  alt={userViewed.username || "User profile image"}
+  fill
+  className="rounded-full border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
+  onLoad={() => setImageLoading(false)}
+  onError={() => setImageLoading(false)}
+/>
                   {imageLoading && (
                     <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700 absolute top-0 left-0" />
                   )}
