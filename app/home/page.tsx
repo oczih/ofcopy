@@ -111,7 +111,7 @@ function App() {
       </div>
     );
   }
-  if (!session?.user) {
+  if (!session?.user && !loading && !session) {
     
     if (typeof window !== "undefined"){
      router.push("/login")};
@@ -192,7 +192,7 @@ function App() {
       <div className="flex justify-center">
   <main className="relative z-10 space-y-8 max-w-3xl w-full px-4 py-8">
         {/* Toggle Buttons with enhanced styling */}
-        {session.user?.creator && (
+        {session?.user?.creator && (
         <div className="flex gap-4 justify-center mb-15 mt-15">
           <Button
             className={`px-8 py-3 rounded-full font-semibold shadow-lg transition-all duration-300 text-lg backdrop-blur-lg border border-white/10 ${

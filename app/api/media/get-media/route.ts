@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 
 
   const signedUrl = getCloudFrontSignedUrl({
-    url: `https://${process.env.CF_DOMAIN}/${s3Key}`,
+    url: `${process.env.CF_DOMAIN}/${s3Key}`,
     keyPairId: process.env.CF_KEY_PAIR_ID!,
     privateKey: process.env.CF_PRIVATE_KEY!,
     dateLessThan: Math.floor(Date.now() / 1000) + 300,

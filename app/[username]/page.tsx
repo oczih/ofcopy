@@ -68,8 +68,8 @@ export default async function UserProfilePage({ params }: { params: Promise<Para
   return (
     <AppWrapper>
       <ProfileContent
-        userViewed={JSON.parse(JSON.stringify(user))}
-        viewingUser={JSON.parse(JSON.stringify(session?.user))}
+        userViewed={user && JSON.parse(JSON.stringify(user)) || null  }
+        viewingUser={session?.user && JSON.parse(JSON.stringify(session?.user)) || null}
         purchasedContent={JSON.parse(JSON.stringify(purchasedContent))}
         totalSpent={totalSpent}
         relationshipStatus={relationshipStatus}

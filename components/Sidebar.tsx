@@ -177,14 +177,16 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
       >
         {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
       </Button>
-
+      
       {/* User Profile Section */}
-      <div className={`flex flex-col items-center ${isCollapsed ? 'mb-6 mt-8' : 'mb-10 mt-2'} relative transition-all duration-300`}>
-  <div className="relative group">
+      {session ? (
+        <>
+        <div className={`flex flex-col items-center ${isCollapsed ? 'mb-6 mt-8' : 'mb-10 mt-2'} relative transition-all duration-300`}>
+      <div className="relative group">
 
-      <div className={`relative w-10 h-10 ${isCollapsed ? "mx-auto" : ""}`}>
-        <div>
-        {renderAvatar()}
+        <div className={`relative w-10 h-10 ${isCollapsed ? "mx-auto" : ""}`}>
+          <div>
+          {renderAvatar()}
       </div>
 
       {/* Name and Username */}
@@ -420,6 +422,28 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
             </div>
           )}
         </div>
+      )}
+      </>
+      ) : (
+          <Link href="/home">
+          <Button
+            variant="ghost"
+            className={`w-full ${isCollapsed ? 'justify-center px-2' : 'justify-start px-4'} py-3 rounded-2xl transition-all duration-300 ${getButtonStyles(pathname === "/apply-creator")}`}
+          >
+            <Home className={`w-5 h-5 ${isCollapsed ? 'mr-0' : 'mr-3'} transition-all duration-300`} />
+            {!isCollapsed && (
+              <>
+                <span className="font-medium opacity-100 transition-opacity duration-300">Home</span>
+                {pathname === "/home" && (
+                  <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                )}
+              </>
+            )}
+            {isCollapsed && pathname === "/home" && (
+              <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-white rounded-full animate-pulse"></div>
+            )}
+          </Button>
+        </Link>
       )}
     </aside>
   );

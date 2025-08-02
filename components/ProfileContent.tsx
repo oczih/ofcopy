@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Creator, Following, MediaPost, Post, User } from '@/app/types';
+import { Creator, Following, MediaPost, Post, Subscriber, User } from '@/app/types';
 import { MoreHorizontal, TreesIcon } from 'lucide-react';
 import Image from 'next/image';
 import SubscribeModal from '@/components/SubscribeModal';
@@ -124,18 +124,18 @@ export default function ProfileContent({
   
     fetchAvatarUrl();
   }, [session?.user?.avatarKey]);
-  
+
   useEffect(() => {
-    if (!creator?.id || !viewingUser.id) {
+    if (!creator?.id || !viewingUser?.id || !viewingUser) {
       setStatus('none');
       return;
     }
   
     const isSubscriber = Array.isArray(creator.subscribers) &&
-      creator.subscribers.some((sub: any) => sub.userId === viewingUser.id);
+      creator.subscribers.some((sub: Subscriber) => sub.userId === viewingUser.id);
   
     const isFollower = Array.isArray(creator.followers) &&
-      creator.followers.some((fol: any) => fol.userId === viewingUser.id);
+      creator.followers.some((fol: Follower) => fol.userId === viewingUser.id);
   
     if (isSubscriber) {
       setStatus('subscriber');
@@ -422,7 +422,7 @@ const handleUnfollow = async (creator: Creator) => {
     const visiblePosts = allPosts.filter((post) =>
       viewingUser.purchases?.some((purchase) => purchase.postId === post._id)
     );
-    const isCreator = viewingUser.id === creator.user;
+    const isCreator = viewingUser && viewingUser.id === creator.user;
     const isFollower = viewingUser.following?.some(f => f.creatorId.toString() === creator.id);
     const isSubscriber = !!viewingUser.subscriptions?.some(s => s.creatorId.toString() === creator.id);
     
@@ -541,9 +541,9 @@ const handleUnfollow = async (creator: Creator) => {
       if (status === 'follower') return post.viewableFor === 'followers';
       return post.viewableFor === 'followers'; // show blurred for public
     });
-    const isCreator = viewingUser.id === creator.user;
-    const isFollower = viewingUser.following?.some(f => f.creatorId.toString() === creator.id);
-    const isSubscriber = !!viewingUser.subscriptions?.some(s => s.creatorId.toString() === creator.id);
+    const isCreator = viewingUser && viewingUser.id === creator.user;
+    const isFollower = viewingUser && viewingUser.following?.some(f => f.creatorId.toString() === creator.id);
+    const isSubscriber = !!viewingUser && viewingUser.subscriptions?.some(s => s.creatorId.toString() === creator.id);
     
     return (
       <div className="grid grid-cols-1 gap-6">

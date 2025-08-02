@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       url: fullUrl,
       keyPairId: process.env.CF_KEY_PAIR_ID,
       privateKey: privateKey,
-      dateLessThan: expirationTime.toISOString(),
+      dateLessThan: expirationTime 
     });
 
     console.log("Generated signed URL:", signedUrl);
