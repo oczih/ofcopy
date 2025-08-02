@@ -4,13 +4,14 @@ import { Button } from "./ui/button";
 import Image from "next/image";
 import { MoreHorizontal, Heart, MessageCircle, UserPlus } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Session } from "@auth/core/types";
 import { Comment, Creator, Post } from "../app/types";
 import uploadmediaservice from "../app/services/uploadmediaservice";
 import { User } from "../app/types";
 import postservice from "../app/services/postservice";
 import { Skeleton } from "@/components/ui/skeleton"
+import { resolveImageUrl } from "./resolveImageUrl";
 // Dynamically import emoji-picker-react to avoid SSR issues
 
 export function CreatorPostCard({
@@ -103,6 +104,45 @@ export function CreatorPostCard({
       }
   }
   };
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarError, setAvatarError] = useState(false);
+  useEffect(() => {
+    const fetchAvatarUrl = async () => {
+      if (creator.avatarKey) {
+        try {
+          setImageLoading(true);
+          setAvatarError(false);
+  
+          const key = creator.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
+          const res = await fetch("/api/media/download-url", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ s3Key: key }),
+          });
+  
+          const data = await res.json();
+  
+          if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
+            setAvatarUrl(data.downloadUrl);
+          } else {
+            console.error("Invalid download URL:", data.downloadUrl);
+            setAvatarError(true);
+          }
+        } catch (error) {
+          console.error("Error fetching avatar URL:", error);
+          setAvatarError(true);
+        } finally {
+          setImageLoading(false);
+        }
+      } else {
+        setImageLoading(false);
+      }
+    };
+  
+    fetchAvatarUrl();
+  }, [creator?.avatarKey]);
   const isLikedByCurrentUser = likes.some(
     (like) => like.userId.toString() === session?.user?.id?.toString()
   );
@@ -179,7 +219,7 @@ export function CreatorPostCard({
     <div className="flex items-center gap-3 flex-1 min-w-0">
   <Link href={`/${creator.username}`}>
     <Avatar className="w-12 h-12">
-      <AvatarImage src={creator.image} alt={creator.name || creator.username} />
+      <AvatarImage src={resolveImageUrl(avatarUrl)} alt={creator.name || creator.username} />
       <AvatarFallback>{creator.name?.[0] || creator.username?.[0]}</AvatarFallback>
     </Avatar>
   </Link>

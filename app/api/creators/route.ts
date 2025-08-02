@@ -4,29 +4,6 @@ import mongoose from 'mongoose';
 import { connectDB } from '@/lib/mongoose';
 import Creator from '@/app/models/creatormodel';
 
-import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import s3 from '@/lib/s3Client'; // your configured S3 client
-import { Post } from '@/app/types';
-async function addSignedUrlsToPosts(posts: Post[]) {
-  return Promise.all(posts.map(async (post) => {  
-    if (!post.s3Key) return post;
-    try {
-      const command = new GetObjectCommand({
-        Bucket: process.env.AWS_BUCKET_NAME!,
-        Key: post.s3Key,
-      });
-      const signedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
-      return {
-        ...(typeof post.toObject === 'function' ? post.toObject() : post),
-        signedUrl,
-      };
-    } catch (err) {
-      console.error("Failed to get signed URL for post:", post._id, err);
-      return typeof post.toObject === 'function' ? post.toObject() : post;
-    }
-  }));
-}
 
 export async function GET(request: NextRequest) {
   await connectDB();
@@ -40,31 +17,19 @@ export async function GET(request: NextRequest) {
       }
 
       const creator = await Creator.findOne({ _id: userId }).populate('posts');
+
       console.log("Creator", creator)
+
       if (!creator) {
         return NextResponse.json({ error: 'Creator not found for user' }, { status: 404 });
       }
 
-      // Add signed URLs to posts
-      const postsWithSignedUrls = await addSignedUrlsToPosts(creator.posts);
-      const creatorObj = creator.toObject();
-      creatorObj.posts = postsWithSignedUrls;
-
-      return NextResponse.json({ creator: creatorObj });
+      return NextResponse.json({ creator });
     } else {
       const creators = await Creator.find({}).populate('posts');
         console.log("Creators:", creators) 
-      // Add signed URLs for all creators' posts
-      const creatorsWithSignedUrls = await Promise.all(
-        creators.map(async (creator) => {
-          const postsWithSignedUrls = await addSignedUrlsToPosts(creator.posts || []);
-          const creatorObj = creator.toObject();
-          creatorObj.posts = postsWithSignedUrls;
-          return creatorObj;
-        })
-      );
 
-      return NextResponse.json({ creators: creatorsWithSignedUrls });
+      return NextResponse.json({ creators });
     }
   } catch (error) {
     console.error('Error fetching creators:', error);

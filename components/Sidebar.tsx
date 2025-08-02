@@ -35,6 +35,7 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
   const [imageLoading, setImageLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
+  
   const menuItems = [
     { id: "feed", label: "Home Feed", icon: Home, color: "pink", href: "/home" },
     { id: "discover", label: "Discover", icon: Compass, color: "purple", href: "/discover" },

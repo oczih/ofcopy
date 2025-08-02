@@ -31,7 +31,7 @@ export type User = {
   export interface Subscriber {
     userId: mongoose.Types.ObjectId;
     username: string;
-    userImage?: string;
+    avatarKey?: string;
     subscribedAt: Date;
     subscriptionPrice: number;
     status: 'active' | 'cancelled' | 'expired';
@@ -54,7 +54,7 @@ export type Creator = {
     id: string;
     name: string;
     username: string;
-    image: string;
+    avatarKey: string;
     bio: string;
     subscribers: Subscriber[];
     followers: Follower[]
@@ -73,14 +73,14 @@ export type Notification = {
 export interface Follower {
   userId: string;
   username: string;
-  userImage?: string;
+  avatarKey?: string;
   followedAt: Date;
 }
 export type Subscription = {
   creatorId: string;
   creatorName: string;
   creatorUsername: string;
-  creatorImage?: string;
+  avatarKey?: string;
   subscriptionDate: Date;
   price: number;
   status: 'active' | 'cancelled' | 'expired';
@@ -91,7 +91,7 @@ export interface Following {
   creatorId: string;
   creatorName: string;
   creatorUsername: string;
-  creatorImage?: string;
+  avatarKey?: string;
   followingDate: Date;
 }
 export interface Comment {

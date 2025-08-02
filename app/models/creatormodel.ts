@@ -3,7 +3,7 @@ import Post, {PostDocument} from "./postmodel"; // Assuming you have PostDocumen
 export interface Subscriber {
   userId: mongoose.Types.ObjectId;
   username: string;
-  userImage?: string;
+  avatarKey: string;
   subscribedAt: Date;
   subscriptionPrice: number;
   status: 'active' | 'cancelled' | 'expired';
@@ -13,7 +13,7 @@ export interface Subscriber {
 export interface Follower {
   userId: mongoose.Types.ObjectId;
   username: string;
-  userImage?: string;
+  avatarKey?: string;
   followedAt: Date;
 }
 enum Gender {
@@ -30,7 +30,7 @@ export interface CreatorDocument extends mongoose.Document {
   password: string;
   bio: string;
   googleId: string | null;
-  image?: string;
+  avatarKey?: string;
   oauthProvider?: string;
   oauthId?: string;
   gender: Gender;
@@ -54,7 +54,7 @@ const creatorSchema = new Schema<CreatorDocument>({
     match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, "Email is invalid"]
   },
   googleId: { type: String, default: null },
-  image: { type: String },
+  avatarKey: { type: String },
   oauthProvider: { type: String },
   oauthId: { type: String },
   lastUsernameChange: { type: Date, default: null },
@@ -65,7 +65,7 @@ const creatorSchema = new Schema<CreatorDocument>({
   subscriptions: [{
     userId: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true },
     username: { type: String, required: true },
-    userImage: { type: String },
+    avatarKey: { type: String },
     subscribedAt: { type: Date, default: Date.now },
     subscriptionPrice: { type: Number, required: true },
     status: { type: String, enum: ['active', 'cancelled', 'expired'], required: true },
@@ -75,7 +75,7 @@ const creatorSchema = new Schema<CreatorDocument>({
   followers: [{
     userId: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true },
     username: { type: String, required: true },
-    userImage: { type: String },
+    avatarKey: { type: String },
     followedAt: { type: Date, default: Date.now }
   }],
   user: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true }

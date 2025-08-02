@@ -17,15 +17,9 @@ import userservice from '@/app/services/userservice';
 import { useRouter } from 'next/navigation';
 import { CreatorPostCard } from './CreatorPostCard';
 import { useSession } from 'next-auth/react';
+import { resolveImageUrl } from './resolveImageUrl';
 
 
-
-const resolveImageUrl = (src: string | null | undefined): string | null => {
-  if (!src) return null;
-  if (src.startsWith('http://') || src.startsWith('https://')) return src;
-  if (src.startsWith('/')) return src;
-  return '/' + src; // Add leading slash if missing
-};
 
 function Modal({ open, onClose, title, children }: { open: boolean, onClose: () => void, title: string, children: React.ReactNode }) {
   if (!open) return null;
@@ -89,12 +83,12 @@ export default function ProfileContent({
   const { data: session} = useSession();
   useEffect(() => {
     const fetchAvatarUrl = async () => {
-      if (session?.user?.avatarKey) {
+      if (userViewed?.avatarKey) {
         try {
           setImageLoading(true);
           setAvatarError(false);
   
-          const key = session?.user?.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
+          const key = creator ? creator?.image : userViewed?.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
           const res = await fetch("/api/media/download-url", {
             method: "POST",
             headers: {
@@ -123,7 +117,7 @@ export default function ProfileContent({
     };
   
     fetchAvatarUrl();
-  }, [session?.user?.avatarKey]);
+  }, [creator?.image, userViewed?.avatarKey]);
 
   useEffect(() => {
     if (!creator?.id || !viewingUser?.id || !viewingUser) {
@@ -196,8 +190,8 @@ const handleUnfollow = async (creator: Creator) => {
             <div className="relative w-40 h-40 rounded-full overflow-hidden">
               {!userViewed ? (
                 <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700" />
-              ) : avatarUrl || creator?.image || userViewed.image? (
-                <>
+              ) : avatarUrl || userViewed.image? (
+                <>a
                   <Image
   src={resolveImageUrl(avatarUrl || creator?.image || userViewed?.image)}
   alt={userViewed.username || "User profile image"}
@@ -487,6 +481,7 @@ const handleUnfollow = async (creator: Creator) => {
                 alt="blurred background"
                 fill
                 className="object-cover blur-lg scale-110 brightness-50"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
   
               {/* Skeleton while loading */}
@@ -500,7 +495,8 @@ const handleUnfollow = async (creator: Creator) => {
                 alt={p.caption || 'Media post'}
                 fill
                 className="object-contain z-10 transition-opacity duration-300"
-                onLoadingComplete={() => handleImageLoad(p._id)}
+                onLoad={() => handleImageLoad(p._id)}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
             </div>
           );

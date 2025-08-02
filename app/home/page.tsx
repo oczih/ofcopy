@@ -53,7 +53,11 @@ function App() {
     }
   }, [status]);
   
-  
+  useEffect(() => {
+    if (!session?.user && !loading && !session) {
+      router.push("/login");
+    }
+  }, [session, loading, router]);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -111,11 +115,7 @@ function App() {
       </div>
     );
   }
-  if (!session?.user && !loading && !session) {
-    
-    if (typeof window !== "undefined"){
-     router.push("/login")};
-  }
+  
   const followedCreatorIds = new Set([
     ...(session?.user.following?.map(f => f.creatorId.toString()) || []),
     ...(session?.user.subscriptions?.map(s => s.creatorId.toString()) || [])
