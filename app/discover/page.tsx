@@ -12,6 +12,7 @@ import toast from "react-hot-toast";
 import { Creator } from "../types";
 import AppWrapper from "../../components/AppWrapper";
 import Image from "next/image";
+import { resolveImageUrl } from "@/components/resolveImageUrl";
 export default function DiscoverPage() {
   return (
     <SessionProvider>
@@ -162,7 +163,13 @@ function DiscoverApp() {
                 {creators.slice(0, 4).map((creator, index) => (
                   <div key={creator.id} className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
                     <div className="flex items-center gap-3">
-                      <Image src={creator.image} alt={creator.name} className="w-12 h-12 rounded-full object-cover" />
+                    <Image
+                        src={resolveImageUrl(creator.image)}
+                        alt={creator.name}
+                        width={48}
+                        height={48}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
                       <div className="flex-1">
                         <h3 className="text-white font-semibold text-sm">{creator.name}</h3>
                         <p className="text-gray-400 text-xs">{creator.category}</p>

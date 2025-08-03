@@ -75,12 +75,12 @@ export const CreatorCard = ({ creator }: CreatorCardProps) => {
         {/* Action buttons */}
         <div className="w-full space-y-3">
           {creator.isSubscribed ? (
-            <Button className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group-hover:animate-glow">
+            <Button className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group-hover:animate-glow cursor-pointer">
               <Heart className="w-4 h-4 mr-2 fill-current" />
               Subscribed
             </Button>
           ) : (
-            <Button className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group-hover:animate-glow">
+            <Button className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group-hover:animate-glow cursor-pointer">
               <Sparkles className="w-4 h-4 mr-2" />
               Subscribe ${creator.price}/month
             </Button>

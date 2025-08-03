@@ -238,7 +238,7 @@ export default function ProfileContent({
 
   return (
     <div>
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Profile Header */}
         <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 mb-8 border border-white/20">
           <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
@@ -269,11 +269,30 @@ export default function ProfileContent({
 
             {/* Profile Info */}
             <div className="flex-1 text-center lg:text-left">
+              <div className='flex flex-row gap-50'>
               <h1 className="text-4xl font-bold text-white mb-2">
                 {creator?.name || creator?.username || userViewed.name || userViewed.username}
               </h1>
+              {status === 'none' && userViewed.creator && !isOwnProfile && (
+                      <button 
+                        onClick={() => handleFollow(creator)}  
+                        className="outline outline-white  hover:bg-white/10 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
+                      >
+                        Follow for free
+                      </button>
+                    )}
+                    
+                    {status === 'follower' && creator && (
+                      <button
+                        onClick={() => handleUnfollow(creator)}
+                        className="border-2 border-blue-500 bg-blue-500 text-white hover:bg-transparent hover:text-blue-400 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
+                      >
+                        Following
+                      </button>
+                    )}
+              </div>
               <p className="text-xl text-purple-200 mb-4">@{creator?.username || userViewed.username}</p>
-
+              
               {creator?.bio && (
                 <BioModal 
                   bio={creator.bio} 
@@ -300,24 +319,24 @@ export default function ProfileContent({
               )}
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap gap-4 justify-center lg:justify-start items-center">
+              <div className="flex flex-wrap lg:justify-start">
                 {isOwnProfile ? (
-                  <div className='flex flex-row gap-3'>
+                  <div className='flex flex-row justify-betwenn gap-20'>
                     <Link 
                       href="/myprofile/edit" 
-                      className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
+                      className="outline-3 outline-white/50 text-white px-6 py-3 rounded-xl hover:bg-white/10 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
                     >
                       Edit Profile
                     </Link>
                     <Link 
                       href="/insights" 
-                      className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
+                      className="outline-3 outline-white/50 text-white px-6 py-3 rounded-xl hover:bg-white/10 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
                     >
                       Insights
                     </Link>
                     <Link 
                       href="/settings/creator/promotions" 
-                      className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
+                      className="outline-3 outline-white/50 text-white px-6 py-3 rounded-xl hover:bg-white/10 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
                     >
                       Promote
                     </Link>
@@ -327,7 +346,7 @@ export default function ProfileContent({
                     {/* Subscribe Button - Bigger and more prominent */}
                     {viewingUser && status !== 'subscriber' && (
                       <button 
-                        className="bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-10 py-4 rounded-xl font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 cursor-pointer"
+                        className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-10 py-4 rounded-xl font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 cursor-pointer"
                         onClick={() => setModalOpen(true)}
                       >
                         Subscribe Now
@@ -335,23 +354,6 @@ export default function ProfileContent({
                     )}
                     
                     {/* Follow Button - Outline style, positioned to the side */}
-                    {status === 'none' && userViewed.creator && (
-                      <button 
-                        onClick={() => handleFollow(creator)}  
-                        className="outline outline-white  hover:bg-white/10 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
-                      >
-                        Follow
-                      </button>
-                    )}
-                    
-                    {status === 'follower' && creator && (
-                      <button
-                        onClick={() => handleUnfollow(creator)}
-                        className="border-2 border-blue-500 bg-blue-500 text-white hover:bg-transparent hover:text-blue-400 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
-                      >
-                        Following
-                      </button>
-                    )}
                   </>
                 )}
               </div>
@@ -381,7 +383,8 @@ export default function ProfileContent({
           <SubscribeModal 
             open={modalOpen} 
             onClose={() => setModalOpen(false)} 
-            creator={creator} 
+            creator={creator}
+            avatarUrl={avatarUrl} 
           />
         )}
 
