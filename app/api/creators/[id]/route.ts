@@ -17,8 +17,8 @@ const s3 = new S3Client({
   },
 });
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  console.log("[API] GET /api/users/[id] - Starting request");
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  console.log("[API] GET /api/creators/[id] - Starting request");
 
   try {
     await connectDB();
@@ -29,66 +29,36 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   const session = await getServerSession(authOptions);
-  console.log("[API] Session from auth():", !!session);
-  console.log("[API] Session user ID:", session?.user?.id);
-
   if (!session) {
     console.log("[API] No session found - Unauthorized");
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = await params;
-  const { searchParams } = new URL(request.url);
-  const userId = searchParams.get('userId');
-  let creator;
+  const { id } = params;
+  const userId = new URL(request.url).searchParams.get('userId');
+
   try {
+    let creator;
+
     if (userId) {
-      // Find creator by user field
       creator = await Creator.findOne({ user: userId }).populate('posts');
-      if (!creator) {
-        return NextResponse.json({ error: 'Creator not found for user' }, { status: 404 });
-      }
     } else {
-      // Find creator by creator id
-      if (!id || id === "undefined" || !mongoose.Types.ObjectId.isValid(id)) {
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
         return NextResponse.json({ error: 'Valid MongoDB ObjectId is required' }, { status: 400 });
       }
       creator = await Creator.findById(id).populate('posts');
-      if (!creator) {
-        return NextResponse.json({ error: 'Creator not found' }, { status: 404 });
-      }
     }
 
-    // Generate signed URLs for each post that has an s3Key
-    if (creator.posts && creator.posts.length > 0) {
-      creator.posts = await Promise.all(
-        creator.posts.map(async (post: Post) => {
-          if (!post.s3Key) return post;
-
-          const command = new GetObjectCommand({
-            Bucket: process.env.AWS_BUCKET_NAME!,
-            Key: post.s3Key,
-          });
-
-          try {
-            const signedUrl = await getSignedUrl(s3, command, { expiresIn: 300 }); // 5 minutes
-            console.log("Presigned URL:", signedUrl);
-            return { ...post.toObject(), signedUrl };
-          } catch (err) {
-            console.error("Failed to generate signed URL for post", post._id, err);
-            return post;
-          }
-        })
-      );
+    if (!creator) {
+      return NextResponse.json({ error: 'Creator not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ user: creator });
+    return NextResponse.json({ creator });
   } catch (error) {
-    console.error('Error fetching user:', error);
-    return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
+    console.error('Error fetching creator:', error);
+    return NextResponse.json({ error: 'Failed to fetch creator' }, { status: 500 });
   }
 }
-
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const session = await getServerSession(authOptions);
     if (!session) {

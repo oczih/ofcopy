@@ -50,3 +50,32 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
   return NextResponse.json({ message: "Followed creator" });
 }
+
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  const { id: creatorId } = params;
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  await connectDB();
+
+  const user = await User.findById(session.user.id);
+  const creator = await Creator.findById(creatorId);
+
+  if (!user || !creator) {
+    return NextResponse.json({ message: "User or Creator not found" }, { status: 404 });
+  }
+
+  // Remove creator from user's following list
+  user.following = user.following.filter(f => f.creatorId.toString() !== creatorId);
+
+  // Remove user from creator's followers list
+  creator.followers = creator.followers.filter(f => f.userId.toString() !== user.id);
+
+  await user.save();
+  await creator.save();
+
+  return NextResponse.json({ message: "Unfollowed creator" });
+}

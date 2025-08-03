@@ -10,6 +10,7 @@ import { useParams, useRouter } from 'next/navigation';
 import postservice from '@/app/services/postservice';
 import creatorservice from '@/app/services/creatorservice';
 import AppWrapper from '@/components/AppWrapper';
+import { resolveImageUrl } from '@/components/resolveImageUrl';
 export default function EditPostPage() {
   return (
     <AppWrapper>
@@ -31,13 +32,14 @@ function EditPost() {
   const [viewable, setViewable] = useState('followers');
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
-
+  const [postUrl, setPostUrl] = useState<string | null>(null);
   useEffect(() => {
     async function fetchPost() {
       setLoading(true);
       setError('');
       try {
-        const fetchedPost = await postservice.getOne(postId);
+        const fetchedPostResponse = await postservice.getOne(postId);
+        const fetchedPost = fetchedPostResponse.post;
         if (fetchedPost.s3Key) {
           const res = await fetch('/api/media/download-url', {
             method: 'POST',
@@ -45,11 +47,11 @@ function EditPost() {
             body: JSON.stringify({ s3Key: fetchedPost.s3Key }),
           });
           const { downloadUrl } = await res.json();
-          fetchedPost.signedUrl = downloadUrl;
+          setPostUrl(downloadUrl);
         }
         setPost(fetchedPost);
         setCaption(fetchedPost.caption || '');
-        setViewable(fetchedPost.viewable || 'followers');
+        setViewable(fetchedPost.viewableFor || 'followers');
       } catch (err) {
         setError('Failed to load post.');
       } finally {
@@ -98,7 +100,6 @@ function EditPost() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
       <div className="flex max-w-5xl mx-auto px-4 py-12 gap-8">
-        <Sidebar />
         <main className="flex-1 flex flex-col items-center">
           <div className="bg-white/10 rounded-3xl p-8 shadow-2xl flex flex-col items-center w-full max-w-2xl">
             <h1 className="text-3xl font-bold text-white mb-6">Edit Post</h1>
@@ -116,9 +117,9 @@ function EditPost() {
               </div>
             <div className="w-full flex justify-center mb-6">
               <div className="relative w-72 h-72 bg-slate-900 rounded-xl flex items-center justify-center overflow-hidden">
-                {post.signedUrl ? (
+                {postUrl ? (
                   <Image
-                    src={post.signedUrl}
+                    src={resolveImageUrl(postUrl)}
                     alt={caption || 'Post image'}
                     fill
                     style={{ objectFit: 'contain' }}

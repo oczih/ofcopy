@@ -72,7 +72,7 @@ function App() {
         if (fetchedCreators) {
           const sortedCreators = fetchedCreators.creators.map((creator: Creator) => ({
             ...creator,
-            posts: creator.posts.sort(
+            posts: creator?.posts?.sort(
               (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             )
           }));
@@ -89,6 +89,43 @@ function App() {
     };
     fetchData();
   }, []);
+  const [postSignedUrls, setPostSignedUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    async function fetchSignedUrls() {
+      if (!creators) return;
+  
+      const allPosts = creators.flatMap(creator => creator.posts || []);
+      const signedUrlsMap: Record<string, string> = {};
+  
+      await Promise.all(
+        allPosts.map(async (post) => {
+          if (!post.s3Key) return;
+  
+          try {
+            const res = await fetch('/api/media/download-url', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ s3Key: post.s3Key }),
+            });
+  
+            if (res.ok) {
+              const data = await res.json();
+              signedUrlsMap[post._id] = data.signedUrl;  // <-- use signedUrl here
+            }
+          } catch (error) {
+            console.error('Failed to fetch signed URL for post:', post._id, error);
+          }
+        })
+      );
+  
+      setPostSignedUrls(signedUrlsMap);
+    }
+  
+    fetchSignedUrls();
+  }, [creators]);
+  
+
   if(loading){
     return (
       <div className="flex items-center justify-center h-full">
@@ -307,6 +344,7 @@ function App() {
                               isFollower={isFollower}
                               isSubscriber={isSubscriber}
                               users={users.users}
+                              signedUrl={postSignedUrls[post._id]}
                             />
                           </div>
                         );

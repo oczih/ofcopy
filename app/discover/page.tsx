@@ -11,6 +11,7 @@ import creatorservice from "../services/creatorservice";
 import toast from "react-hot-toast";
 import { Creator } from "../types";
 import AppWrapper from "../../components/AppWrapper";
+import Image from "next/image";
 export default function DiscoverPage() {
   return (
     <SessionProvider>
@@ -27,15 +28,69 @@ function DiscoverApp() {
   useEffect(() => {
     const fetchCreators = async () => {
       try {
-        const fetchedCreators = await creatorservice.get()
-        setCreators(fetchedCreators.creators)
+        const fetchedCreators = await creatorservice.get();
+  
+        const creatorsWithMedia = await Promise.all(
+          fetchedCreators.creators.map(async (creator: Creator) => {
+            let image = creator.image;
+  
+            // Fetch creator image (if s3Key exists)
+            if (creator.avatarKey) {
+              try { 
+                const res = await fetch("/api/media/download-url", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ s3Key: creator.avatarKey }),
+                });
+                const data = await res.json();
+                if (res.ok && data.downloadUrl) {
+                  image = data.downloadUrl;
+                }
+              } catch (err) {
+                console.error(`Error getting creator image URL for ${creator.name}:`, err);
+              }
+            }
+  
+            // Fetch post download URLs
+            const postsWithUrls = await Promise.all(
+              (creator.posts || []).map(async (post) => {
+                if (!post.s3Key) return post;
+  
+                try {
+                  const res = await fetch("/api/media/download-url", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ s3Key: post.s3Key }),
+                  });
+                  const data = await res.json();
+  
+                  if (res.ok && data.downloadUrl) {
+                    return { ...post, signedUrl: data.downloadUrl };
+                  }
+                } catch (err) {
+                  console.error(`Error getting post media for post ${post._id}`, err);
+                }
+  
+                return post;
+              })
+            );
+  
+            return {
+              ...creator,
+              image,
+              posts: postsWithUrls,
+            };
+          })
+        );
+  
+        setCreators(creatorsWithMedia);
+      } catch (error) {
+        console.error("Couldn't fetch creators: ", error);
+        toast.error("Error fetching creators");
       }
-      catch (error){
-        console.error("Couldn't fetch creators: ", error)
-        toast.error("Error fetching creators")
-      }
-    }
-    fetchCreators()
+    };
+  
+    fetchCreators();
   }, []); // Added dependency array
   console.log("Creators: ",creators)
   const filteredCreators = creators?.filter(creator => {
@@ -107,7 +162,7 @@ function DiscoverApp() {
                 {creators.slice(0, 4).map((creator, index) => (
                   <div key={creator.id} className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
                     <div className="flex items-center gap-3">
-                      <img src={creator.image} alt={creator.name} className="w-12 h-12 rounded-full object-cover" />
+                      <Image src={creator.image} alt={creator.name} className="w-12 h-12 rounded-full object-cover" />
                       <div className="flex-1">
                         <h3 className="text-white font-semibold text-sm">{creator.name}</h3>
                         <p className="text-gray-400 text-xs">{creator.category}</p>

@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import postservice from '@/app/services/postservice'; // adjust path accordingly
 import { Creator, MediaPost, Post, User } from '@/app/types';
 import { Skeleton } from './ui/skeleton';
+import { resolveImageUrl } from './resolveImageUrl';
 
 // Signup Modal Component
 function SignupModal({ open, onClose, creatorName }: { open: boolean, onClose: () => void, creatorName: string }) {
@@ -341,12 +342,14 @@ export function PostCard({
   post,
   creator,
   status,
-  viewingUser
+  viewingUser,
+  signedUrl
 }: {
   post: Post;
   creator: Creator;
   status: 'subscriber' | 'follower' | 'none';
   viewingUser: User
+  signedUrl: string
 }) {
   const [imageLoading, setImageLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -506,7 +509,7 @@ export function PostCard({
         )}
           {post.type?.startsWith('image') ? (
             <Image
-              src={post.signedUrl}
+              src={resolveImageUrl(signedUrl)}
               alt={post.caption}
               fill
               onLoad={() => setImageLoading(false)}
@@ -517,7 +520,7 @@ export function PostCard({
             />
           ) : post.type?.startsWith('video') ? (
             <video
-              src={!shouldBlur ? post.signedUrl : ''}
+              src={!shouldBlur ? signedUrl : ''}
               className={`w-full h-full object-cover ${shouldBlur ? 'blur-md brightness-50' : ''}`}
               controls={!shouldBlur}
               poster="/video-placeholder.png"

@@ -54,15 +54,16 @@ export type Creator = {
     id: string;
     name: string;
     username: string;
-    avatarKey: string;
+    avatarKey?: string;  
     bio: string;
+    image?: string;
     subscribers: Subscriber[];
     followers: Follower[]
     isSubscribed: boolean;
     gender: Gender;
     price: number;
     category: string;
-    posts: Post[];
+    posts?: Post[];
     user: string;
   }
 export type Notification = {
@@ -128,7 +129,7 @@ export type Post = {
   signedUrl?: string;         // Optional signed URL added at runtime (not stored in DB)
   width?: number;             // Optional image width
   height?: number;
-  price: number;            // Optional image height
+  price: number; 
 };
 declare module "next-auth" {
   interface User {

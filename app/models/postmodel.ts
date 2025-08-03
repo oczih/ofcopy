@@ -49,4 +49,3 @@ const postSchema = new Schema<PostDocument>({
 const Post = mongoose.models?.Post || model<PostDocument>('Post', postSchema);
 
 export default Post;
-export type { PostDocument };

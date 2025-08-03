@@ -22,7 +22,8 @@ export function CreatorPostCard({
   isFollower,
   isSubscriber,
   user,
-  users
+  users,
+  signedUrl
 }: {
   creator: Creator;
   post: Post;
@@ -32,6 +33,7 @@ export function CreatorPostCard({
   isSubscriber: boolean;
   user: User
   users: User[]
+  signedUrl: string
 }) {
   // Restriction logic
   const isFollowersOnly = post.viewableFor === "followers";
@@ -292,7 +294,7 @@ export function CreatorPostCard({
     {/* Media */}
     <div className="relative bg-slate-900">
       
-    {canView && post.signedUrl ? (
+    {canView && signedUrl ? (
       <div
         className="relative w-full bg-black"
         style={post.width && post.height ? { aspectRatio: `${post.width} / ${post.height}` } : {}}
@@ -305,7 +307,7 @@ export function CreatorPostCard({
 
         {post.width && post.height ? (
           <Image
-            src={post.signedUrl}
+            src={resolveImageUrl(signedUrl)}
             alt={post.caption}
             fill
             onLoad={() => setImageLoading(false)}
@@ -316,7 +318,7 @@ export function CreatorPostCard({
           />
         ) : (
           <Image
-            src={post.signedUrl}
+            src={resolveImageUrl(signedUrl)}
             alt={post.caption}
             width={600}
             height={400}

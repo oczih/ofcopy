@@ -2,49 +2,53 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Creator, Following, MediaPost, Post, Subscriber, User } from '@/app/types';
-import { MoreHorizontal, TreesIcon } from 'lucide-react';
+import { Creator, Follower, MediaPost, Post, Subscriber, User } from '@/app/types';
 import Image from 'next/image';
 import SubscribeModal from '@/components/SubscribeModal';
 import creatorservice from '@/app/services/creatorservice';
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from './ui/button';
-import { Avatar, AvatarImage } from '@radix-ui/react-avatar';
-import { AvatarFallback } from './ui/avatar';
-import postservice from '@/app/services/postservice';
-import { PostCard } from './PostCard';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
 import userservice from '@/app/services/userservice';
-import { useRouter } from 'next/navigation';
+
 import { CreatorPostCard } from './CreatorPostCard';
 import { useSession } from 'next-auth/react';
 import { resolveImageUrl } from './resolveImageUrl';
+import { Heart, Lock, PersonStanding, User, User, Video } from 'lucide-react';
 
+// Bio Modal Component
+const BioModal = ({ bio, creatorName }: { bio: string; creatorName: string }) => {
+  const [open, setOpen] = useState(false);
+  
+  const getPreviewText = (text: string, maxLength: number = 100) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
 
-
-function Modal({ open, onClose, title, children }: { open: boolean, onClose: () => void, title: string, children: React.ReactNode }) {
-  if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-8 w-full max-w-lg relative animate-scale-in">
-        <button
-          className="absolute top-3 right-3 text-gray-400 hover:text-pink-400"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          ✕
-        </button>
-        <h2 className="text-2xl font-bold text-white mb-4 text-center">{title}</h2>
-        <div className="text-gray-300 text-sm max-h-[60vh] overflow-y-auto">{children}</div>
-      </div>
-    </div>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <div className="cursor-pointer">
+          <p className="text-gray-300 mb-6 max-w-2xl hover:text-gray-200 transition-colors">
+            {getPreviewText(bio)}
+            {bio.length > 100 && (
+              <span className="text-blue-400 ml-2 font-medium">Read more</span>
+            )}
+          </p>
+        </div>
+      </DialogTrigger>
+      <DialogContent className="max-w-md bg-gray-900/95 backdrop-blur-lg border-gray-700">
+        <DialogHeader>
+          <DialogTitle className="text-white text-xl">{creatorName}'s Bio</DialogTitle>
+          <DialogDescription className="text-gray-300 text-base leading-relaxed mt-4">
+            {bio}
+          </DialogDescription>
+        </DialogHeader>
+      </DialogContent>
+    </Dialog>
   );
-}
-
-
-
-
-
-
+};
 
 export default function ProfileContent({ 
   userViewed, 
@@ -53,14 +57,14 @@ export default function ProfileContent({
   totalSpent, 
   isOwnProfile, 
 }: UserProfileData) {
+
   const [modalOpen, setModalOpen] = useState(false);
   const [creator, setCreator] = useState<Creator | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
   const [isCreator, setIsCreator] = useState(false);
   const [currentUser, setCurrentUser] = useState<User>(viewingUser);
   const [status, setStatus] = useState<'subscriber' | 'follower' | 'none'>('none');
-  
-  console.log("status", creator?.followers)
+
   useEffect(() => {
     async function fetchCreator() {
       const creators = await creatorservice.get();
@@ -78,17 +82,19 @@ export default function ProfileContent({
     }
     if (userViewed?.id) fetchCreator();
   }, [userViewed]);
+
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
-  const { data: session} = useSession();
+
   useEffect(() => {
     const fetchAvatarUrl = async () => {
       if (userViewed?.avatarKey) {
         try {
           setImageLoading(true);
           setAvatarError(false);
-  
+          
           const key = creator ? creator?.image : userViewed?.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
+          
           const res = await fetch("/api/media/download-url", {
             method: "POST",
             headers: {
@@ -105,6 +111,7 @@ export default function ProfileContent({
             console.error("Invalid download URL:", data.downloadUrl);
             setAvatarError(true);
           }
+
         } catch (error) {
           console.error("Error fetching avatar URL:", error);
           setAvatarError(true);
@@ -118,7 +125,44 @@ export default function ProfileContent({
   
     fetchAvatarUrl();
   }, [creator?.image, userViewed?.avatarKey]);
-
+  
+  const [postSignedUrls, setPostSignedUrls] = useState<Record<string, string>>({});
+  
+  useEffect(() => {
+    async function fetchSignedUrls() {
+      if (!creator?.posts) return;
+  
+      const signedUrlMap: Record<string, string> = {};
+      await Promise.all(
+        creator.posts.map(async (post: Post) => {
+          if (!post.s3Key) return;
+  
+          try {
+            const res = await fetch('/api/media/download-url', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ s3Key: post.s3Key }),
+            });
+  
+            const data = await res.json();
+  
+            if (res.ok && data.downloadUrl) {
+              signedUrlMap[post._id] = data.downloadUrl;
+            }
+          } catch (err) {
+            console.error(`Failed to fetch signed URL for post ${post._id}`, err);
+          }
+        })
+      );
+  
+      setPostSignedUrls(signedUrlMap);
+    }
+  
+    fetchSignedUrls();
+  }, [creator?.posts]);
+  
   useEffect(() => {
     if (!creator?.id || !viewingUser?.id || !viewingUser) {
       setStatus('none');
@@ -140,46 +184,58 @@ export default function ProfileContent({
     }
   }, [creator, viewingUser]);
   
-  
-
-
-    console.log(status)
-    const handleFollow = async (creator: Creator) => {
-      if (!creator) return;
+  // Calculate stats
+  const getCreatorStats = () => {
+    if (!creator) return { posts: 0, videos: 0, likes: 0 };
     
-      try {
-        const alreadyFollowing = viewingUser.following.some(f => f.creatorId === creator.id);
-        if (alreadyFollowing) return;
+    const posts = creator.posts?.length || 0;
+    const videos = creator.posts?.filter(post => post.mediaType === 'video').length || 0;
+    const likes = creator.posts?.reduce((total, post) => total + (post.likes?.length || 0), 0) || 0;
     
-        await creatorservice.followCreator(creator.id);
-        setCurrentUser({
-          ...currentUser,
-          following: [...currentUser.following, { 
-            creatorId: creator.id, creatorName: creator.name, creatorUsername: creator.username, followingDate: new Date()
-          }],
-        });
-        setStatus('follower');
-      } catch (err) {
-        console.error('Error following creator:', err);
-      }
-    };
+    return { posts, videos, likes };
+  };
+
+  const stats = getCreatorStats();
+
+  console.log(status)
   
-const handleUnfollow = async (creator: Creator) => {
-  if (!creator || !viewingUser) return;
+  const handleFollow = async (creator: Creator) => {
+    if (!creator) return;
+  
+    try {
+      const alreadyFollowing = viewingUser.following.some(f => f.creatorId === creator.id);
+      if (alreadyFollowing) return;
+  
+      await creatorservice.followCreator(creator.id);
+      setCurrentUser({
+        ...currentUser,
+        following: [...currentUser.following, { 
+          creatorId: creator.id, creatorName: creator.name, creatorUsername: creator.username, followingDate: new Date()
+        }],
+      });
+      setStatus('follower');
+    } catch (err) {
+      console.error('Error following creator:', err);
+    }
+  };
 
-  try {
-    await creatorservice.unfollowCreator(creator.id);
+  const handleUnfollow = async (creator: Creator) => {
+    if (!creator || !viewingUser) return;
 
-    setCurrentUser({
-      ...currentUser,
-      following: currentUser.following.filter(f => f.creatorId !== creator.id),
-    });
+    try {
+      await creatorservice.unfollowCreator(creator.id);
 
-    setStatus('none');
-  } catch (err) {
-    console.error('Error unfollowing creator:', err);
-  }
-};
+      setCurrentUser({
+        ...currentUser,
+        following: currentUser.following.filter(f => f.creatorId !== creator.id),
+      });
+
+      setStatus('none');
+    } catch (err) {
+      console.error('Error unfollowing creator:', err);
+    }
+  };
+
   return (
     <div>
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -191,15 +247,15 @@ const handleUnfollow = async (creator: Creator) => {
               {!userViewed ? (
                 <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700" />
               ) : avatarUrl || userViewed.image? (
-                <>a
+                <>
                   <Image
-  src={resolveImageUrl(avatarUrl || creator?.image || userViewed?.image)}
-  alt={userViewed.username || "User profile image"}
-  fill
-  className="rounded-full border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
-  onLoad={() => setImageLoading(false)}
-  onError={() => setImageLoading(false)}
-/>
+                    src={resolveImageUrl(avatarUrl || creator?.image || userViewed?.image)}
+                    alt={userViewed.username || "User profile image"}
+                    fill
+                    className="rounded-full border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
+                    onLoad={() => setImageLoading(false)}
+                    onError={() => setImageLoading(false)}
+                  />
                   {imageLoading && (
                     <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700 absolute top-0 left-0" />
                   )}
@@ -219,58 +275,88 @@ const handleUnfollow = async (creator: Creator) => {
               <p className="text-xl text-purple-200 mb-4">@{creator?.username || userViewed.username}</p>
 
               {creator?.bio && (
-                <p className="text-gray-300 mb-6 max-w-2xl">{creator.bio}</p>
+                <BioModal 
+                  bio={creator.bio} 
+                  creatorName={creator?.name || creator?.username || userViewed.name || userViewed.username} 
+                />
+              )}
+
+              {/* Creator Stats */}
+              {creator && (
+                <div className="mb-6 flex flex-wrap gap-4 justify-center lg:justify-start">
+                  <div className="rounded-xl px-4 py-2 flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-gray-400" />
+                    <div className="text-lg font-semibold text-white">{stats.posts}</div>
+                  </div>
+                  <div className="rounded-xl px-4 py-2 flex items-center gap-2">
+                    <Video className="w-4 h-4 text-gray-400" />
+                    <div className="text-lg font-semibold text-white">{stats.videos}</div>
+                  </div>
+                  <div className="rounded-xl px-4 py-2 flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-gray-400" />
+                    <div className="text-lg font-semibold text-pink-400">{stats.likes}</div>
+                  </div>
+                </div>
               )}
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap gap-5 justify-center lg:justify-start">
+              <div className="flex flex-wrap gap-4 justify-center lg:justify-start items-center">
                 {isOwnProfile ? (
-                  <div className='flex flex-row gap-2'>
-                  <Link 
-                    href="/myprofile/edit" 
-                    className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
-                  >
-                    Edit Profile
-                  </Link>
-                  <Link 
-                  href="/insights" 
-                  className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
-                >
-                  Insights
-                  </Link>
-                  <Link 
-                  href="/settings/creator/promotions" 
-                  className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
-                >
-                  Promote
-                  </Link>
+                  <div className='flex flex-row gap-3'>
+                    <Link 
+                      href="/myprofile/edit" 
+                      className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
+                    >
+                      Edit Profile
+                    </Link>
+                    <Link 
+                      href="/insights" 
+                      className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
+                    >
+                      Insights
+                    </Link>
+                    <Link 
+                      href="/settings/creator/promotions" 
+                      className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
+                    >
+                      Promote
+                    </Link>
                   </div>
                 ) : (
                   <>
-                  {status === 'none' && userViewed.creator && (
-                        <Button onClick={() => handleFollow(creator)}  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform">Follow</Button>
-                      )}
-                    {status === 'follower' && creator && (
-                      <Button
-                        onClick={() => handleUnfollow(creator)}
-                        className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
-                      >
-                        Following
-                      </Button>
-                    )}
+                    {/* Subscribe Button - Bigger and more prominent */}
                     {viewingUser && status !== 'subscriber' && (
                       <button 
-                        className="bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform"
+                        className="bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-10 py-4 rounded-xl font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 cursor-pointer"
                         onClick={() => setModalOpen(true)}
                       >
-                        Subscribe
+                        Subscribe Now
+                      </button>
+                    )}
+                    
+                    {/* Follow Button - Outline style, positioned to the side */}
+                    {status === 'none' && userViewed.creator && (
+                      <button 
+                        onClick={() => handleFollow(creator)}  
+                        className="outline outline-white  hover:bg-white/10 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
+                      >
+                        Follow
+                      </button>
+                    )}
+                    
+                    {status === 'follower' && creator && (
+                      <button
+                        onClick={() => handleUnfollow(creator)}
+                        className="border-2 border-blue-500 bg-blue-500 text-white hover:bg-transparent hover:text-blue-400 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
+                      >
+                        Following
                       </button>
                     )}
                   </>
                 )}
               </div>
 
-              {/* Stats */}
+              {/* User Stats (for non-creators) */}
               {!creator && (
                 <div className="mt-6 flex gap-6 text-center lg:text-left">
                   <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
@@ -307,6 +393,7 @@ const handleUnfollow = async (creator: Creator) => {
             isOwnProfile={isOwnProfile}
             status={status}
             viewingUser={viewingUser}
+            postSignedUrls={postSignedUrls}
           />
         )}
       </div>
@@ -320,16 +407,17 @@ const handleUnfollow = async (creator: Creator) => {
     creator, 
     isOwnProfile, 
     status,
-    viewingUser
+    viewingUser,
+    postSignedUrls
   }: {
     purchasedContent: MediaPost[];
     creator: Creator;
     isOwnProfile: boolean;
     status: 'subscriber' | 'follower' | 'none';
     viewingUser: User
+    postSignedUrls: Record<string, string>;
   }) {
     const [activeTab, setActiveTab] = useState(creator ? 'posts' : 'purchased');
-    console.log(creator)
     const tabs = [
       { id: 'posts', label: 'Posts', count: creator?.posts?.length || 0 },
       ...(status !== 'none'
@@ -368,13 +456,13 @@ const handleUnfollow = async (creator: Creator) => {
         {/* Tab Content */}
         <div className="p-6">
           {activeTab === 'posts' && (
-            <PostsGrid creator={creator} status={status} viewingUser={viewingUser} />
+            <PostsGrid creator={creator} status={status} viewingUser={viewingUser} postSignedUrls={postSignedUrls} />
           )}
           {activeTab === 'purchased' && (
-            <PurchasedPostsGrid creator={creator} status={status} viewingUser={viewingUser} />
+            <PurchasedPostsGrid creator={creator} status={status} viewingUser={viewingUser} postSignedUrls={postSignedUrls}/>
           )}
           {activeTab === 'media' && (
-            <MediaGrid creator={creator} status={status}  />
+            <MediaGrid creator={creator} status={status} postSignedUrls={postSignedUrls}  />
           )}
           {activeTab === 'likes' && (
             <div className="text-center text-gray-400 py-12">
@@ -390,11 +478,13 @@ const handleUnfollow = async (creator: Creator) => {
   function PurchasedPostsGrid ({
     creator,
     status,
-    viewingUser
+    viewingUser,
+    postSignedUrls
   }: {
     status: 'subscriber' | 'follower' | 'none';
     creator?: Creator;
     viewingUser: User;
+    postSignedUrls: Record<string, string>;
   }) {
     const [users, setUsers] = useState<User[] | null>(null);
     
@@ -440,6 +530,7 @@ const handleUnfollow = async (creator: Creator) => {
             isSubscriber={isSubscriber}
             session={session}
             users={users.users}
+            signedUrl={postSignedUrls[post._id]}
           />
         ))}
       </div>
@@ -448,9 +539,11 @@ const handleUnfollow = async (creator: Creator) => {
   function MediaGrid({
     creator,
     status,
+    postSignedUrls
   }: {
     status: 'subscriber' | 'follower' | 'none';
     creator?: Creator;
+    postSignedUrls: Record<string, string>;
   }) {
     const allPosts = creator?.posts || [];
   
@@ -477,7 +570,7 @@ const handleUnfollow = async (creator: Creator) => {
             >
               {/* Blurred Background Layer */}
               <Image
-                src={p.signedUrl!}
+                src={resolveImageUrl(postSignedUrls[p._id])}
                 alt="blurred background"
                 fill
                 className="object-cover blur-lg scale-110 brightness-50"
@@ -491,7 +584,7 @@ const handleUnfollow = async (creator: Creator) => {
   
               {/* Foreground Image */}
               <Image
-                src={p.signedUrl!}
+                src={resolveImageUrl(postSignedUrls[p._id])}
                 alt={p.caption || 'Media post'}
                 fill
                 className="object-contain z-10 transition-opacity duration-300"
@@ -508,11 +601,13 @@ const handleUnfollow = async (creator: Creator) => {
   function PostsGrid({
     creator,
     status,
-    viewingUser
+    viewingUser,
+    postSignedUrls
   }: {
     creator?: Creator;
     status: 'subscriber' | 'follower' | 'none';
     viewingUser: User;
+    postSignedUrls: { [key: string]: string };
   }) {
     const [users, setUsers] = useState<User[] | null>(null);
     const { data: session} = useSession();
@@ -553,6 +648,7 @@ const handleUnfollow = async (creator: Creator) => {
           isSubscriber={isSubscriber}
           session={session}
           users={users?.users}
+          signedUrl={postSignedUrls[post._id]}
         />
         ))}
       </div>
