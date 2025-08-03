@@ -245,6 +245,7 @@ export const authOptions: NextAuthOptions = {
         session.user.bio = user.bio
         session.user.emailVerified = user.emailVerified;
         session.user.location = user.location
+        session.user.createdAt = user.createdAt
       } else {
         console.log("[Session] No user found in database");
       }

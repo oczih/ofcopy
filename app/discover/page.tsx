@@ -5,6 +5,7 @@ import { CreatorCard } from "@/components/CreatorCard";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Badge } from "../../components/ui/badge";
+import { Skeleton } from "../../components/ui/skeleton";
 import { Search, Filter, Sparkles, TrendingUp, Star, Compass } from "lucide-react";
 import { SessionProvider } from "next-auth/react";
 import creatorservice from "../services/creatorservice";
@@ -13,6 +14,7 @@ import { Creator } from "../types";
 import AppWrapper from "../../components/AppWrapper";
 import Image from "next/image";
 import { resolveImageUrl } from "@/components/resolveImageUrl";
+
 export default function DiscoverPage() {
   return (
     <SessionProvider>
@@ -26,9 +28,13 @@ export default function DiscoverPage() {
 function DiscoverApp() {
   const [searchQuery, setSearchQuery] = useState("");
   const [creators, setCreators] = useState<Creator[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showNoResults, setShowNoResults] = useState(false);
+
   useEffect(() => {
     const fetchCreators = async () => {
       try {
+        setLoading(true);
         const fetchedCreators = await creatorservice.get();
   
         const creatorsWithMedia = await Promise.all(
@@ -88,18 +94,72 @@ function DiscoverApp() {
       } catch (error) {
         console.error("Couldn't fetch creators: ", error);
         toast.error("Error fetching creators");
+      } finally {
+        setLoading(false);
       }
     };
   
     fetchCreators();
-  }, []); // Added dependency array
-  console.log("Creators: ",creators)
+  }, []);
+
+  console.log("Creators: ", creators);
+
   const filteredCreators = creators?.filter(creator => {
     const matchesSearch = creator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          creator.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          creator.category.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch
+    return matchesSearch;
   });
+
+  // Handle showing "no results" message after a delay when not loading
+  useEffect(() => {
+    if (!loading && filteredCreators.length === 0) {
+      const timer = setTimeout(() => {
+        setShowNoResults(true);
+      }, 1500); // Show "no results" after 1.5 seconds
+
+      return () => clearTimeout(timer);
+    } else {
+      setShowNoResults(false);
+    }
+  }, [loading, filteredCreators.length]);
+
+  // Skeleton component for creator cards
+  const CreatorCardSkeleton = () => (
+    <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 space-y-4">
+      <div className="flex items-center gap-4">
+        <Skeleton className="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-700" />
+        <div className="space-y-2 flex-1">
+          <Skeleton className="h-5 w-32 bg-gray-200 dark:bg-gray-700" />
+          <Skeleton className="h-4 w-24 bg-gray-200 dark:bg-gray-700" />
+        </div>
+      </div>
+      <Skeleton className="h-40 w-full rounded-lg bg-gray-200 dark:bg-gray-700" />
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-full bg-gray-200 dark:bg-gray-700" />
+        <Skeleton className="h-4 w-3/4 bg-gray-200 dark:bg-gray-700" />
+      </div>
+      <div className="flex justify-between items-center">
+        <Skeleton className="h-6 w-20 bg-gray-200 dark:bg-gray-700" />
+        <Skeleton className="h-8 w-24 rounded-full bg-gray-200 dark:bg-gray-700" />
+      </div>
+    </div>
+  );
+
+  // Skeleton component for trending creators
+  const TrendingCreatorSkeleton = () => (
+    <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+      <div className="flex items-center gap-3">
+        <Skeleton className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-4 w-24 bg-gray-200 dark:bg-gray-700" />
+          <Skeleton className="h-3 w-16 bg-gray-200 dark:bg-gray-700" />
+        </div>
+        <Skeleton className="h-4 w-8 bg-gray-200 dark:bg-gray-700" />
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-hidden">
       {/* Animated background elements */}
@@ -160,27 +220,34 @@ function DiscoverApp() {
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {creators.slice(0, 4).map((creator, index) => (
-                  <div key={creator.id} className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                    <div className="flex items-center gap-3">
-                    <Image
-                        src={resolveImageUrl(creator.image)}
-                        alt={creator.name}
-                        width={48}
-                        height={48}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                      <div className="flex-1">
-                        <h3 className="text-white font-semibold text-sm">{creator.name}</h3>
-                        <p className="text-gray-400 text-xs">{creator.category}</p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="text-white text-sm font-medium">4.{9 - index}</span>
+                {loading ? (
+                  // Show skeleton loading for trending creators
+                  Array.from({ length: 4 }).map((_, index) => (
+                    <TrendingCreatorSkeleton key={index} />
+                  ))
+                ) : (
+                  creators.slice(0, 4).map((creator, index) => (
+                    <div key={creator.id} className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
+                      <div className="flex items-center gap-3">
+                        <Image
+                          src={resolveImageUrl(creator.image)}
+                          alt={creator.name}
+                          width={48}
+                          height={48}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                        <div className="flex-1">
+                          <h3 className="text-white font-semibold text-sm">{creator.name}</h3>
+                          <p className="text-gray-400 text-xs">{creator.category}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                          <span className="text-white text-sm font-medium">4.{9 - index}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
@@ -196,19 +263,34 @@ function DiscoverApp() {
                 </div>
               </div>
               
-              {filteredCreators.length > 0 ? (
+              {loading ? (
+                // Show skeleton loading for creator cards
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <CreatorCardSkeleton key={index} />
+                  ))}
+                </div>
+              ) : filteredCreators.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {filteredCreators.map((creator) => (
                     <CreatorCard key={creator.id} creator={creator} />
                   ))}
                 </div>
-              ) : (
+              ) : showNoResults ? (
+                // Show "no results" message after delay
                 <div className="text-center py-12">
                   <div className="bg-gradient-to-r from-purple-500 to-pink-600 p-4 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
                     <Search className="w-10 h-10 text-white" />
                   </div>
                   <h3 className="text-xl font-bold text-white mb-2">No creators found</h3>
                   <p className="text-gray-400">Try adjusting your search or filter criteria</p>
+                </div>
+              ) : (
+                // Show skeleton while waiting to show "no results"
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <CreatorCardSkeleton key={index} />
+                  ))}
                 </div>
               )}
             </div>

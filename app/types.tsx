@@ -27,6 +27,7 @@ export type User = {
     lastVerificationEmailSentAt: Date;
     lastPasswordResetSentAt: Date;
     purchases: Purchase[];
+    createdAt: Date;
   }
   export interface Subscriber {
     userId: mongoose.Types.ObjectId;

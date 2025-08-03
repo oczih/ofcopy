@@ -139,7 +139,7 @@ function SettingsApp() {
               <button
                 key={tab.id}
                 onClick={() => handleTabClick(tab.id)}
-                className="bg-white/5 backdrop-blur-xl rounded-2xl hover:outline hover:outline-white p-6 text-left hover:bg-white/10 transition-all duration-300 group cursor-pointer"
+                className="bg-white/5 backdrop-blur-xl cursor-pointer rounded-2xl hover:outline hover:outline-white p-6 text-left hover:bg-white/10 transition-all duration-300 group cursor-pointer"
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -170,7 +170,7 @@ function SettingsApp() {
               <button
                 key={subTab.id}
                 onClick={() => handleSubTabClick(subTab.id)}
-                className={`px-4 py-2 rounded-lg transition-all duration-300 ${
+                className={`px-4 py-2 rounded-lg transition-all cursor-pointer duration-300 ${
                   activeSubTab === subTab.id
                     ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white"
                     : "text-gray-400 hover:text-white hover:bg-white/10"
@@ -201,41 +201,13 @@ function SettingsApp() {
                     <Calendar className="w-5 h-5 text-green-500" />
                     <div>
                       <p className="text-gray-400 text-sm">Member Since</p>
-                      <p className="text-white font-medium">January 2024</p>
+                      <p className="text-white font-medium">{new Date(session.user?.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}</p>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="name" className="text-white">Full Name</Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="mt-2 bg-white/10 border-white/20 text-white focus:border-green-500"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="username" className="text-white">Username</Label>
-                  <Input
-                    id="username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="mt-2 bg-white/10 border-white/20 text-white focus:border-green-500"
-                  />
-                </div>
-
-                <div className="flex items-center gap-4 pt-4">
-                  <Button className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700">
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Changes
-                  </Button>
-                  <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
-                    Cancel
-                  </Button>
                 </div>
               </div>
             </div>
@@ -364,7 +336,7 @@ function SettingsApp() {
               <button
                 key={subTab.id}
                 onClick={() => handleSubTabClick(subTab.id)}
-                className={`px-4 py-2 rounded-lg transition-all duration-300 ${
+                className={`px-4 py-2 rounded-lg transition-all duration-300 cursor-pointer ${
                   activeSubTab === subTab.id
                     ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white"
                     : "text-gray-400 hover:text-white hover:bg-white/10"
@@ -507,7 +479,7 @@ function SettingsApp() {
               <button
                 key={subTab.id}
                 onClick={() => handleSubTabClick(subTab.id)}
-                className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 text-left hover:bg-white/10 transition-all duration-300 group"
+                className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 cursor-pointer text-left hover:bg-white/10 transition-all duration-300 group"
               >
                 <div className="flex items-center justify-between">
                   <div>

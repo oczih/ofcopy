@@ -23,7 +23,8 @@ export function CreatorPostCard({
   isSubscriber,
   user,
   users,
-  signedUrl
+  signedUrl,
+  handleFollow
 }: {
   creator: Creator;
   post: Post;
@@ -34,12 +35,12 @@ export function CreatorPostCard({
   user: User
   users: User[]
   signedUrl: string
+  handleFollow: (creator: Creator) => void;
 }) {
   // Restriction logic
   const isFollowersOnly = post.viewableFor === "followers";
   const isSubscribersOnly = post.viewableFor === "subscribers";
   const canView = !isFollowersOnly && !isSubscribersOnly || isCreator || isFollower || isSubscriber;
-
   // Like and comment modal state
   const [commentOpen, setCommentOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false)
@@ -336,12 +337,13 @@ export function CreatorPostCard({
           </span>
           <div className="flex gap-3">
             {isSubscribersOnly && (
-              <Button className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-full shadow">
+              <Button className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-full shadow cursor-pointer">
                 <Heart className="w-4 h-4 mr-2" /> Subscribe
               </Button>
             )}
             {isFollowersOnly && (
-              <Button className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-semibold rounded-full shadow">
+              <Button onClick={() => handleFollow(creator)}
+              className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-semibold rounded-full shadow cursor-pointer">
                 <UserPlus className="w-4 h-4 mr-2" /> Follow
               </Button>
             )}

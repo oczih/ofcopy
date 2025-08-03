@@ -64,6 +64,7 @@ export default function ProfileContent({
   const [isCreator, setIsCreator] = useState(false);
   const [currentUser, setCurrentUser] = useState<User>(viewingUser);
   const [status, setStatus] = useState<'subscriber' | 'follower' | 'none'>('none');
+  const [userStatsLoading, setUserStatsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchCreator() {
@@ -79,6 +80,8 @@ export default function ProfileContent({
         setCreator(null);
         setIsCreator(false);
       }
+      // Set user stats loading to false after creator data is fetched
+      setUserStatsLoading(false);
     }
     if (userViewed?.id) fetchCreator();
   }, [userViewed]);
@@ -241,143 +244,144 @@ export default function ProfileContent({
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Profile Header */}
         <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 mb-8 border border-white/20">
-          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
-            {/* Profile Image */}
-            <div className="relative w-40 h-40 rounded-full overflow-hidden">
-              {!userViewed ? (
-                <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700" />
-              ) : avatarUrl || userViewed.image? (
-                <>
-                  <Image
-                    src={resolveImageUrl(avatarUrl || creator?.image || userViewed?.image)}
-                    alt={userViewed.username || "User profile image"}
-                    fill
-                    className="rounded-full border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
-                    onLoad={() => setImageLoading(false)}
-                    onError={() => setImageLoading(false)}
-                  />
-                  {imageLoading && (
-                    <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700 absolute top-0 left-0" />
-                  )}
-                </>
-              ) : (
-                <div className="w-40 h-40 flex items-center justify-center rounded-full bg-gray-400 text-white font-bold text-6xl">
-                  {creator?.name?.charAt(0).toUpperCase() || userViewed.name?.charAt(0).toUpperCase() || "U"}
+  <div className="flex flex-col lg:flex-row lg:items-start gap-8">
+    {/* Left Column - Profile Image, Stats, and Subscribe Button */}
+    <div className="flex flex-col gap-6 items-start">
+      {/* Profile Image */}
+      <div className='flex-row flex justify-between'>
+      <div className="relative w-30 h-30 rounded-full overflow-hidden">
+        {!userViewed ? (
+          <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700" />
+        ) : avatarUrl || userViewed.image? (
+          <>
+            <Image
+              src={resolveImageUrl(avatarUrl || creator?.image || userViewed?.image)}
+              alt={userViewed.username || "User profile image"}
+              fill
+              className="rounded-full border border-black shadow-lg transition-all duration-300 object-cover"
+              onLoad={() => setImageLoading(false)}
+              onError={() => setImageLoading(false)}
+            />
+            {imageLoading && (
+              <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700 absolute top-0 left-0" />
+            )}
+          </>
+        ) : (
+          <div className="w-40 h-40 flex items-center justify-center rounded-full bg-gray-400 text-white font-bold text-6xl">
+            {creator?.name?.charAt(0).toUpperCase() || userViewed.name?.charAt(0).toUpperCase() || "U"}
+          </div>
+        )}
+      </div>
+        </div>
+        <div className='flex flex-row gap-6'>
+        <div className='flex flex-col items-start'>
+            <h1 className="text-2xl font-bold text-white mb-1">
+              {creator?.name || creator?.username || userViewed.name || userViewed.username}
+            </h1>
+            <p className="text-xl text-purple-200">@{creator?.username || userViewed.username}</p>
+          </div>
+          <div className='flex flex-col gap-3 flex-1'>          
+          {/* Follow Button - On the right side of name */}
+          {status === 'none' && userViewed.creator && !isOwnProfile && (
+            <button 
+              onClick={() => handleFollow(creator)}  
+              className="border border-blue-500 hover:bg-blue-500/10 text-blue-400 px-4 py-2 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer whitespace-nowrap"
+            >
+              Follow
+            </button>
+          )}
+          
+          {status === 'follower' && creator && (
+            <button
+              onClick={() => handleUnfollow(creator)}
+              className="border border-white text-white hover:bg-white/10 px-4 py-1 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer whitespace-nowrap"
+            >
+              Following
+            </button>
+          )}
                 </div>
-              )}
+          </div>
+      {/* Creator Stats - Under profile pic and smaller */}
+      {creator && (
+        <div className="flex flex-row gap-2 text-center">
+          <div className="flex items-center gap-2 justify-center">
+            <Lock className="w-3 h-3 text-gray-400" />
+            <div className="text-sm font-medium text-white">{stats.posts} Posts</div>
+          </div>
+          <div className="flex items-center gap-2 justify-center">
+            <Video className="w-3 h-3 text-gray-400" />
+            <div className="text-sm font-medium text-white">{stats.videos} Videos</div>
+          </div>
+          <div className="flex items-center gap-2 justify-center">
+            <Heart className="w-3 h-3 text-gray-400" />
+            <div className="text-sm font-medium text-pink-400">{stats.likes} Likes</div>
+          </div>
+        </div>
+      )}
+    {creator?.bio && (
+        <BioModal 
+          bio={creator.bio} 
+          creatorName={creator?.name || creator?.username || userViewed.name || userViewed.username} 
+        />
+      )}
+      {/* User Stats (for non-creators) - Under profile pic and smaller */}
+      {!userStatsLoading && !creator && (
+        <div className="flex flex-col gap-2 text-center">
+          <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
+            <div className="text-xs text-gray-300">Status</div>
+            <div className="text-sm font-semibold text-white capitalize">
+              {userViewed.status}
             </div>
-
-            {/* Profile Info */}
-            <div className="flex-1 text-center lg:text-left">
-              <div className='flex flex-row gap-50'>
-              <h1 className="text-4xl font-bold text-white mb-2">
-                {creator?.name || creator?.username || userViewed.name || userViewed.username}
-              </h1>
-              {status === 'none' && userViewed.creator && !isOwnProfile && (
-                      <button 
-                        onClick={() => handleFollow(creator)}  
-                        className="outline outline-white  hover:bg-white/10 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
-                      >
-                        Follow for free
-                      </button>
-                    )}
-                    
-                    {status === 'follower' && creator && (
-                      <button
-                        onClick={() => handleUnfollow(creator)}
-                        className="border-2 border-blue-500 bg-blue-500 text-white hover:bg-transparent hover:text-blue-400 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
-                      >
-                        Following
-                      </button>
-                    )}
-              </div>
-              <p className="text-xl text-purple-200 mb-4">@{creator?.username || userViewed.username}</p>
-              
-              {creator?.bio && (
-                <BioModal 
-                  bio={creator.bio} 
-                  creatorName={creator?.name || creator?.username || userViewed.name || userViewed.username} 
-                />
-              )}
-
-              {/* Creator Stats */}
-              {creator && (
-                <div className="mb-6 flex flex-wrap gap-4 justify-center lg:justify-start">
-                  <div className="rounded-xl px-4 py-2 flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-gray-400" />
-                    <div className="text-lg font-semibold text-white">{stats.posts}</div>
-                  </div>
-                  <div className="rounded-xl px-4 py-2 flex items-center gap-2">
-                    <Video className="w-4 h-4 text-gray-400" />
-                    <div className="text-lg font-semibold text-white">{stats.videos}</div>
-                  </div>
-                  <div className="rounded-xl px-4 py-2 flex items-center gap-2">
-                    <Heart className="w-4 h-4 text-gray-400" />
-                    <div className="text-lg font-semibold text-pink-400">{stats.likes}</div>
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap lg:justify-start">
-                {isOwnProfile ? (
-                  <div className='flex flex-row justify-betwenn gap-20'>
-                    <Link 
-                      href="/myprofile/edit" 
-                      className="outline-3 outline-white/50 text-white px-6 py-3 rounded-xl hover:bg-white/10 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
-                    >
-                      Edit Profile
-                    </Link>
-                    <Link 
-                      href="/insights" 
-                      className="outline-3 outline-white/50 text-white px-6 py-3 rounded-xl hover:bg-white/10 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
-                    >
-                      Insights
-                    </Link>
-                    <Link 
-                      href="/settings/creator/promotions" 
-                      className="outline-3 outline-white/50 text-white px-6 py-3 rounded-xl hover:bg-white/10 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
-                    >
-                      Promote
-                    </Link>
-                  </div>
-                ) : (
-                  <>
-                    {/* Subscribe Button - Bigger and more prominent */}
-                    {viewingUser && status !== 'subscriber' && (
-                      <button 
-                        className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-10 py-4 rounded-xl font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 cursor-pointer"
-                        onClick={() => setModalOpen(true)}
-                      >
-                        Subscribe Now
-                      </button>
-                    )}
-                    
-                    {/* Follow Button - Outline style, positioned to the side */}
-                  </>
-                )}
-              </div>
-
-              {/* User Stats (for non-creators) */}
-              {!creator && (
-                <div className="mt-6 flex gap-6 text-center lg:text-left">
-                  <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                    <div className="text-sm text-gray-300">Status</div>
-                    <div className="text-lg font-semibold text-white capitalize">
-                      {userViewed.status}
-                    </div>
-                  </div>
-                  <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                    <div className="text-sm text-gray-300">Total Spent</div>
-                    <div className="text-lg font-semibold text-green-400">
-                      ${totalSpent.toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              )}
+          </div>
+          <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
+            <div className="text-xs text-gray-300">Total Spent</div>
+            <div className="text-sm font-semibold text-green-400">
+              ${totalSpent.toFixed(2)}
             </div>
           </div>
         </div>
+      )}
+    </div>
+
+    {/* Right Column - Profile Info and Action Buttons */}
+    <div className="flex-1 text-center lg:text-left">
+      {/* Action Buttons - Spread out evenly */}
+      {isOwnProfile && (
+        <div className="flex flex-wrap justify-between gap-4 mt-6">
+          <Link 
+            href="/myprofile/edit" 
+            className="flex-1 text-center outline-3 outline-white/50 text-white px-6 py-3 rounded-xl hover:bg-white/10 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
+          >
+            Edit Profile
+          </Link>
+          <Link 
+            href="/insights" 
+            className="flex-1 text-center outline-3 outline-white/50 text-white px-6 py-3 rounded-xl hover:bg-white/10 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
+          >
+            Insights
+          </Link>
+          <Link 
+            href="/settings/creator/promotions" 
+            className="flex-1 text-center outline-3 outline-white/50 text-white px-6 py-3 rounded-xl hover:bg-white/10 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
+          >
+            Promote
+          </Link>
+        </div>
+      )}
+    </div>
+  </div>
+  {!isOwnProfile && viewingUser && status !== 'subscriber' && (
+        <button 
+          className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-full font-bold transition-all duration-200 shadow-lg hover:shadow-xl transform cursor-pointer"
+          onClick={() => setModalOpen(true)}
+        >
+          <div className='flex flex-row justify-between'>
+          <span>Subscribe Now</span>
+          <span>${creator?.price}/Month</span>
+          </div>
+        </button>
+      )}
+</div>
 
         {modalOpen && creator && (
           <SubscribeModal 
@@ -482,12 +486,14 @@ export default function ProfileContent({
     creator,
     status,
     viewingUser,
-    postSignedUrls
+    postSignedUrls,
+    handleFollow
   }: {
     status: 'subscriber' | 'follower' | 'none';
     creator?: Creator;
     viewingUser: User;
     postSignedUrls: Record<string, string>;
+    handleFollow: (creator: Creator) => void;
   }) {
     const [users, setUsers] = useState<User[] | null>(null);
     
@@ -534,6 +540,7 @@ export default function ProfileContent({
             session={session}
             users={users.users}
             signedUrl={postSignedUrls[post._id]}
+            handleFollow={handleFollow}
           />
         ))}
       </div>

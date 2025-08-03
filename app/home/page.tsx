@@ -54,10 +54,10 @@ function App() {
   }, [status]);
   
   useEffect(() => {
-    if (!session?.user && !loading && !session) {
+    if (status === 'unauthenticated') {
       router.push("/login");
     }
-  }, [session, loading, router]);
+  }, [status, router]);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -90,7 +90,6 @@ function App() {
     fetchData();
   }, []);
   const [postSignedUrls, setPostSignedUrls] = useState<Record<string, string>>({});
-
   useEffect(() => {
     async function fetchSignedUrls() {
       if (!creators) return;
@@ -111,7 +110,7 @@ function App() {
   
             if (res.ok) {
               const data = await res.json();
-              signedUrlsMap[post._id] = data.signedUrl;  // <-- use signedUrl here
+              signedUrlsMap[post._id] = data.downloadUrl;  // <-- use signedUrl here
             }
           } catch (error) {
             console.error('Failed to fetch signed URL for post:', post._id, error);
@@ -331,6 +330,7 @@ function App() {
                     {creator.posts && creator.posts.length > 0 && (
                       creator.posts.map(post => {
                         const isCreator = session?.user?.id === creator.user;
+                        
                         const isFollower = session?.user?.following?.some(f => f.creatorId.toString() === creator.id);
                         const isSubscriber = !!session?.user?.subscriptions?.some(s => s.creatorId.toString() === creator.id);
                         return (

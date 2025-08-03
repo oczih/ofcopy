@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { signIn, getSession, useSession } from "next-auth/react";
-import { toast } from 'react-hot-toast';
+import { toast, Toaster } from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
@@ -180,6 +180,10 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#13072c]">
+      <Toaster
+          position="top-center"
+          reverseOrder={false}
+        />
        <h1 className="text-3xl font-extrabold text-white mb-4 text-center drop-shadow-lg">Fanslio</h1>
        <h1 className="text-5xl font-extrabold text-white mb-4 text-center drop-shadow-lg">Log In</h1>
       <div className="w-full max-w-md bg-white/10 rounded-2xl shadow-xl p-8 flex flex-col items-center">
@@ -276,7 +280,7 @@ export default function LoginPage() {
               type="button"
               onClick={handleEmailSignIn}
               disabled={loading}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? 'Logging in...' : 'Log in'}
             </button>
