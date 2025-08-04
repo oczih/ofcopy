@@ -5,12 +5,14 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Badge } from "../../components/ui/badge";
-import { Settings, User, Shield, Bell, Palette, CreditCard, LogOut, Save, ChevronRight, Calendar, Mail, Eye, EyeOff, Trash2, Star, Wallet, History, X, ExternalLink } from "lucide-react";
+import { Settings, User, Shield, Bell, Palette, CreditCard, LogOut, Save, ChevronRight, Calendar, Mail, Eye, EyeOff, Trash2, Star, Wallet, History, X, ExternalLink, AlertCircle } from "lucide-react";
 import { SessionProvider, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import AppWrapper from "../../components/AppWrapper";
 import SubscriptionManagement from "@/components/SubscriptionManagement";
 import PaymentHistory from "@/components/PaymentHistory";
+import { VerificationToken } from "../models/usermodel";
+import { createVerificationToken } from "@/lib/auth-utils";
 
 export default function SettingsPage() {
   return (
@@ -29,12 +31,8 @@ function SettingsApp() {
   const [name, setName] = useState(session?.user.name || "");
   const [email, setEmail] = useState(session?.user.email || "");
   const [username, setUsername] = useState(session?.user.username || "");
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [form, setForm] = useState({ password: "", confirm: "" });
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -128,7 +126,43 @@ function SettingsApp() {
       </div>
     );
   };
+  const validate = () => {
+    const errs: Record<string, string> = {};
+    if (!form.password || form.password.length < 8) {
+      errs.password = "Password must be at least 8 characters";
+    }
+    if (form.confirm !== form.password) {
+      errs.confirm = "Passwords do not match";
+    }
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+  const handleReset = async () => {
+    if (!validate() || !session) return;
+    await VerificationToken.deleteMany({ email, type: 'password_reset' });
 
+    const token = await createVerificationToken(email, 'password_reset');
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, password: form.password }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Reset failed");
+      } else {
+        toast.success("Password reset successful! You can now log in.");
+        router.push("/login");
+      }
+    } catch (err) {
+      toast.error("Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  };
   const renderMainTabContent = () => {
     if (!activeTab) {
       return (
@@ -225,74 +259,44 @@ function SettingsApp() {
               </div>
 
               <div className="space-y-4 max-w-md">
-                <div className="relative">
-                  <Label htmlFor="current-password" className="text-white">Current Password</Label>
-                  <div className="relative mt-2">
-                    <Input
-                      id="current-password"
-                      type={showCurrentPassword ? "text" : "password"}
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="bg-white/10 border-white/20 text-white focus:border-green-500 pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                    >
-                      {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
 
-                <div className="relative">
-                  <Label htmlFor="new-password" className="text-white">New Password</Label>
-                  <div className="relative mt-2">
-                    <Input
-                      id="new-password"
-                      type={showNewPassword ? "text" : "password"}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="bg-white/10 border-white/20 text-white focus:border-green-500 pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                    >
-                      {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
+              <div>
+              <input
+                type="password"
+                placeholder="Confirm password"
+                value={form.confirm}
+                onChange={(e) => setForm({ ...form, confirm: e.target.value })}
+                className="w-full pl-4 pr-4 py-3 bg-white/10 rounded-xl shadow-sm text-white placeholder-gray-400"
+              />
+              {errors.confirm && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" /> {errors.confirm}
+                </p>
+              )}
+            </div>
 
-                <div className="relative">
-                  <Label htmlFor="confirm-password" className="text-white">Confirm New Password</Label>
-                  <div className="relative mt-2">
-                    <Input
-                      id="confirm-password"
-                      type={showConfirmPassword ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="bg-white/10 border-white/20 text-white focus:border-green-500 pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                    >
-                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
+            <div>
+              <input
+                type="password"
+                placeholder="Confirm password"
+                value={form.confirm}
+                onChange={(e) => setForm({ ...form, confirm: e.target.value })}
+                className="w-full pl-4 pr-4 py-3 bg-white/10 rounded-xl shadow-sm text-white placeholder-gray-400"
+              />
+              {errors.confirm && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" /> {errors.confirm}
+                </p>
+              )}
+            </div>
 
-                <div className="flex items-center gap-4 pt-4">
-                  <Button className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700">
-                    Update Password
-                  </Button>
-                  <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
-                    Cancel
-                  </Button>
-                </div>
+            <button
+            onClick={handleReset}
+            disabled={loading || !token}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg font-medium transition cursor pointer disabled:opacity-50"
+            >
+              {loading ? "Resetting..." : "Reset Password"}
+            </button>
               </div>
             </div>
           )}
