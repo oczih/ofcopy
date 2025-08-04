@@ -9,7 +9,7 @@ import { signIn } from "next-auth/react";
 import { toast } from 'react-hot-toast';
 import { useRouter } from "next/navigation";
 import postservice from '@/app/services/postservice'; // adjust path accordingly
-import { Creator, MediaPost, Post, User } from '@/app/types';
+import { Creator, Comment, Post, User } from '@/app/types';
 import { Skeleton } from './ui/skeleton';
 import { resolveImageUrl } from './resolveImageUrl';
 
@@ -354,6 +354,7 @@ export function PostCard({
   const [imageLoading, setImageLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [signupModalOpen, setSignupModalOpen] = useState(false);
+  const [commentModalOpen ,setCommentModalOpen] = useState(false)
   const [likes, setLikes] = useState(post.likes ?? []);
   const shouldBlur = status === 'none';
   const showCaption = status === 'subscriber' || status === 'follower';
@@ -441,6 +442,10 @@ export function PostCard({
   const handleToggleComment = () => {
     setCommentOpen((open) => !open);
   };
+  const handleCommentModalOpen = () => {
+    setCommentModalOpen((open) => !open)
+  }
+  
   return (
     <>
       <div className="bg-white/10 backdrop-blur-sm max-w-3xl w-full rounded-2xl overflow-hidden border border-white/20 hover:border-white/40 transition-all duration-300 group hover:transform hover:shadow-2xl">
@@ -573,13 +578,13 @@ export function PostCard({
             onClick={() => handleLike(post)}
           >
             <Heart
-  className={`w-5 h-5 ${
-    
-    isLikedByCurrentUser
-      ? "text-pink-400 fill-pink-400"
-      : "text-gray-400"
-  }`}
-/>
+          className={`w-5 h-5 ${
+            
+            isLikedByCurrentUser
+              ? "text-pink-400 fill-pink-400"
+              : "text-gray-400"
+          }`}
+        />
           </Button>
         <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-400 hover:bg-grey cursor-pointer" onClick={handleToggleComment}>
           <MessageCircle className="w-5 h-5" />
@@ -605,16 +610,46 @@ export function PostCard({
               const userObj = rightUser(comment);
               return (
                 <div key={comment.commentId || idx} className="flex items-start gap-3 bg-slate-800/60 rounded-lg p-3">
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex flex-row items-center gap-2 min-w-0">
                       <Avatar className="w-8 h-8">
                         <AvatarImage src={userObj?.avatar || ''} alt={userObj?.name || userObj?.username || 'User'} />
                         <AvatarFallback>{userObj?.name?.[0] || userObj?.username?.[0] || 'U'}</AvatarFallback>
                       </Avatar>
                       <span className="text-xs text-pink-300 font-semibold truncate">{comment.username}</span>
+                      { && (
+                        
+                      )
+                      }
                     </div>
+                    {commentModalOpen && (post.creator || comment.userId === viewingUser.id) && (
+                        <div
+                          className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-95 opacity-100 animate-fade-in z-30 cursor-pointer"
+                        >
+                          <Link href={`/post/${post._id}/edit`}>
+                            <Button variant="ghost" className="w-full justify-start text-left hover:bg-gray-100 dark:hover:bg-slate-600 cursor-pointer">
+                              Delete Comment
+                            </Button>
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            onClick={handleRepostContent}
+                            className="w-full justify-start text-left hover:bg-gray-100 dark:hover:bg-slate-600 cursor-pointer"
+                          >
+                            Repost Content
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleDeletePost(post._id)}
+                            className="w-full justify-start text-left text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
+                          >
+                            Delete Post
+                          </Button>
+                        </div>
+                      )}
                   <div className="flex-1 flex flex-col min-w-0">
                     <span className="text-white text-sm break-words">{comment.text}</span>
                     <span className="text-xs text-gray-400 mt-1">{comment.createdAt ? new Date(comment.createdAt).toLocaleString() : ''}</span>
+                    
                   </div>
                 </div>
               );
