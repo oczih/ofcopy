@@ -9,6 +9,8 @@ import { Settings, User, Shield, Bell, Palette, CreditCard, LogOut, Save, Chevro
 import { SessionProvider, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import AppWrapper from "../../components/AppWrapper";
+import SubscriptionManagement from "@/components/SubscriptionManagement";
+import PaymentHistory from "@/components/PaymentHistory";
 
 export default function SettingsPage() {
   return (
@@ -350,78 +352,11 @@ function SettingsApp() {
           </div>
 
           {activeSubTab === "subscriptions" && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-2">Active Subscriptions</h3>
-                <p className="text-gray-400">Manage your current subscriptions</p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="p-2 bg-purple-500/20 rounded-lg">
-                        <Star className="w-5 h-5 text-purple-400" />
-                      </div>
-                      <div>
-                        <h4 className="text-white font-semibold">Premium Plan</h4>
-                        <p className="text-gray-400 text-sm">$9.99/month • Next billing: Feb 15, 2024</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <Badge className="bg-green-500 text-white">Active</Badge>
-                      <Button variant="outline" size="sm" className="border-red-500/50 text-red-400 hover:bg-red-500/10">
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                  <div className="text-center py-8">
-                    <p className="text-gray-400 mb-4">No other active subscriptions</p>
-                    <Button 
-                    onClick={() => router.push("/discover")}
-                    variant="outline" className="border-white/20 text-white hover:bg-white/10">
-                      Browse Creators
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <SubscriptionManagement session={session}/>
           )}
 
           {activeSubTab === "history" && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-2">Payment History</h3>
-                <p className="text-gray-400">View your past transactions</p>
-              </div>
-
-              <div className="space-y-3">
-                {[
-                  { date: "Jan 15, 2024", amount: "$9.99", description: "Premium Plan - Monthly", status: "Completed" },
-                  { date: "Dec 15, 2023", amount: "$9.99", description: "Premium Plan - Monthly", status: "Completed" },
-                  { date: "Nov 15, 2023", amount: "$9.99", description: "Premium Plan - Monthly", status: "Completed" },
-                ].map((payment, index) => (
-                  <div key={index} className="bg-white/5 rounded-xl p-4 border border-white/10">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <History className="w-5 h-5 text-green-500" />
-                        <div>
-                          <p className="text-white font-medium">{payment.description}</p>
-                          <p className="text-gray-400 text-sm">{payment.date}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-white font-semibold">{payment.amount}</p>
-                        <Badge className="bg-green-500 text-white text-xs">{payment.status}</Badge>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <PaymentHistory session={session} /> 
           )}
 
           {activeSubTab === "wallet" && (

@@ -47,7 +47,7 @@ export interface Notification {
   seen: boolean
 }
 export interface UserDocument {
-    _id: string;
+  _id: string;
   username: string;
   password: string;
   email: string;
