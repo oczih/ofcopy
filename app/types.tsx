@@ -27,7 +27,7 @@ export type User = {
     lastVerificationEmailSentAt: Date;
     lastPasswordResetSentAt: Date;
     purchases: Purchase[];
-    createdAt: Date;
+    createdAt: string;
   }
   export interface Subscriber {
     userId: mongoose.Types.ObjectId;
@@ -140,6 +140,8 @@ declare module "next-auth" {
     googleId?: string;
     membership?: boolean;
     bio?: string;
+    password: string;
+    createdAt: string;
     location: string;
     hasAccess?: boolean;
     email?: string;

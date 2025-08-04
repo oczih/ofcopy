@@ -244,11 +244,23 @@ userSchema.set('toJSON', {
   });
 
 const verificationTokenSchema = new mongoose.Schema({
-    email: { type: String, required: true },
-    token: { type: String, required: true },
-    expires: { type: Date, required: true },
-    type: { type: String, enum: ['email_verification', 'password_reset'], required: true }
-  });
+  token: { type: String, required: true, unique: true },
+  email: { type: String, required: true },
+  type: { 
+    type: String, 
+    required: true,
+    enum: ['email_verification', 'password_reset', 'password_add', 'password_confirm'] // Added password_add and password_confirm
+  },
+  tempPassword: { type: String },
+  originalAction: { type: String, enum: ['add', 'reset'] },
+  expiresAt: { 
+    type: Date, 
+    required: true,
+    index: { expireAfterSeconds: 0 } // TTL index for automatic cleanup
+  }
+}, {
+  timestamps: true
+});
   
 export const VerificationToken = mongoose.models?.VerificationToken || mongoose.model('VerificationToken', verificationTokenSchema);
 

@@ -8,6 +8,37 @@ const transporter = nodemailer.createTransport({
     pass: process.env.SMTP_PASS,
   },
 });
+export async function sendPasswordAddConfirmationEmail(email: string, token: string) {
+  const confirmationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/settings?token=${token}`;
+  const mailOptions = {
+  from: process.env.FROM_EMAIL,
+  to: email,
+  subject: 'Confirm Your Password Setup',
+  html: `
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
+      <h2 style="color: #333;">Confirm Password Setup</h2>
+      <p>You've created a new password for your account. To complete the setup, please click the button below:</p>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${confirmationUrl}" 
+           style="background-color: #28a745; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+          Confirm Password Setup
+        </a>
+      </div>
+      
+      <p style="color: #666; font-size: 14px;">
+        This link will expire in 15 minutes for security reasons.
+      </p>
+      
+      <p style="color: #666; font-size: 14px;">
+        If you didn't request this password setup, please ignore this email.
+      </p>
+    </div>
+  `}
+  
+  await transporter.sendMail(mailOptions);
+}
+
 export async function sendPasswordResetEmail(email: string, token: string) {
   const resetUrl = `${process.env.NEXT_PUBLIC_API_URL}/reset-password?token=${token}`;
 

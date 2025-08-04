@@ -1,10 +1,8 @@
-// File: /app/api/auth/request-reset/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from '@/lib/mongoose';
 import OFUser, { VerificationToken } from "@/app/models/usermodel";
 import { createVerificationToken } from '@/lib/auth-utils';
-import { sendPasswordResetEmail } from '@/lib/email';
+import { sendPasswordResetEmail, sendPasswordAddEmail } from '@/lib/email';
 
 const MIN_RESEND_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
@@ -24,31 +22,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    // 🔒 Cooldown check (specific to password resets)
+    // Determine if this is adding a password or resetting
+    const isAddingPassword = !user.password || user.password === '';
+    const tokenType = isAddingPassword ? 'password_add' : 'password_reset';
+
+    // 🔒 Cooldown check
     if (
       user.lastPasswordResetSentAt &&
       Date.now() - user.lastPasswordResetSentAt.getTime() < MIN_RESEND_INTERVAL
     ) {
       return NextResponse.json(
-        { error: 'Please wait before requesting another reset email.' },
+        { error: 'Please wait before requesting another email.' },
         { status: 429 }
       );
     }
 
-    // 🧹 Remove old password reset tokens
-    await VerificationToken.deleteMany({ email, type: 'password_reset' });
+    // 🧹 Remove old tokens of this type
+    await VerificationToken.deleteMany({ email, type: tokenType });
 
-    const token = await createVerificationToken(email, 'password_reset');
-    await sendPasswordResetEmail(email, token); // link: /reset-password?token=abc
+    const token = await createVerificationToken(email, tokenType);
+    
+    // Send appropriate email based on action type
+    if (isAddingPassword) {
+      await sendPasswordAddEmail(email, token); // link: /add-password?token=abc
+    } else {
+      await sendPasswordResetEmail(email, token); // link: /reset-password?token=abc
+    }
 
     // ⏱️ Save timestamp
     user.lastPasswordResetSentAt = new Date();
     await user.save();
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true, 
+      isAddingPassword,
+      message: isAddingPassword ? 'Password setup email sent!' : 'Password reset email sent!'
+    });
 
   } catch (error) {
-    console.error('Password reset request failed:', error);
+    console.error('Password action request failed:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

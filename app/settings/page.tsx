@@ -7,12 +7,15 @@ import { Label } from "../../components/ui/label";
 import { Badge } from "../../components/ui/badge";
 import { Settings, User, Shield, Bell, Palette, CreditCard, LogOut, Save, ChevronRight, Calendar, Mail, Eye, EyeOff, Trash2, Star, Wallet, History, X, ExternalLink, AlertCircle } from "lucide-react";
 import { SessionProvider, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import AppWrapper from "../../components/AppWrapper";
 import SubscriptionManagement from "@/components/SubscriptionManagement";
 import PaymentHistory from "@/components/PaymentHistory";
 import { VerificationToken } from "../models/usermodel";
 import { createVerificationToken } from "@/lib/auth-utils";
+import AddPassword from "@/components/AddPassword";
+import ResetPasswordPage from "../reset-password/page";
+import toast from "react-hot-toast";
 
 export default function SettingsPage() {
   return (
@@ -26,20 +29,65 @@ export default function SettingsPage() {
 
 function SettingsApp() {
   const { data: session, status } = useSession();
+  console.log("sessioni:", session?.user)
   const [activeTab, setActiveTab] = useState("");
   const [activeSubTab, setActiveSubTab] = useState("");
-  const [name, setName] = useState(session?.user.name || "");
-  const [email, setEmail] = useState(session?.user.email || "");
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+  const [name, setName] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
   const [username, setUsername] = useState(session?.user.username || "");
-  const [form, setForm] = useState({ password: "", confirm: "" });
+  const [form, setForm] = useState({
+    currentPassword: "",
+    password: "",
+    confirm: ""
+  });
+  const [isAddingPassword, setIsAddingPassword] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const router = useRouter();
+  
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push("/login");
     }
   }, [status, router]);
-  
+  useEffect(() => {
+    if (session?.user) {
+      setEmail(session.user.email ?? "");
+      setName(session.user.name ?? "");
+    }
+  }, [session?.user]);
+  useEffect(() => {
+    if (!token) return;
+
+    const confirmAction = async () => {
+      try {
+        const res = await fetch('/api/auth/confirm-password-action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+
+        const data = await res.json();
+        
+        if (res.ok) {
+          setConfirmed(true);
+          setIsAddingPassword(data.isAddingPassword);
+          const actionType = data.isAddingPassword ? 'Password setup' : 'Password reset';
+          toast.success(`${actionType} confirmed! You can now log in with your ${data.isAddingPassword ? 'new' : 'updated'} password.`);
+        } else {
+          toast.error(data.error || 'Confirmation failed');
+          setTimeout(() => router.push('/login'), 2000);
+        }
+      } catch (error) {
+        toast.error('Something went wrong');
+      }
+    };
+
+    confirmAction();
+  }, [token, router]);
   if (status === "loading") return null;
   
 
@@ -126,36 +174,50 @@ function SettingsApp() {
       </div>
     );
   };
-  const validate = () => {
-    const errs: Record<string, string> = {};
-    if (!form.password || form.password.length < 8) {
-      errs.password = "Password must be at least 8 characters";
-    }
-    if (form.confirm !== form.password) {
-      errs.confirm = "Passwords do not match";
-    }
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
-  const handleReset = async () => {
-    if (!validate() || !session) return;
-    await VerificationToken.deleteMany({ email, type: 'password_reset' });
+// Update your validate function to handle both scenarios:
+const validate = () => {
+  const errs: Record<string, string> = {};
+  
+  // For users with existing passwords, require current password
+  if (session?.user.password && (!form.currentPassword || form.currentPassword.trim() === '')) {
+    errs.currentPassword = 'Current password is required';
+  }
+  
+  // Validate new password
+  if (!form.password || form.password.length < 8) {
+    errs.password = "Password must be at least 8 characters";
+  }
+  
+  // Validate password confirmation
+  if (!form.confirm) {
+    errs.confirm = 'Please confirm your password';
+  } else if (form.confirm !== form.password) {
+    errs.confirm = "Passwords do not match";
+  }
+  
+  setErrors(errs);
+  return Object.keys(errs).length === 0;
+};
+  const handlePasswordAction = async () => {
+    console.log("validate:", validate)
 
-    const token = await createVerificationToken(email, 'password_reset');
+    if (!validate()) return;
+    
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/reset-password", {
+      const res = await fetch("/api/auth/password-action", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password: form.password }),
+        body: JSON.stringify({ email: email, password: form.password }),
       });
-
+  
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || "Reset failed");
+        toast.error(data.error || "Action failed");
       } else {
-        toast.success("Password reset successful! You can now log in.");
-        router.push("/login");
+        const actionType = data.isAddingPassword ? "Password setup" : "Password reset";
+        toast.success(`Verification email sent! Please check your email to confirm your ${actionType.toLowerCase()}.`);
+        // Don't redirect yet - wait for email confirmation
       }
     } catch (err) {
       toast.error("Something went wrong.");
@@ -251,55 +313,167 @@ function SettingsApp() {
             </div>
           )}
 
-          {activeSubTab === "password" && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-2">Change Password</h3>
-                <p className="text-gray-400">Update your password to keep your account secure</p>
-              </div>
+{activeSubTab === "password" && !session?.user.password && (
+  <div className="space-y-6">
+    <div>
+      <h3 className="text-2xl font-bold text-white mb-2">Add Password</h3>
+      <p className="text-gray-400">Set up a password to secure your account and enable email login</p>
+    </div>
 
-              <div className="space-y-4 max-w-md">
-
-              <div>
-              <input
-                type="password"
-                placeholder="Confirm password"
-                value={form.confirm}
-                onChange={(e) => setForm({ ...form, confirm: e.target.value })}
-                className="w-full pl-4 pr-4 py-3 bg-white/10 rounded-xl shadow-sm text-white placeholder-gray-400"
-              />
-              {errors.confirm && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" /> {errors.confirm}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <input
-                type="password"
-                placeholder="Confirm password"
-                value={form.confirm}
-                onChange={(e) => setForm({ ...form, confirm: e.target.value })}
-                className="w-full pl-4 pr-4 py-3 bg-white/10 rounded-xl shadow-sm text-white placeholder-gray-400"
-              />
-              {errors.confirm && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" /> {errors.confirm}
-                </p>
-              )}
-            </div>
-
-            <button
-            onClick={handleReset}
-            disabled={loading || !token}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg font-medium transition cursor pointer disabled:opacity-50"
-            >
-              {loading ? "Resetting..." : "Reset Password"}
-            </button>
-              </div>
-            </div>
+    <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+      <div className="space-y-4 max-w-md">
+        {/* New Password Input */}
+        <div>
+          <label className="block text-sm font-medium text-white mb-2">Create Password</label>
+          <input
+            type="password"
+            placeholder="Enter your new password"
+            value={form.password || ''}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            className="w-full pl-4 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl shadow-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          {errors.password && (
+            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <AlertCircle className="w-4 h-4" /> {errors.password}
+            </p>
           )}
+        </div>
+
+        {/* Confirm Password Input */}
+        <div>
+          <label className="block text-sm font-medium text-white mb-2">Confirm Password</label>
+          <input
+            type="password"
+            placeholder="Confirm your password" 
+            value={form.confirm || ''}
+            onChange={(e) => setForm({ ...form, confirm: e.target.value })}
+            className="w-full pl-4 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl shadow-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          {errors.confirm && (
+            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <AlertCircle className="w-4 h-4" /> {errors.confirm}
+            </p>
+          )}
+        </div>
+
+        {/* Add Password Button */}
+        <button
+          onClick={handlePasswordAction}
+          disabled={loading}
+          className="w-full bg-green-600 hover:bg-green-700 cursor-pointer text-white py-3 px-4 rounded-xl font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? "Setting up password..." : "Add Password"}
+        </button>
+
+        {/* Info Box */}
+        <div className="bg-blue-900/20 border border-blue-500/20 rounded-xl p-4 mt-4">
+          <div className="flex items-start gap-3">
+            <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+            </div>
+            <div className="text-sm text-blue-200">
+              <p className="font-medium mb-1">Setting up a password allows you to:</p>
+              <ul className="space-y-1 text-blue-300">
+                <li>• Sign in with your email and password</li>
+                <li>• Access your account if OAuth is unavailable</li>
+                <li>• Have an additional layer of security</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+{activeSubTab === "password" && session?.user.password && (
+  <div className="space-y-6">
+    <div>
+      <h3 className="text-2xl font-bold text-white mb-2">Change Password</h3>
+      <p className="text-gray-400">Update your password to keep your account secure</p>
+    </div>
+
+    <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+      <div className="space-y-4 max-w-md">
+        {/* Current Password Input */}
+        <div>
+          <label className="block text-sm font-medium text-white mb-2">Current Password</label>
+          <input
+            type="password"
+            placeholder="Enter your current password"
+            value={form.currentPassword || ''}
+            onChange={(e) => setForm({ ...form, currentPassword: e.target.value })}
+            className="w-full pl-4 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl shadow-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          {errors.currentPassword && (
+            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <AlertCircle className="w-4 h-4" /> {errors.currentPassword}
+            </p>
+          )}
+        </div>
+
+        {/* New Password Input */}
+        <div>
+          <label className="block text-sm font-medium text-white mb-2">New Password</label>
+          <input
+            type="password"
+            placeholder="Enter your new password"
+            value={form.password || ''}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            className="w-full pl-4 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl shadow-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          {errors.password && (
+            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <AlertCircle className="w-4 h-4" /> {errors.password}
+            </p>
+          )}
+        </div>
+
+        {/* Confirm New Password Input */}
+        <div>
+          <label className="block text-sm font-medium text-white mb-2">Confirm New Password</label>
+          <input
+            type="password"
+            placeholder="Confirm your new password"
+            value={form.confirm || ''}
+            onChange={(e) => setForm({ ...form, confirm: e.target.value })}
+            className="w-full pl-4 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl shadow-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          {errors.confirm && (
+            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <AlertCircle className="w-4 h-4" /> {errors.confirm}
+            </p>
+          )}
+        </div>
+
+        {/* Change Password Button */}
+        <button
+          onClick={handlePasswordAction}
+          disabled={loading}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-xl font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? "Changing password..." : "Change Password"}
+        </button>
+
+        {/* Security Info */}
+        <div className="bg-yellow-900/20 border border-yellow-500/20 rounded-xl p-4 mt-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-yellow-200">
+              <p className="font-medium mb-1">Password Security Tips:</p>
+              <ul className="space-y-1 text-yellow-300">
+                <li>• Use at least 8 characters</li>
+                <li>• Include uppercase and lowercase letters</li>
+                <li>• Add numbers and special characters</li>
+                <li>• Don't reuse passwords from other accounts</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
           {activeSubTab === "delete" && (
             <div className="space-y-6">
@@ -446,13 +620,6 @@ function SettingsApp() {
 
   return (
     <div>
-      {/* Animated background elements */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
-      </div>
-
       <main className="flex-1 max-w-6xl mx-auto px-4 py-8 relative z-10">
         <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl p-8">
           {renderBreadcrumb()}
