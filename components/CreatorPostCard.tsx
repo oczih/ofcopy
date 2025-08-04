@@ -53,36 +53,6 @@ export function CreatorPostCard({
   const [showConfirm, setShowConfirm] = useState(false);
   const [imageLoading, setImageLoading] = useState(true)
   const handleLike = async (post: Post) => {
-
-    if(post.likes.some(like => like.userId.toString() === session.user?.id)){
-
-      try {
-        const res = await fetch(`/api/media?username=${creator.username}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            postId: post._id,
-            liker: { userId: session.user?.id },
-            unlike: true
-          }),
-        });
-    
-        if (res.ok) {
-          const data = await res.json();
-          const updated = data.posts.find((p: Post) => p._id === post._id);
-          if (updated) {
-            setLikes(updated.likes ?? []);
-            console.log("After: ", updated.likes);
-          }
-        } else {
-          alert('Failed to unlike post');
-        }
-      } catch (error) {
-        console.error(error);
-        alert('Failed to unlike post');
-      }
-    }
-    else {
       try {
         const res = await fetch(`/api/media?username=${creator.username}`, {
           method: 'PUT',
@@ -105,8 +75,35 @@ export function CreatorPostCard({
         console.error(error);
         alert('Failed to like post');
       }
-  }
+  
   };
+  const handleUnlike = async (post: Post) => {
+    try {
+      const res = await fetch(`/api/media?username=${creator.username}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId: post._id,
+          liker: { userId: session.user?.id },
+          unlike: true
+        }),
+      });
+  
+      if (res.ok) {
+        const data = await res.json();
+        const updated = data.posts.find((p: Post) => p._id === post._id);
+        if (updated) {
+          setLikes(updated.likes ?? []);
+          console.log("After: ", updated.likes);
+        }
+      } else {
+        alert('Failed to unlike post');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Failed to unlike post');
+    }
+  }
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
   useEffect(() => {
@@ -191,7 +188,6 @@ export function CreatorPostCard({
         const updated = data.posts.find((p: typeof post) => p._id === post._id);
         if (updated) setComments(updated.comments ?? []);
         setCommentText("");
-        setCommentOpen(false);
       } else {
         alert('Failed to add comment');
       }
@@ -373,16 +369,16 @@ export function CreatorPostCard({
             variant="ghost"
             size="icon"
             className="text-gray-400 hover:text-pink-400 cursor-pointer"
-            onClick={() => handleLike(post)}
+            onClick={() => !isLikedByCurrentUser ? handleLike(post) : handleUnlike(post)}
           >
             <Heart
-  className={`w-5 h-5 ${
-    
-    isLikedByCurrentUser
-      ? "text-pink-400 fill-pink-400"
-      : "text-gray-400"
-  }`}
-/>
+            className={`w-5 h-5 ${
+              
+              isLikedByCurrentUser
+                ? "text-pink-400 fill-pink-400"
+                : "text-gray-400"
+            }`}
+          />
           </Button>
         <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-400 hover:bg-grey cursor-pointer" onClick={handleToggleComment}>
           <MessageCircle className="w-5 h-5" />
