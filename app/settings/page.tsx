@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -34,12 +34,14 @@ function SettingsApp() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
-
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push("/login");
+    }
+  }, [status, router]);
+  
   if (status === "loading") return null;
-  if (!session?.user) {
-    if (typeof window !== "undefined") router.replace("/login");
-    return null;
-  }
+  
 
   const mainTabs = [
     { id: "creator", label: "Become a Creator", href: "/apply-creator" },
@@ -65,7 +67,7 @@ function SettingsApp() {
     { id: "terms", label: "Terms of Service", href: "/tos" },
   ];
 
-  const handleTabClick = (tabId) => {
+  const handleTabClick = (tabId: string) => {
     const tab = mainTabs.find(t => t.id === tabId);
     if (tab?.href) {
       router.push(tab.href);
@@ -79,7 +81,7 @@ function SettingsApp() {
     else setActiveSubTab("");
   };
 
-  const handleSubTabClick = (subTabId) => {
+  const handleSubTabClick = (subTabId: string) => {
     const currentSubTabs = activeTab === "account" ? accountSubTabs : 
                           activeTab === "payments" ? paymentSubTabs : legalSubTabs;
     const subTab = currentSubTabs.find(t => t.id === subTabId);
@@ -378,7 +380,9 @@ function SettingsApp() {
                 <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
                   <div className="text-center py-8">
                     <p className="text-gray-400 mb-4">No other active subscriptions</p>
-                    <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
+                    <Button 
+                    onClick={() => router.push("/discover")}
+                    variant="outline" className="border-white/20 text-white hover:bg-white/10">
                       Browse Creators
                     </Button>
                   </div>
