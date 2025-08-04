@@ -28,11 +28,12 @@ interface SidebarProps {
 
 export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
   
@@ -64,7 +65,11 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
     };
     fetchCreator();
   }, [session?.user?.id]);
-
+  useEffect(() => {
+    if (status !== 'loading') {
+      setLoading(false);
+    }
+  }, [status]);
   useEffect(() => {
     const fetchAvatarUrl = async () => {
       if (session?.user?.avatarKey) {
@@ -169,7 +174,32 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
       </div>
     );
   };
-  
+  if(loading){
+    return (
+      <div className="flex items-center justify-center h-full">
+        <svg
+          className="animate-spin h-8 w-8 text-blue-500"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+          />
+        </svg>
+      </div>
+    );
+  }
   return (
     <aside className={`${isCollapsed ? 'w-20' : 'w-72'} h-screen fixed left-0 top-0 z-30 bg-gradient-to-b from-slate-900/80 via-purple-900/70 to-slate-900/90 backdrop-blur-xl border-r border-white/10 shadow-2xl p-6 flex flex-col transition-all duration-300 ease-in-out`}>
       
@@ -394,34 +424,6 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
         </>
       ) : (
         <>
-        {/* Sign In Button */}
-        <div 
-          className={`flex ${isCollapsed ? 'justify-center mt-auto' : 'gap-3 mt-10 mx-auto ml-auto mr-auto'} relative`}
-          onMouseEnter={() => setHoveredItem('signin')}
-          onMouseLeave={() => setHoveredItem(null)}
-        >
-          <Button
-            variant="ghost"
-            className={`bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 rounded-full ${isCollapsed ? 'px-3 py-2' : 'px-6 py-2'} font-semibold shadow-lg hover:shadow-xl transition-all duration-300`}
-            onClick={handleSignIn}
-          >
-            {isCollapsed ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            ) : (
-              'Sign In'
-            )}
-          </Button>
-
-          {/* Sign In hover tooltip for collapsed state */}
-          {isCollapsed && hoveredItem === 'signin' && (
-            <div className="absolute left-16 top-1/2 transform -translate-y-1/2 opacity-100 bg-gray-800 text-white text-sm rounded-lg px-3 py-2 whitespace-nowrap shadow-lg z-50 pointer-events-none">
-              Sign In
-            </div>
-          )}
-        </div>
-
         {/* Home link for non-authenticated users */}
         <Link href="/home">
           <Button

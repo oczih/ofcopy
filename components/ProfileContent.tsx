@@ -16,6 +16,7 @@ import { CreatorPostCard } from './CreatorPostCard';
 import { useSession } from 'next-auth/react';
 import { resolveImageUrl } from './resolveImageUrl';
 import { Heart, Lock, PersonStanding, User, User, Video } from 'lucide-react';
+import SignUpModal from './SignupModal';
 
 // Bio Modal Component
 const BioModal = ({ bio, creatorName }: { bio: string; creatorName: string }) => {
@@ -59,6 +60,7 @@ export default function ProfileContent({
 }: UserProfileData) {
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [creator, setCreator] = useState<Creator | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
   const [isCreator, setIsCreator] = useState(false);
@@ -282,7 +284,7 @@ export default function ProfileContent({
           </div>
           <div className='flex flex-col gap-3 flex-1'>          
           {/* Follow Button - On the right side of name */}
-          {status === 'none' && userViewed.creator && !isOwnProfile && (
+          {status === 'none' && userViewed.creator && !isOwnProfile && viewingUser && (
             <button 
               onClick={() => handleFollow(creator)}  
               className="border border-blue-500 hover:bg-blue-500/10 text-blue-400 px-4 py-2 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer whitespace-nowrap"
@@ -290,7 +292,14 @@ export default function ProfileContent({
               Follow
             </button>
           )}
-          
+          {status === 'none' && userViewed.creator && !viewingUser && (
+            <button 
+              onClick={() => setJoinModalOpen(true)}  
+              className="border border-blue-500 hover:bg-blue-500/10 text-blue-400 px-4 py-2 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer whitespace-nowrap"
+            >
+              Follow
+            </button>
+          )}
           {status === 'follower' && creator && (
             <button
               onClick={() => handleUnfollow(creator)}
@@ -372,7 +381,7 @@ export default function ProfileContent({
   </div>
   {!isOwnProfile && viewingUser && status !== 'subscriber' && (
         <button 
-          className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-full font-bold transition-all duration-200 shadow-lg hover:shadow-xl transform cursor-pointer"
+          className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-full font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
           onClick={() => setModalOpen(true)}
         >
           <div className='flex flex-row justify-between'>
@@ -381,8 +390,26 @@ export default function ProfileContent({
           </div>
         </button>
       )}
+      {!viewingUser && (
+        <button 
+        className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-full font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
+        onClick={() => setJoinModalOpen(true)}
+      >
+        <div className='flex flex-row justify-between'>
+        <span>Join today!</span>
+        </div>
+      </button>
+      ) 
+      }
 </div>
-
+{joinModalOpen && (
+          <SignUpModal 
+          open={joinModalOpen}
+          onClose={() => setJoinModalOpen(false)}
+          creator={creator}
+          avatarUrl={avatarUrl}
+          />
+        )}
         {modalOpen && creator && (
           <SubscribeModal 
             open={modalOpen} 
@@ -391,7 +418,7 @@ export default function ProfileContent({
             avatarUrl={avatarUrl} 
           />
         )}
-
+        
         {/* Content Tabs */}
         {creator && (
           <ContentTabs

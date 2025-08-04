@@ -147,12 +147,16 @@ function Landing() {
   const {data: session} = useSession();
   const [mounted, setMounted] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      router.push("/home");
+    }
+  }, []);
   useEffect(() => {
     setMounted(true);
   }, []);
   if (session?.user) {
-    
+  
   
   if (!mounted) {
     return (
