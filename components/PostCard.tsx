@@ -354,11 +354,17 @@ export function PostCard({
   const [imageLoading, setImageLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [signupModalOpen, setSignupModalOpen] = useState(false);
-  const [commentModalOpen ,setCommentModalOpen] = useState(false)
+  const [commentModalOpen, setCommentModalOpen] = useState<string | null>(null); // Track which comment's modal is open
+  const [commentOpen, setCommentOpen] = useState(false); // Fixed variable name
+  const [commentText, setCommentText] = useState(''); // Added missing state
+  const [sending, setSending] = useState(false); // Added missing state
+  const [comments, setComments] = useState(post.comments || []); // Added comments state
   const [likes, setLikes] = useState(post.likes ?? []);
+  
   const shouldBlur = status === 'none';
   const showCaption = status === 'subscriber' || status === 'follower';
-  const isOwner = status === 'subscriber'; // Replace with actual owner check if needed
+  const isOwner = viewingUser.id === creator._id || viewingUser.id === creator.id; // Fixed owner check
+  
   const handleModalOpen = () => setModalOpen((open) => !open);
 
   const handleDeletePost = async (id: string) => {
@@ -380,6 +386,7 @@ export function PostCard({
       setSignupModalOpen(true);
     }
   };
+
   const handleLike = async (post: Post) => {
     console.log("Here are the likes:", post.likes)
     console.log(post.likes.some(like => like.userId.toString() === viewingUser.id))
@@ -434,17 +441,81 @@ export function PostCard({
         console.error(error);
         alert('Failed to like post');
       }
-  }
+    }
   };
+
   const isLikedByCurrentUser = likes.some(
     (like) => like.userId.toString() === viewingUser.id?.toString()
   );
+
   const handleToggleComment = () => {
     setCommentOpen((open) => !open);
   };
-  const handleCommentModalOpen = () => {
-    setCommentModalOpen((open) => !open)
-  }
+
+  const handleCommentModalOpen = (commentId: string) => {
+    setCommentModalOpen(commentModalOpen === commentId ? null : commentId);
+  };
+
+  const handleSendComment = async () => {
+    if (!commentText.trim() || sending) return;
+    
+    setSending(true);
+    try {
+      const res = await fetch(`/api/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId: post._id,
+          text: commentText,
+          userId: viewingUser.id,
+          username: viewingUser.username
+        }),
+      });
+
+      if (res.ok) {
+        const newComment = await res.json();
+        setComments(prev => [...prev, newComment]);
+        setCommentText('');
+      } else {
+        alert('Failed to send comment');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Failed to send comment');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      const res = await fetch(`/api/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId: post._id,
+          userId: viewingUser.id
+        }),
+      });
+
+      if (res.ok) {
+        setComments(prev => prev.filter(comment => comment._id !== commentId));
+        setCommentModalOpen(null);
+      } else {
+        alert('Failed to delete comment');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Failed to delete comment');
+    }
+  };
+
+  // Helper function to check if user can delete comment
+  const canDeleteComment = (comment: any) => {
+    const isCommentOwner = comment.userId === viewingUser.id;
+    const isPostOwner = viewingUser.id === creator._id || viewingUser.id === creator.id;
+    return isCommentOwner || isPostOwner;
+  };
   
   return (
     <>
@@ -507,11 +578,9 @@ export function PostCard({
 
         {/* MEDIA SECTION */}
         <div className="aspect-square relative overflow-hidden">
-        {imageLoading && (
-          <Skeleton
-          className="w-full h-full rounded-none bg-gray-200 dark:bg-gray-700"
-        />  
-        )}
+          {imageLoading && (
+            <Skeleton className="w-full h-full rounded-none bg-gray-200 dark:bg-gray-700" />  
+          )}
           {post.type?.startsWith('image') ? (
             <Image
               src={resolveImageUrl(signedUrl)}
@@ -563,129 +632,123 @@ export function PostCard({
 
         {/* CONTENT INFO */}
         <div className="p-4">
-      <div className="px-5 py-3 space-y-1">
-        <div className="text-white text-sm">{post.caption}</div>
-        <div className="text-xs text-gray-500">{new Date(post.createdAt).toLocaleString()}</div>
-      </div>
+          <div className="px-5 py-3 space-y-1">
+            <div className="text-white text-sm">{post.caption}</div>
+            <div className="text-xs text-gray-500">{new Date(post.createdAt).toLocaleString()}</div>
+          </div>
 
-    {/* Footer */}
-    <div className="flex items-center justify-between px-5 py-3 border-t border-white/10 bg-slate-950/80">
-      <div className="flex gap-2">
-      <Button
-            variant="ghost"
-            size="icon"
-            className="text-gray-400 hover:text-pink-400 cursor-pointer"
-            onClick={() => handleLike(post)}
-          >
-            <Heart
-          className={`w-5 h-5 ${
-            
-            isLikedByCurrentUser
-              ? "text-pink-400 fill-pink-400"
-              : "text-gray-400"
-          }`}
-        />
-          </Button>
-        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-400 hover:bg-grey cursor-pointer" onClick={handleToggleComment}>
-          <MessageCircle className="w-5 h-5" />
-        </Button>
-      </div>
-      <div className="flex gap-3 text-xs text-gray-400 items-center">
-        <span>{likes.length} Likes</span>
-        <span
-          className="hover:underline"
-        >
-          {comments.length} Comments
-        </span>
-      </div>
-    </div>
-
-    {/* Comments Section */}
-    {(commentOpen || showcomment) && (
-      <div className="w-full px-5 pb-4 mt-5 mb-5 space-y-4 animate-fade-in-fast">
-        {/* Comments List */}
-        <div className="space-y-2">
-          {comments && comments.length > 0 ? (
-            comments.map((comment: Comment, idx) => {
-              const userObj = rightUser(comment);
-              return (
-                <div key={comment.commentId || idx} className="flex items-start gap-3 bg-slate-800/60 rounded-lg p-3">
-                  <div className="flex flex-row items-center gap-2 min-w-0">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={userObj?.avatar || ''} alt={userObj?.name || userObj?.username || 'User'} />
-                        <AvatarFallback>{userObj?.name?.[0] || userObj?.username?.[0] || 'U'}</AvatarFallback>
-                      </Avatar>
-                      <span className="text-xs text-pink-300 font-semibold truncate">{comment.username}</span>
-                      { && (
-                        
-                      )
-                      }
-                    </div>
-                    {commentModalOpen && (post.creator || comment.userId === viewingUser.id) && (
-                        <div
-                          className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-95 opacity-100 animate-fade-in z-30 cursor-pointer"
-                        >
-                          <Link href={`/post/${post._id}/edit`}>
-                            <Button variant="ghost" className="w-full justify-start text-left hover:bg-gray-100 dark:hover:bg-slate-600 cursor-pointer">
-                              Delete Comment
-                            </Button>
-                          </Link>
-                          <Button
-                            variant="ghost"
-                            onClick={handleRepostContent}
-                            className="w-full justify-start text-left hover:bg-gray-100 dark:hover:bg-slate-600 cursor-pointer"
-                          >
-                            Repost Content
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleDeletePost(post._id)}
-                            className="w-full justify-start text-left text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
-                          >
-                            Delete Post
-                          </Button>
-                        </div>
-                      )}
-                  <div className="flex-1 flex flex-col min-w-0">
-                    <span className="text-white text-sm break-words">{comment.text}</span>
-                    <span className="text-xs text-gray-400 mt-1">{comment.createdAt ? new Date(comment.createdAt).toLocaleString() : ''}</span>
-                    
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="text-gray-400 italic">No comments yet.</div>
-          )}
-        </div>
-        {/* Comment Input */}
-        <div className="flex w-full items-start gap-3">
-              {session?.user?.avatar && (
-                <Avatar className="w-8 h-8 mt-1">
-                  <AvatarImage src={session.user.avatar} alt={session.user.name || 'User'} />
-                  <AvatarFallback>{session.user.name?.[0] || 'U'}</AvatarFallback>
-                </Avatar>
-              )}
-              <textarea
-                className="flex-1 rounded-lg border border-white/20 bg-slate-900 text-white p-2 resize-none transition-all duration-200 hover:border-white focus:border-white focus:outline-none focus:ring-2 focus:ring-pink-500"
-                rows={2}
-                placeholder="Add a comment..."
-                value={commentText}
-                onChange={e => setCommentText(e.target.value)}
-                disabled={sending}
-              />
+          {/* Footer */}
+          <div className="flex items-center justify-between px-5 py-3 border-t border-white/10 bg-slate-950/80">
+            <div className="flex gap-2">
               <Button
-                size="sm"
-                className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold px-4 py-1 rounded-full shadow mt-1"
-                onClick={handleSendComment}
-                disabled={sending || !commentText.trim()}
+                variant="ghost"
+                size="icon"
+                className="text-gray-400 hover:text-pink-400 cursor-pointer"
+                onClick={() => handleLike(post)}
               >
-                {sending ? "Sending..." : "Send"}
+                <Heart
+                  className={`w-5 h-5 ${
+                    isLikedByCurrentUser
+                      ? "text-pink-400 fill-pink-400"
+                      : "text-gray-400"
+                  }`}
+                />
+              </Button>
+              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-400 hover:bg-grey cursor-pointer" onClick={handleToggleComment}>
+                <MessageCircle className="w-5 h-5" />
               </Button>
             </div>
+            <div className="flex gap-3 text-xs text-gray-400 items-center">
+              <span>{likes.length} Likes</span>
+              <button onClick={handleToggleComment} className="hover:underline cursor-pointer">
+                {comments.length} Comments
+              </button>
+            </div>
+          </div>
 
-      </div>
-    )}
+          {/* Comments Section */}
+          {commentOpen && (
+            <div className="w-full px-5 pb-4 mt-5 mb-5 space-y-4 animate-fade-in-fast">
+              {/* Comments List */}
+              <div className="space-y-2">
+                {comments && comments.length > 0 ? (
+                  comments.map((comment: any, idx) => (
+                    <div key={comment._id || idx} className="flex items-start gap-3 bg-slate-800/60 rounded-lg p-3 relative">
+                      <div className="flex flex-row items-center gap-2 min-w-0 flex-1">
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage src={comment.avatar || ''} alt={comment.username || 'User'} />
+                          <AvatarFallback>{comment.username?.[0] || 'U'}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 flex flex-col min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-pink-300 font-semibold truncate">{comment.username}</span>
+                            <span className="text-xs text-gray-400">
+                              {comment.createdAt ? new Date(comment.createdAt).toLocaleString() : ''}
+                            </span>
+                          </div>
+                          <span className="text-white text-sm break-words mt-1">{comment.text}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Comment Options */}
+                      {canDeleteComment(comment) && (
+                        <div className="relative">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-gray-400 hover:text-pink-400 cursor-pointer w-8 h-8"
+                            onClick={() => handleCommentModalOpen(comment._id)}
+                          >
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+
+                          {commentModalOpen === comment._id && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-95 opacity-100 animate-fade-in z-30">
+                              <Button 
+                                variant="ghost" 
+                                className="w-full justify-start text-left text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
+                                onClick={() => handleDeleteComment(comment._id)}
+                              >
+                                Delete Comment
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-gray-400 italic">No comments yet.</div>
+                )}
+              </div>
+
+              {/* Comment Input */}
+              <div className="flex w-full items-start gap-3">
+                {viewingUser?.avatar && (
+                  <Avatar className="w-8 h-8 mt-1">
+                    <AvatarImage src={viewingUser.avatar} alt={viewingUser.name || 'User'} />
+                    <AvatarFallback>{viewingUser.name?.[0] || 'U'}</AvatarFallback>
+                  </Avatar>
+                )}
+                <textarea
+                  className="flex-1 rounded-lg border border-white/20 bg-slate-900 text-white p-2 resize-none transition-all duration-200 hover:border-white focus:border-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  rows={2}
+                  placeholder="Add a comment..."
+                  value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
+                  disabled={sending}
+                />
+                <Button
+                  size="sm"
+                  className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold px-4 py-1 rounded-full shadow mt-1"
+                  onClick={handleSendComment}
+                  disabled={sending || !commentText.trim()}
+                >
+                  {sending ? "Sending..." : "Send"}
+                </Button>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center justify-between text-sm text-gray-400">
             <span>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ''}</span>
