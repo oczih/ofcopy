@@ -4,7 +4,7 @@ import { Button } from "./ui/button";
 import Image from "next/image";
 import { MoreHorizontal, Heart, MessageCircle, UserPlus } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Session } from "@auth/core/types";
 import { Comment, Creator, Post } from "../app/types";
 import uploadmediaservice from "../app/services/uploadmediaservice";
@@ -12,6 +12,7 @@ import { User } from "../app/types";
 import postservice from "../app/services/postservice";
 import { Skeleton } from "@/components/ui/skeleton"
 import { resolveImageUrl } from "./resolveImageUrl";
+
 // Dynamically import emoji-picker-react to avoid SSR issues
 
 export function CreatorPostCard({
@@ -145,6 +146,48 @@ export function CreatorPostCard({
   
     fetchAvatarUrl();
   }, [creator?.avatarKey]);
+  const [userAvatars, setUserAvatars] = useState<Record<string, string>>({});
+const [avatarsLoading, setAvatarsLoading] = useState<Record<string, boolean>>({});
+const [avatarsError, setAvatarsError] = useState<Record<string, boolean>>({});
+const resolvedUrl = useMemo(() => resolveImageUrl(signedUrl), [signedUrl]);
+const fetchUserAvatarUrl = async (user: User) => {
+  if (!user.avatarKey) return null;
+
+  try {
+    setAvatarsLoading(prev => ({ ...prev, [user.id]: true }));
+    setAvatarsError(prev => ({ ...prev, [user.id]: false }));
+
+    const key = user.avatarKey.replace(/^\/+/, ''); // remove leading slash
+    const res = await fetch("/api/media/download-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ s3Key: key }),
+    });
+
+    const data = await res.json();
+    if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
+      setUserAvatars(prev => ({ ...prev, [user.id]: data.downloadUrl }));
+      return data.downloadUrl;
+    } else {
+      setAvatarsError(prev => ({ ...prev, [user.id]: true }));
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching user avatar:", error);
+    setAvatarsError(prev => ({ ...prev, [user.id]: true }));
+    return null;
+  } finally {
+    setAvatarsLoading(prev => ({ ...prev, [user.id]: false }));
+  }
+};
+useEffect(() => {
+  users.forEach(user => {
+    if (user.avatarKey && !userAvatars[user.id]) {
+      fetchUserAvatarUrl(user);
+    }
+  });
+}, [users]);
+
   const isLikedByCurrentUser = likes.some(
     (like) => like.userId.toString() === session?.user?.id?.toString()
   );
@@ -221,16 +264,18 @@ export function CreatorPostCard({
     setCommentModalOpen(commentModalOpen === commentId ? null : commentId);
   };
   const handleDeleteComment = async (postId: string, commentId: string) => {
+    if (!postId || !commentId) {
+      console.error('Missing postId or commentId');
+      return;
+    }
+  
     try {
-      const res = await fetch(`/api/posts/${postId}/comments/${commentId}`, {
+      const res = await fetch(`/api/comments/${commentId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          postId: post._id,
-          userId: session.user?.id
-        }),
+        body: JSON.stringify({ postId }),
       });
-
+  
       if (res.ok) {
         setComments(prev => prev.filter(comment => comment._id !== commentId));
         setCommentModalOpen(null);
@@ -242,6 +287,8 @@ export function CreatorPostCard({
       alert('Failed to delete comment');
     }
   };
+  
+  const resolvedAvatarUrl = useMemo(() => resolveImageUrl(avatarUrl), [avatarUrl]);
   return (
   <div className="bg-white/5 rounded-2xl shadow-xl border border-white/10 p-0 overflow-hidden max-w-3xl w-full mx-auto animate-fade-in">
     {/* Header */}
@@ -250,7 +297,7 @@ export function CreatorPostCard({
     <div className="flex items-center gap-3 flex-1 min-w-0">
   <Link href={`/${creator.username}`}>
     <Avatar className="w-12 h-12">
-      <AvatarImage src={resolveImageUrl(avatarUrl)} alt={creator.name || creator.username} />
+      <AvatarImage src={resolvedAvatarUrl} alt={creator.name || creator.username} />
       <AvatarFallback>{creator.name?.[0] || creator.username?.[0]}</AvatarFallback>
     </Avatar>
   </Link>
@@ -336,7 +383,7 @@ export function CreatorPostCard({
 
         {post.width && post.height ? (
           <Image
-            src={resolveImageUrl(signedUrl)}
+            src={resolvedUrl}
             alt={post.caption}
             fill
             onLoad={() => setImageLoading(false)}
@@ -438,10 +485,15 @@ export function CreatorPostCard({
               return (
                 <div key={comment.commentId || idx} className="flex items-start gap-3 bg-slate-800/60 rounded-lg p-3">
                   <div className="flex items-center gap-2 min-w-0">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={userObj?.avatar || ''} alt={userObj?.name || userObj?.username || 'User'} />
-                        <AvatarFallback>{userObj?.name?.[0] || userObj?.username?.[0] || 'U'}</AvatarFallback>
-                      </Avatar>
+                  <Avatar className="w-8 h-8">
+                      <AvatarImage 
+                        src={userAvatars[userObj?.id || ''] || userObj?.avatar || ''} 
+                        alt={userObj?.name || userObj?.username || 'User'} 
+                      />
+                      <AvatarFallback>
+                        {userObj?.name?.[0] || userObj?.username?.[0] || 'U'}
+                      </AvatarFallback> 
+                    </Avatar>
                       <span className="text-xs text-pink-300 font-semibold truncate">{comment.username}</span>
                     </div>
                   <div className="flex-1 flex flex-col min-w-0">
@@ -464,7 +516,7 @@ export function CreatorPostCard({
                               <Button 
                                 variant="ghost" 
                                 className="w-full justify-start text-left text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
-                                onClick={() => handleDeleteComment(post._id, comment.commentId)}
+                                onClick={() => handleDeleteComment(post._id, comment._id)}
                               >
                                 Delete Comment
                               </Button>

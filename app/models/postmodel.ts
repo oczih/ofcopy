@@ -34,12 +34,13 @@ const postSchema = new Schema<PostDocument>({
   viewableFor: { type: String, enum: ['followers', 'subscribers'], default: 'followers' },
   comments: [
     {
+      _id: { type: Schema.Types.ObjectId, default: () => new mongoose.Types.ObjectId() }, // <-- Add this line
       userId: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true },
       username: { type: String, required: true },
       text: { type: String, required: true },
       createdAt: { type: Date, default: Date.now },
     }
-  ],
+  ],  
   width: { type: Number },
   height: { type: Number },
   price: { type: Number },
