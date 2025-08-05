@@ -24,7 +24,7 @@ export function CreatorPostCard({
   user,
   users,
   signedUrl,
-  handleFollow
+  handleFollow,
 }: {
   creator: Creator;
   post: Post;
@@ -46,12 +46,14 @@ export function CreatorPostCard({
   const [modalOpen, setModalOpen] = useState(false)
   const [commentText, setCommentText] = useState("");
   const [sending, setSending] = useState(false);
+  const [commentModalOpen, setCommentModalOpen] = useState<string | null>(null);
   const [showEmojis, setShowEmojis] = useState(false);
   const [likes, setLikes] = useState(post.likes ?? []);
   const [comments, setComments] = useState(post.comments ?? []);
   const [showcomment, setShowComments] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false);
-  const [imageLoading, setImageLoading] = useState(true)
+  const [imageLoading, setImageLoading] = useState(true);
+  const [correctUser, setCorrectUser] = useState<User| null>(null)
   const handleLike = async (post: Post) => {
       try {
         const res = await fetch(`/api/media?username=${creator.username}`, {
@@ -210,6 +212,36 @@ export function CreatorPostCard({
         alert('Failed to delete post')
       }
   }
+  const canDeleteComment = (comment: Comment) => {
+    const isCommentOwner = comment.userId === session.user?.id;
+    const isPostOwner = session.user?.id === creator.id
+    return isCommentOwner || isPostOwner;
+  };
+  const handleCommentModalOpen = (commentId: string) => {
+    setCommentModalOpen(commentModalOpen === commentId ? null : commentId);
+  };
+  const handleDeleteComment = async (postId: string, commentId: string) => {
+    try {
+      const res = await fetch(`/api/posts/${postId}/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId: post._id,
+          userId: session.user?.id
+        }),
+      });
+
+      if (res.ok) {
+        setComments(prev => prev.filter(comment => comment._id !== commentId));
+        setCommentModalOpen(null);
+      } else {
+        alert('Failed to delete comment');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Failed to delete comment');
+    }
+  };
   return (
   <div className="bg-white/5 rounded-2xl shadow-xl border border-white/10 p-0 overflow-hidden max-w-3xl w-full mx-auto animate-fade-in">
     {/* Header */}
@@ -386,11 +418,12 @@ export function CreatorPostCard({
       </div>
       <div className="flex gap-3 text-xs text-gray-400 items-center">
         <span>{likes.length} Likes</span>
-        <span
-          className="hover:underline"
+        <button
+         onClick={handleToggleComment}
+          className="hover:underline cursor-pointer"
         >
           {comments.length} Comments
-        </span>
+        </button>
       </div>
     </div>
 
@@ -415,6 +448,30 @@ export function CreatorPostCard({
                     <span className="text-white text-sm break-words">{comment.text}</span>
                     <span className="text-xs text-gray-400 mt-1">{comment.createdAt ? new Date(comment.createdAt).toLocaleString() : ''}</span>
                   </div>
+                  {canDeleteComment(comment) && (
+                        <div className="relative">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-gray-400 hover:text-pink-400 cursor-pointer w-8 h-8"
+                            onClick={() => handleCommentModalOpen(comment.postId)}
+                          >
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+
+                          {commentModalOpen === comment.postId && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-95 opacity-100 animate-fade-in z-30">
+                              <Button 
+                                variant="ghost" 
+                                className="w-full justify-start text-left text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
+                                onClick={() => handleDeleteComment(post._id, comment.commentId)}
+                              >
+                                Delete Comment
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                 </div>
               );
             })

@@ -452,9 +452,9 @@ export function PostCard({
     setCommentOpen((open) => !open);
   };
 
-  const handleCommentModalOpen = (commentId: string) => {
-    setCommentModalOpen(commentModalOpen === commentId ? null : commentId);
-  };
+    const handleCommentModalOpen = (commentId: string) => {
+      setCommentModalOpen(commentModalOpen === commentId ? null : commentId);
+    };
 
   const handleSendComment = async () => {
     if (!commentText.trim() || sending) return;
