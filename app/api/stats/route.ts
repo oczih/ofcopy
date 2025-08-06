@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongoose';
 import Creator from '@/app/models/creatormodel';
 import OFUser from '@/app/models/usermodel';
-import { auth } from '@/lib/auth-client';
 
 export async function GET() {
   

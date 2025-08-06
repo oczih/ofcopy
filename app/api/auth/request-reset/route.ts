@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from '@/lib/mongoose';
 import OFUser, { VerificationToken } from "@/app/models/usermodel";
 import { createVerificationToken } from '@/lib/auth-utils';
-import { sendPasswordResetEmail, sendPasswordAddEmail } from '@/lib/email';
+import { sendPasswordResetEmail, sendPasswordAddConfirmationEmail } from '@/lib/email';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth-client";
 
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     
     // Send appropriate email based on action type
     if (isAddingPassword) {
-      await sendPasswordAddEmail(email, token); // link: /add-password?token=abc
+      await sendPasswordAddConfirmationEmail(email, token); // link: /add-password?token=abc
     } else {
       await sendPasswordResetEmail(email, token); // link: /reset-password?token=abc
     }

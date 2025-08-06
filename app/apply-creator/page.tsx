@@ -2,17 +2,15 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Header } from "../../components/Header";
-import { Sidebar } from "../../components/Sidebar";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import AppWrapper from "../../components/AppWrapper";
 import { Camera, X, ZoomIn, ZoomOut } from 'lucide-react';
 import userservice from "../services/userservice";
 import Cropper from 'react-easy-crop';
 import getCroppedImg from '@/lib/utils'
 import { uploadContent } from "@/app/services/uploadmediaservice";
 import Image from "next/image";
+import { User } from "../types";
 
 export default function ApplyCreator() {
   return (
@@ -60,7 +58,7 @@ function ApplyCreatorPage() {
       try {
         const users = await userservice.get();
         console.log(users)
-        const userfound = users.users.find((u) => u.username === formData.handle)
+        const userfound = users.users.find((u: User) => u.username === formData.handle)
         if(userfound){
           setUsernameAvailable(false)
         }
@@ -98,7 +96,7 @@ function ApplyCreatorPage() {
     return null;
   }
   
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setError("");
   };
@@ -241,7 +239,7 @@ function ApplyCreatorPage() {
           <div className="space-y-6">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-white mb-2">Country of Residence</h2>
-              <p className="text-gray-300">Let us know where you're located</p>
+              <p className="text-gray-300">Let us know where you`&apos;`re located</p>
             </div>
             <div>
               <label className="block mb-2 text-white font-medium">Select your country</label>
@@ -785,7 +783,7 @@ function ApplyCreatorPage() {
               <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-2">
                 <p className="text-sm text-yellow-200">
                   <strong>Hold a sign with:</strong><br/>
-                  1. Today's date: {new Date().toLocaleDateString()}<br/>
+                  1. Today`&apos;`s date: {new Date().toLocaleDateString()}<br/>
                   2. Your date of birth<br/>
                   3. Your full legal name<br/>
                   4. The word "Fanslio"

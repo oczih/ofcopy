@@ -58,7 +58,14 @@ function MessagesApp() {
       unreadCount: Math.floor(Math.random() * 3)
     };
   }) || [];
-  const handleConversationClick = (conversation) => {
+  type Conversation = {
+    id: number,
+    sender: string,
+    content: string,
+    timestamp: string,
+    isRead: boolean
+  }
+  const handleConversationClick = (conversation: Conversation) => {
     setSelectedConversation(conversation.id)
     setSelected(true)
   }

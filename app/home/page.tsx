@@ -1,6 +1,5 @@
 'use client';
 
-import { Sidebar } from "../../components/Sidebar";
 import { Button } from "../../components/ui/button";
 import { CheckCircle, MessageCircle, Sparkles } from "lucide-react";
 import { SessionProvider, useSession } from "next-auth/react";
@@ -381,7 +380,7 @@ function App() {
                           <div className="flex items-center gap-4 mb-4">
                             <div className="relative">
                               <Image 
-                                src={subscription.creatorImage || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"} 
+                                src={subscription.avatarKey || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"} 
                                 alt={subscription.creatorName}
                                 width={50}
                                 height={50}

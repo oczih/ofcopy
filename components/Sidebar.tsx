@@ -16,7 +16,7 @@ import {
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname} from "next/navigation";
 import Image from "next/image";
 import creatorservice from "../app/services/creatorservice";
 import { Creator } from "../app/types";
@@ -29,7 +29,6 @@ interface SidebarProps {
 export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
   const pathname = usePathname();
   const { data: session, status } = useSession();
-  const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
@@ -127,9 +126,6 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
     await signOut({ callbackUrl: '/login' }); 
   };
 
-  const handleSignIn = () => {
-    router.push("/login");
-  };
 
   const toggleCollapse = () => {
     const newCollapsedState = !isCollapsed;

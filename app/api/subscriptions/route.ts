@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SubscriptionService } from '@/app/services/subscriptionservice';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth-client';
 
 export async function GET(request: NextRequest) {
+  if(!request) return;
   try {
     const session = await getServerSession(authOptions);
   if (!session || session.user.email !== `${process.env.SECEMAIL}`) {

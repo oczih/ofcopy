@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { CreatorCard } from "@/components/CreatorCard";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { Badge } from "../../components/ui/badge";
 import { Skeleton } from "../../components/ui/skeleton";
 import { Search, Filter, Sparkles, TrendingUp, Star, Compass } from "lucide-react";
 import { SessionProvider } from "next-auth/react";

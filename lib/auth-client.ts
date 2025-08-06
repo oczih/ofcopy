@@ -5,7 +5,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import OFUser from "@/app/models/usermodel";
 import { connectDB } from "@/lib/mongoose";
 import bcrypt from "bcryptjs";
-import { use } from "react";
 
 async function generateUniqueUsername(baseUsername: string): Promise<string> {
   let username = baseUsername.toLowerCase().replace(/\s+/g, "_");
@@ -139,7 +138,7 @@ export const authOptions: NextAuthOptions = {
             email: fallbackEmail,
             username: uniqueUsername,
             name: user.name,
-            avatar: user.avatar,
+            avatar: user.avatarKey,
             oauthProvider: "twitter",
             oauthId: twitterId,
             emailVerified: true, // OAuth emails are pre-verified

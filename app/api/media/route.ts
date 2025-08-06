@@ -28,8 +28,8 @@ export async function GET(req: NextRequest) {
 
   // Generate signed URLs for each post:
   const postsWithSignedUrls = await Promise.all(
-    (creator.posts || []).map(async (post: any) => {
-      if (!post.s3Key) return post;
+    (creator.posts || []).map(async (post: typeof Post) => {
+      if (!post.s3key) return post;
       try {
         const command = new GetObjectCommand({
           Bucket: process.env.AWS_BUCKET_NAME!,

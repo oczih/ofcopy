@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation';
 import { connectDB } from '@/lib/mongoose';
-import Media from '@/app/models/mediamodel';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-client';
 import User from '@/app/models/usermodel';

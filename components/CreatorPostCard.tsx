@@ -7,7 +7,6 @@ import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
 import { Session } from "@auth/core/types";
 import { Comment, Creator, Post } from "../app/types";
-import uploadmediaservice from "../app/services/uploadmediaservice";
 import { User } from "../app/types";
 import postservice from "../app/services/postservice";
 import { Skeleton } from "@/components/ui/skeleton"
@@ -48,13 +47,11 @@ export function CreatorPostCard({
   const [commentText, setCommentText] = useState("");
   const [sending, setSending] = useState(false);
   const [commentModalOpen, setCommentModalOpen] = useState<string | null>(null);
-  const [showEmojis, setShowEmojis] = useState(false);
   const [likes, setLikes] = useState(post.likes ?? []);
   const [comments, setComments] = useState(post.comments ?? []);
   const [showcomment, setShowComments] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
-  const [correctUser, setCorrectUser] = useState<User| null>(null)
   const handleLike = async (post: Post) => {
       try {
         const res = await fetch(`/api/media?username=${creator.username}`, {
@@ -194,22 +191,11 @@ useEffect(() => {
   const handleToggleComment = () => {
     setCommentOpen((open) => !open);
   };
-  const handleShowComments = () => {
-    setShowComments((open) => !open)
-  }
   const handleModalOpen = () => {
     setModalOpen((open) => !open)
   }
   const handleRepostContent = () => {
     setShowConfirm(true);
-  };
-  const confirmRepost = () => {
-    setShowConfirm(false);
-    // TODO: Call your API to repost content
-    console.log('Content reposted');
-  };
-  const cancelRepost = () => {
-    setShowConfirm(false);
   };
   const handleSendComment = async () => {
     if (!commentText.trim()) return;
@@ -487,7 +473,7 @@ useEffect(() => {
                   <div className="flex items-center gap-2 min-w-0">
                   <Avatar className="w-8 h-8">
                       <AvatarImage 
-                        src={userAvatars[userObj?.id || ''] || userObj?.avatar || ''} 
+                        src={userAvatars[userObj?.id || ''] || userObj?.avatarKey || ''} 
                         alt={userObj?.name || userObj?.username || 'User'} 
                       />
                       <AvatarFallback>
@@ -516,7 +502,7 @@ useEffect(() => {
                               <Button 
                                 variant="ghost" 
                                 className="w-full justify-start text-left text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
-                                onClick={() => handleDeleteComment(post._id, comment._id)}
+                                onClick={() => handleDeleteComment(post._id, comment.commentId)}
                               >
                                 Delete Comment
                               </Button>

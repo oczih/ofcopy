@@ -4,13 +4,12 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Sidebar } from '@/components/Sidebar';
 import { Button } from '@/components/ui/button';
 import { useParams, useRouter } from 'next/navigation';
 import postservice from '@/app/services/postservice';
-import creatorservice from '@/app/services/creatorservice';
 import AppWrapper from '@/components/AppWrapper';
 import { resolveImageUrl } from '@/components/resolveImageUrl';
+import { Post } from '@/app/types';
 export default function EditPostPage() {
   return (
     <AppWrapper>
@@ -20,12 +19,11 @@ export default function EditPostPage() {
 }
 
 function EditPost() {
-  const { data: session } = useSession();
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const postId = params.id;
 
-  const [post, setPost] = useState<any>(null);
+  const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [caption, setCaption] = useState('');

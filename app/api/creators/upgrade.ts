@@ -5,10 +5,11 @@ import Creator from '@/app/models/creatormodel';
 import OFUser from '@/app/models/usermodel';
 
 export async function POST(request: NextRequest) {
-  
+  if(!request) return;
   try {
     await connectDB();
   } catch (error) {
+    console.error(error)
     return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
   }
 
