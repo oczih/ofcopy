@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MoreHorizontal, Eye, EyeOff, CheckCircle, AlertCircle, X, Heart, MessageCircle } from 'lucide-react';
+import { MoreHorizontal, Eye, EyeOff, AlertCircle, X, Heart, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from "@/components/ui/separator";
@@ -9,7 +9,7 @@ import { signIn } from "next-auth/react";
 import { toast } from 'react-hot-toast';
 import { useRouter } from "next/navigation";
 import postservice from '@/app/services/postservice'; // adjust path accordingly
-import { Creator, Comment, Post, User } from '@/app/types';
+import { Comment, Creator, Post, User } from '@/app/types';
 import { Skeleton } from './ui/skeleton';
 import { resolveImageUrl } from './resolveImageUrl';
 
@@ -362,8 +362,7 @@ export function PostCard({
   const [likes, setLikes] = useState(post.likes ?? []);
   
   const shouldBlur = status === 'none';
-  const showCaption = status === 'subscriber' || status === 'follower';
-  const isOwner = viewingUser.id === creator._id || viewingUser.id === creator.id; // Fixed owner check
+  const isOwner = viewingUser.id === creator.id; // Fixed owner check
   
   const handleModalOpen = () => setModalOpen((open) => !open);
 
@@ -499,7 +498,7 @@ export function PostCard({
       });
 
       if (res.ok) {
-        setComments(prev => prev.filter(comment => comment._id !== commentId));
+        setComments(prev => prev.filter(comment => comment.commentId !== commentId));
         setCommentModalOpen(null);
       } else {
         alert('Failed to delete comment');
@@ -583,8 +582,8 @@ export function PostCard({
           )}
           {post.type?.startsWith('image') ? (
             <Image
-              src={resolveImageUrl(signedUrl)}
-              alt={post.caption}
+              src={resolveImageUrl(signedUrl) || ""}
+              alt={post.caption || ""}
               fill
               onLoad={() => setImageLoading(false)}
               onError={() => setImageLoading(false)}
@@ -672,11 +671,11 @@ export function PostCard({
               {/* Comments List */}
               <div className="space-y-2">
                 {comments && comments.length > 0 ? (
-                  comments.map((comment: any, idx) => (
-                    <div key={comment._id || idx} className="flex items-start gap-3 bg-slate-800/60 rounded-lg p-3 relative">
+                  comments.map((comment: Comment, idx) => (
+                    <div key={comment.commentId || idx} className="flex items-start gap-3 bg-slate-800/60 rounded-lg p-3 relative">
                       <div className="flex flex-row items-center gap-2 min-w-0 flex-1">
                         <Avatar className="w-8 h-8">
-                          <AvatarImage src={comment.avatar || ''} alt={comment.username || 'User'} />
+                          <AvatarImage src={comment.userId || ''} alt={comment.username || 'User'} />
                           <AvatarFallback>{comment.username?.[0] || 'U'}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 flex flex-col min-w-0">
@@ -697,17 +696,17 @@ export function PostCard({
                             variant="ghost"
                             size="icon"
                             className="text-gray-400 hover:text-pink-400 cursor-pointer w-8 h-8"
-                            onClick={() => handleCommentModalOpen(comment._id)}
+                            onClick={() => handleCommentModalOpen(comment.commentId)}
                           >
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
 
-                          {commentModalOpen === comment._id && (
+                          {commentModalOpen === comment.commentId && (
                             <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-95 opacity-100 animate-fade-in z-30">
                               <Button 
                                 variant="ghost" 
                                 className="w-full justify-start text-left text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
-                                onClick={() => handleDeleteComment(comment._id)}
+                                onClick={() => handleDeleteComment(commentId)}
                               >
                                 Delete Comment
                               </Button>
@@ -724,7 +723,7 @@ export function PostCard({
 
               {/* Comment Input */}
               <div className="flex w-full items-start gap-3">
-                {viewingUser?.avatar && (
+                {viewingUser?.avatarKey && (
                   <Avatar className="w-8 h-8 mt-1">
                     <AvatarImage src={viewingUser.avatar} alt={viewingUser.name || 'User'} />
                     <AvatarFallback>{viewingUser.name?.[0] || 'U'}</AvatarFallback>
@@ -753,14 +752,14 @@ export function PostCard({
           <div className="flex items-center justify-between text-sm text-gray-400">
             <span>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ''}</span>
             <div className="flex items-center gap-2">
-              {post.subscriberOnly && (
+              {post.viewableFor === 'subscribers' && (
                 <span className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-xs">
                   Subscribers Only
                 </span>
               )}
-              {post.isPublic && (
+              {post.viewableFor === "Followers" && (
                 <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs">
-                  Public
+                  Followers
                 </span>
               )}
             </div>

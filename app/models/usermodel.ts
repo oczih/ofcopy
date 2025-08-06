@@ -3,6 +3,7 @@ import { Message } from "./messagemodel";
 
 // Subscription interface for better type safety
 export interface Subscription {
+  id: string;
   creatorId: mongoose.Types.ObjectId;
   creatorName: string;
   creatorUsername: string;

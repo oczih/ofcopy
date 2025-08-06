@@ -70,7 +70,7 @@ export default function SubscribeModal({ open, onClose, creator, avatarUrl }) {
                       <div className="absolute inset-0 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 p-1">
                         <div className="w-full h-full rounded-full overflow-hidden bg-slate-800">
                           <Image
-                            src={avatarUrl || '/api/placeholder/128/128'}
+                            src={avatarUrl || ""}
                             alt={creator.name || creator.username}
                             className="w-full h-full object-cover"
                             style={{ imageRendering: 'auto' }}

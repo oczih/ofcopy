@@ -4,8 +4,10 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useRouter } from "next/navigation";
+import { Creator } from '@/app/types';
+import { signIn } from "next-auth/react";
 
-export default function SignUpModal({ open, onClose, creator, avatarUrl }) {
+export default function SignUpModal({ open, onClose, creator, avatarUrl }: { open: boolean, onClose: () => void, creator: Creator, avatarUrl: string }) {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [passwordField, setPasswordField] = useState(false)
@@ -82,14 +84,9 @@ export default function SignUpModal({ open, onClose, creator, avatarUrl }) {
   const handleStay = () => {
     setShowExitConfirm(false);
   };
-  const date30DaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-  const month = String(date30DaysFromNow.getMonth() + 1).padStart(2, '0');
-  const day = String(date30DaysFromNow.getDate()).padStart(2, '0');
-  const year = date30DaysFromNow.getFullYear();
-  const formattedDate = `${month}/${day}/${year}`; 
   const handleOAuthSignIn = async (provider: string) => {
     try {
-      setLoading(true);
+      setIsLoading(true);
       const result = await signIn(provider, { 
         callbackUrl: '/discover',
         redirect: false 
@@ -98,7 +95,7 @@ export default function SignUpModal({ open, onClose, creator, avatarUrl }) {
       if (result?.error) {
         toast.error(`Error signing in with ${provider}: ${result.error}`);
       } else if (result?.url) {
-        route .push(result.url);
+        router.push(result.url);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

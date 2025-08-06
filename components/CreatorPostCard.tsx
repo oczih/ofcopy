@@ -6,8 +6,7 @@ import { MoreHorizontal, Heart, MessageCircle, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
 import { Session } from "@auth/core/types";
-import { Comment, Creator, Post } from "../app/types";
-import { User } from "../app/types";
+import { Comment, Creator, Post, User} from "../app/types";
 import postservice from "../app/services/postservice";
 import { Skeleton } from "@/components/ui/skeleton"
 import { resolveImageUrl } from "./resolveImageUrl";
@@ -28,10 +27,10 @@ export function CreatorPostCard({
 }: {
   creator: Creator;
   post: Post;
-  session: Session;
+  session: Session | null;
   isCreator: boolean;
   isFollower: boolean;
-  isSubscriber: boolean;
+  isSubscriber: boolean | undefined;
   user: User
   users: User[]
   signedUrl: string
@@ -59,7 +58,7 @@ export function CreatorPostCard({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             postId: post._id,
-            liker: { userId: session.user?.id }
+            liker: { userId: session?.user?.id }
           })
         });
       
@@ -84,7 +83,7 @@ export function CreatorPostCard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           postId: post._id,
-          liker: { userId: session.user?.id },
+          liker: { userId: session?.user?.id },
           unlike: true
         }),
       });
@@ -139,10 +138,52 @@ export function CreatorPostCard({
       } else {
         setImageLoading(false);
       }
+
     };
   
     fetchAvatarUrl();
   }, [creator?.avatarKey]);
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
+  const [userAvatarError, setUserAvatarError] = useState(false);
+
+  const avatarKey = (session?.user as User)?.avatarKey;
+  useEffect(() => {
+    const fetchAvatarUrl = async () => {
+      if (avatarKey) {
+        try {
+          setImageLoading(true);
+          setUserAvatarError(false);
+  
+          const key = avatarKey.replace(/^\/+/, ''); // Remove leading slash
+          const res = await fetch("/api/media/download-url", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ s3Key: key }),
+          });
+  
+          const data = await res.json();
+  
+          if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
+            setUserAvatarUrl(data.downloadUrl);
+          } else {
+            console.error("Invalid download URL:", data.downloadUrl);
+            setUserAvatarError(true);
+          }
+        } catch (error) {
+          console.error("Error fetching avatar URL:", error);
+          setUserAvatarError(true);
+        } finally {
+          setImageLoading(false);
+        }
+      } else {
+        setImageLoading(false);
+      }
+    };
+  
+    fetchAvatarUrl();
+  }, [avatarKey]);
   const [userAvatars, setUserAvatars] = useState<Record<string, string>>({});
 const [avatarsLoading, setAvatarsLoading] = useState<Record<string, boolean>>({});
 const [avatarsError, setAvatarsError] = useState<Record<string, boolean>>({});
@@ -242,8 +283,8 @@ useEffect(() => {
       }
   }
   const canDeleteComment = (comment: Comment) => {
-    const isCommentOwner = comment.userId === session.user?.id;
-    const isPostOwner = session.user?.id === creator.id
+    const isCommentOwner = comment.userId === session?.user?.id;
+    const isPostOwner = session?.user?.id === creator.id
     return isCommentOwner || isPostOwner;
   };
   const handleCommentModalOpen = (commentId: string) => {
@@ -263,7 +304,7 @@ useEffect(() => {
       });
   
       if (res.ok) {
-        setComments(prev => prev.filter(comment => comment._id !== commentId));
+        setComments(prev => prev.filter(comment => comment.commentId !== commentId));
         setCommentModalOpen(null);
       } else {
         alert('Failed to delete comment');
@@ -283,7 +324,7 @@ useEffect(() => {
     <div className="flex items-center gap-3 flex-1 min-w-0">
   <Link href={`/${creator.username}`}>
     <Avatar className="w-12 h-12">
-      <AvatarImage src={resolvedAvatarUrl} alt={creator.name || creator.username} />
+      <AvatarImage src={resolvedAvatarUrl ?? undefined} alt={creator.name || creator.username} />
       <AvatarFallback>{creator.name?.[0] || creator.username?.[0]}</AvatarFallback>
     </Avatar>
   </Link>
@@ -369,19 +410,19 @@ useEffect(() => {
 
         {post.width && post.height ? (
           <Image
-            src={resolvedUrl}
-            alt={post.caption}
-            fill
-            onLoad={() => setImageLoading(false)}
-            onError={() => setImageLoading(false)}
-            style={{ objectFit: 'contain' }}
-            sizes="(max-width: 1200px) 100vw, 1200px"
-            className={`transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"}`}
-          />
+          src={resolvedUrl || ""}
+          alt={post.caption || ""}
+          fill
+          onLoad={() => setImageLoading(false)}
+          onError={() => setImageLoading(false)}
+          style={{ objectFit: "contain" }}
+          sizes="(max-width: 1200px) 100vw, 1200px"
+          className={`transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"}`}
+        />
         ) : (
           <Image
-            src={resolveImageUrl(signedUrl)}
-            alt={post.caption}
+            src={resolveImageUrl(signedUrl) || ""}
+            alt={post.caption || ""}
             width={600}
             height={400}
             onLoad={() => setImageLoading(false)}
@@ -519,10 +560,10 @@ useEffect(() => {
         </div>
         {/* Comment Input */}
         <div className="flex w-full items-start gap-3">
-              {session?.user?.avatar && (
+              {userAvatarUrl && (
                 <Avatar className="w-8 h-8 mt-1">
-                  <AvatarImage src={session.user.avatar} alt={session.user.name || 'User'} />
-                  <AvatarFallback>{session.user.name?.[0] || 'U'}</AvatarFallback>
+                  <AvatarImage src={resolveImageUrl(userAvatarUrl) || ""} alt={session?.user?.name || 'User'} />
+                  <AvatarFallback>{session?.user?.name?.[0] || 'U'}</AvatarFallback>
                 </Avatar>
               )}
               <textarea

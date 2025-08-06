@@ -786,7 +786,7 @@ function ApplyCreatorPage() {
                   1. Today`&apos;`s date: {new Date().toLocaleDateString()}<br/>
                   2. Your date of birth<br/>
                   3. Your full legal name<br/>
-                  4. The word "Fanslio"
+                  4. The word &quot;Fanslio&quot;
                 </p>
               </div>
               <input
@@ -806,7 +806,7 @@ function ApplyCreatorPage() {
                 The Fanslio team will review your application within <strong>24-48 hours</strong>.
               </p>
               <p className="text-sm text-gray-300 mb-2">
-                You'll receive an email once approved or if additional documentation is needed.
+              &quot;You&apos;ll&quot; receive an email once approved or if additional documentation is needed.
               </p>
               <p className="text-sm text-gray-300">
                 Questions? Contact us at <strong>ashleygreybiz@gmail.com</strong>
@@ -832,13 +832,13 @@ function ApplyCreatorPage() {
                 <h3 className="font-semibold text-white">What happens next?</h3>
                 <div className="text-gray-300 text-sm space-y-2">
                   <p>✓ Our team will review your application within 24-48 hours</p>
-                  <p>✓ You'll receive an email confirmation once approved</p>
-                  <p>✓ If additional documentation is needed, we'll contact you via email</p>
+                  <p>✓ &quot;You&apos;ll&quot; receive an email confirmation once approved</p>
+                  <p>✓ If additional documentation is needed, &quot;we&apos;ll&quot; contact you via email</p>
                   <p>✓ Add <strong>noreply@fanslio.com</strong> and <strong>help@fanslio.com</strong> to your safe senders list</p>
                 </div>
               </div>
               <p className="text-gray-300 mb-6">
-                Thank you for your interest in becoming a Fanslio creator! We're excited to potentially welcome you to our community.
+                Thank you for your interest in becoming a Fanslio creator! &quot;We&apos;re&quot; excited to potentially welcome you to our community.
               </p>
               <Button onClick={() => router.push("/")} className="bg-gradient-to-r from-pink-500 to-purple-600">
                 Back to Home

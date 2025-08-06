@@ -79,6 +79,7 @@ export interface Follower {
   followedAt: Date;
 }
 export type Subscription = {
+  id: string;
   creatorId: string;
   creatorName: string;
   creatorUsername: string;

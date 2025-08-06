@@ -7,7 +7,6 @@ import Image from 'next/image';
 import SubscribeModal from '@/components/SubscribeModal';
 import creatorservice from '@/app/services/creatorservice';
 import { Skeleton } from "@/components/ui/skeleton"
-import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 import userservice from '@/app/services/userservice';
@@ -15,7 +14,7 @@ import userservice from '@/app/services/userservice';
 import { CreatorPostCard } from './CreatorPostCard';
 import { useSession } from 'next-auth/react';
 import { resolveImageUrl } from './resolveImageUrl';
-import { Heart, Lock, PersonStanding, User, User, Video } from 'lucide-react';
+import { Heart, Lock, Video } from 'lucide-react';
 import SignUpModal from './SignupModal';
 
 // Bio Modal Component
@@ -41,7 +40,7 @@ const BioModal = ({ bio, creatorName }: { bio: string; creatorName: string }) =>
       </DialogTrigger>
       <DialogContent className="max-w-md bg-gray-900/95 backdrop-blur-lg border-gray-700">
         <DialogHeader>
-          <DialogTitle className="text-white text-xl">{creatorName}'s Bio</DialogTitle>
+          <DialogTitle className="text-white text-xl">{creatorName}&apos;s Bio</DialogTitle>
           <DialogDescription className="text-gray-300 text-base leading-relaxed mt-4">
             {bio}
           </DialogDescription>
@@ -50,7 +49,13 @@ const BioModal = ({ bio, creatorName }: { bio: string; creatorName: string }) =>
     </Dialog>
   );
 };
-
+type UserProfileData = {
+  userViewed: User,
+  viewingUser: User,
+  purchasedContent: MediaPost[],
+  totalSpent: number,
+  isOwnProfile: boolean
+}
 export default function ProfileContent({ 
   userViewed, 
   viewingUser,
@@ -194,7 +199,7 @@ export default function ProfileContent({
     if (!creator) return { posts: 0, videos: 0, likes: 0 };
     
     const posts = creator.posts?.length || 0;
-    const videos = creator.posts?.filter(post => post.mediaType === 'video').length || 0;
+    const videos = creator.posts?.filter(post => post.type === 'video').length || 0;
     const likes = creator.posts?.reduce((total, post) => total + (post.likes?.length || 0), 0) || 0;
     
     return { posts, videos, likes };
@@ -254,10 +259,10 @@ export default function ProfileContent({
       <div className="relative w-30 h-30 rounded-full overflow-hidden">
         {!userViewed ? (
           <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700" />
-        ) : avatarUrl || userViewed.image? (
+        ) : avatarUrl || userViewed.avatarKey? (
           <>
             <Image
-              src={resolveImageUrl(avatarUrl || creator?.image || userViewed?.image)}
+              src={resolveImageUrl(avatarUrl) || ""}
               alt={userViewed.username || "User profile image"}
               fill
               className="rounded-full border border-black shadow-lg transition-all duration-300 object-cover"
@@ -284,7 +289,7 @@ export default function ProfileContent({
           </div>
           <div className='flex flex-col gap-3 flex-1'>          
           {/* Follow Button - On the right side of name */}
-          {status === 'none' && userViewed.creator && !isOwnProfile && viewingUser && (
+          {status === 'none' && creator && userViewed.creator && !isOwnProfile && viewingUser && (
             <button 
               onClick={() => handleFollow(creator)}  
               className="border border-blue-500 hover:bg-blue-500/10 text-blue-400 px-4 py-2 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer whitespace-nowrap"
@@ -339,7 +344,7 @@ export default function ProfileContent({
           <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
             <div className="text-xs text-gray-300">Status</div>
             <div className="text-sm font-semibold text-white capitalize">
-              {userViewed.status}
+              {status}
             </div>
           </div>
           <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
@@ -407,7 +412,7 @@ export default function ProfileContent({
           open={joinModalOpen}
           onClose={() => setJoinModalOpen(false)}
           creator={creator}
-          avatarUrl={avatarUrl}
+          avatarUrl={avatarUrl || ""}
           />
         )}
         {modalOpen && creator && (
@@ -493,7 +498,7 @@ export default function ProfileContent({
             <PostsGrid creator={creator} status={status} viewingUser={viewingUser} postSignedUrls={postSignedUrls} />
           )}
           {activeTab === 'purchased' && (
-            <PurchasedPostsGrid creator={creator} status={status} viewingUser={viewingUser} postSignedUrls={postSignedUrls}/>
+            <PurchasedPostsGrid creator={creator} handleFollow={handleFollow} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user}/>
           )}
           {activeTab === 'media' && (
             <MediaGrid creator={creator} status={status} postSignedUrls={postSignedUrls}  />
@@ -511,16 +516,16 @@ export default function ProfileContent({
 
   function PurchasedPostsGrid ({
     creator,
-    status,
     viewingUser,
     postSignedUrls,
-    handleFollow
+    handleFollow,
+    user
   }: {
-    status: 'subscriber' | 'follower' | 'none';
     creator?: Creator;
     viewingUser: User;
     postSignedUrls: Record<string, string>;
     handleFollow: (creator: Creator) => void;
+    user: User
   }) {
     const [users, setUsers] = useState<User[] | null>(null);
     
@@ -551,7 +556,7 @@ export default function ProfileContent({
         {visiblePosts.length === 0 && (
           <div className='flex flex-col items-center'>
               <h1 className="text-2xl font-bold text-white mb-2">
-                  You haven't purchased anything from this person yet!
+                  You &quot;haven&apos;t&quot; purchased anything from this person yet!
                 </h1>
           </div>
         )}
@@ -565,7 +570,8 @@ export default function ProfileContent({
             isFollower={isFollower}
             isSubscriber={isSubscriber}
             session={session}
-            users={users.users}
+            users={users ?? []}
+            user={user}
             signedUrl={postSignedUrls[post._id]}
             handleFollow={handleFollow}
           />
@@ -607,7 +613,7 @@ export default function ProfileContent({
             >
               {/* Blurred Background Layer */}
               <Image
-                src={resolveImageUrl(postSignedUrls[p._id])}
+                src={resolveImageUrl(postSignedUrls[p._id]) || ""}
                 alt="blurred background"
                 fill
                 className="object-cover blur-lg scale-110 brightness-50"
@@ -621,7 +627,7 @@ export default function ProfileContent({
   
               {/* Foreground Image */}
               <Image
-                src={resolveImageUrl(postSignedUrls[p._id])}
+                src={resolveImageUrl(postSignedUrls[p._id]) || ""}
                 alt={p.caption || 'Media post'}
                 fill
                 className="object-contain z-10 transition-opacity duration-300"
