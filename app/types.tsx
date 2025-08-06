@@ -40,6 +40,7 @@ export type User = {
     autoRenew: boolean;
   }
   export interface Purchase {
+    id: string;
     price: number; 
     creatorId: mongoose.Types.ObjectId
     postId: string;
@@ -162,7 +163,7 @@ declare module "next-auth" {
     emailVerificationExpires: Date;
     lastVerificationEmailSentAt: Date;
     lastPasswordResetSentAt: Date;
-    purchase: Purchase[];
+    purchases: Purchase[];
   }
 
   interface Session {

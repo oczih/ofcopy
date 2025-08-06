@@ -104,13 +104,12 @@ export function CreatorPostCard({
     }
   }
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarError, setAvatarError] = useState(false);
+
   useEffect(() => {
     const fetchAvatarUrl = async () => {
       if (creator.avatarKey) {
         try {
           setImageLoading(true);
-          setAvatarError(false);
   
           const key = creator.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
           const res = await fetch("/api/media/download-url", {
@@ -127,11 +126,9 @@ export function CreatorPostCard({
             setAvatarUrl(data.downloadUrl);
           } else {
             console.error("Invalid download URL:", data.downloadUrl);
-            setAvatarError(true);
           }
         } catch (error) {
           console.error("Error fetching avatar URL:", error);
-          setAvatarError(true);
         } finally {
           setImageLoading(false);
         }
@@ -144,7 +141,6 @@ export function CreatorPostCard({
     fetchAvatarUrl();
   }, [creator?.avatarKey]);
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
-  const [userAvatarError, setUserAvatarError] = useState(false);
 
   const avatarKey = (session?.user as User)?.avatarKey;
   useEffect(() => {
@@ -152,7 +148,6 @@ export function CreatorPostCard({
       if (avatarKey) {
         try {
           setImageLoading(true);
-          setUserAvatarError(false);
   
           const key = avatarKey.replace(/^\/+/, ''); // Remove leading slash
           const res = await fetch("/api/media/download-url", {
@@ -169,11 +164,9 @@ export function CreatorPostCard({
             setUserAvatarUrl(data.downloadUrl);
           } else {
             console.error("Invalid download URL:", data.downloadUrl);
-            setUserAvatarError(true);
           }
         } catch (error) {
           console.error("Error fetching avatar URL:", error);
-          setUserAvatarError(true);
         } finally {
           setImageLoading(false);
         }
@@ -186,14 +179,12 @@ export function CreatorPostCard({
   }, [avatarKey]);
   const [userAvatars, setUserAvatars] = useState<Record<string, string>>({});
 const [avatarsLoading, setAvatarsLoading] = useState<Record<string, boolean>>({});
-const [avatarsError, setAvatarsError] = useState<Record<string, boolean>>({});
 const resolvedUrl = useMemo(() => resolveImageUrl(signedUrl), [signedUrl]);
 const fetchUserAvatarUrl = async (user: User) => {
   if (!user.avatarKey) return null;
 
   try {
     setAvatarsLoading(prev => ({ ...prev, [user.id]: true }));
-    setAvatarsError(prev => ({ ...prev, [user.id]: false }));
 
     const key = user.avatarKey.replace(/^\/+/, ''); // remove leading slash
     const res = await fetch("/api/media/download-url", {
@@ -207,12 +198,10 @@ const fetchUserAvatarUrl = async (user: User) => {
       setUserAvatars(prev => ({ ...prev, [user.id]: data.downloadUrl }));
       return data.downloadUrl;
     } else {
-      setAvatarsError(prev => ({ ...prev, [user.id]: true }));
       return null;
     }
   } catch (error) {
     console.error("Error fetching user avatar:", error);
-    setAvatarsError(prev => ({ ...prev, [user.id]: true }));
     return null;
   } finally {
     setAvatarsLoading(prev => ({ ...prev, [user.id]: false }));

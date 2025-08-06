@@ -53,7 +53,6 @@ export default function SignUpModal({ open, onClose, creator, avatarUrl }: { ope
       }
       return prev;
     });
-    // eslint-disable-next-line
   }, []);
   const [errors, setErrors] = useState<Record<string, string>>({});
   useEffect(() => {

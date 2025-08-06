@@ -1,7 +1,7 @@
 import { History } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Session } from 'next-auth';
-import { Subscription, User } from '@/app/types';
+import { Subscription } from '@/app/types';
 
 interface Purchase {
   id: string;
@@ -20,8 +20,8 @@ interface PaymentHistoryProps {
 
 const PaymentHistory: React.FC<PaymentHistoryProps> = ({ session }) => {
 
-  const purchases = (session?.user as any)?.purchases || [];
-  const subscriptions = (session?.user as any)?.subscriptions || [];
+  const purchases = session?.user.purchases || [];
+  const subscriptions = session?.user?.subscriptions || [];
 
   // Combine purchases and subscription payments into a unified history
   const paymentHistory = [
@@ -89,7 +89,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ session }) => {
         <div className="text-center py-12">
           <History className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-white mb-2">No Payment History</h3>
-          <p className="text-gray-400">You haven't made any payments yet.</p>
+          <p className="text-gray-400">You haven&apos;t made any payments yet.</p>
         </div>
       </div>
     );

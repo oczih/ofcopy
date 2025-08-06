@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams} from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { AlertCircle } from 'lucide-react';
 
@@ -10,7 +10,6 @@ export default function AddPassword() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const searchParams = useSearchParams();
-  const router = useRouter();
   const token = searchParams.get('token');
 
   const validate = () => {
@@ -43,6 +42,7 @@ export default function AddPassword() {
         toast.success("Verification email sent! Please check your email to confirm your password setup.");
       }
     } catch (err) {
+      console.error(err)
       toast.error("Something went wrong.");
     } finally {
       setLoading(false);

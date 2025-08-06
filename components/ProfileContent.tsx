@@ -68,7 +68,6 @@ export default function ProfileContent({
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [creator, setCreator] = useState<Creator | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
-  const [isCreator, setIsCreator] = useState(false);
   const [currentUser, setCurrentUser] = useState<User>(viewingUser);
   const [status, setStatus] = useState<'subscriber' | 'follower' | 'none'>('none');
   const [userStatsLoading, setUserStatsLoading] = useState(true);
@@ -78,14 +77,12 @@ export default function ProfileContent({
       const creators = await creatorservice.get();
       // Find creator where userViewed.id matches either c.user or c.user.id
       const found = creators.creators.find(
-        c => c.user === userViewed.id || c.user?.id === userViewed.id
+        (c: Creator) => c.user === userViewed.id
       );
       if (found) {
         setCreator(found);
-        setIsCreator(true);
       } else {
         setCreator(null);
-        setIsCreator(false);
       }
       // Set user stats loading to false after creator data is fetched
       setUserStatsLoading(false);
@@ -94,14 +91,12 @@ export default function ProfileContent({
   }, [userViewed]);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarError, setAvatarError] = useState(false);
 
   useEffect(() => {
     const fetchAvatarUrl = async () => {
       if (userViewed?.avatarKey) {
         try {
           setImageLoading(true);
-          setAvatarError(false);
           
           const key = creator ? creator?.image : userViewed?.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
           
@@ -119,12 +114,10 @@ export default function ProfileContent({
             setAvatarUrl(data.downloadUrl);
           } else {
             console.error("Invalid download URL:", data.downloadUrl);
-            setAvatarError(true);
           }
 
         } catch (error) {
           console.error("Error fetching avatar URL:", error);
-          setAvatarError(true);
         } finally {
           setImageLoading(false);
         }
@@ -134,7 +127,7 @@ export default function ProfileContent({
     };
   
     fetchAvatarUrl();
-  }, [creator?.image, userViewed?.avatarKey]);
+  }, [creator, userViewed?.avatarKey]);
   
   const [postSignedUrls, setPostSignedUrls] = useState<Record<string, string>>({});
   
@@ -179,9 +172,11 @@ export default function ProfileContent({
       return;
     }
   
-    const isSubscriber = Array.isArray(creator.subscribers) &&
-      creator.subscribers.some((sub: Subscriber) => sub.userId === viewingUser.id);
-  
+    const isSubscriber =
+        Array.isArray(creator.subscribers) &&
+        creator.subscribers.some(
+          (sub: Subscriber) => sub.userId.toString() === viewingUser.id
+        );
     const isFollower = Array.isArray(creator.followers) &&
       creator.followers.some((fol: Follower) => fol.userId === viewingUser.id);
   
@@ -407,7 +402,7 @@ export default function ProfileContent({
       ) 
       }
 </div>
-{joinModalOpen && (
+{joinModalOpen && creator && (
           <SignUpModal 
           open={joinModalOpen}
           onClose={() => setJoinModalOpen(false)}
@@ -433,6 +428,8 @@ export default function ProfileContent({
             status={status}
             viewingUser={viewingUser}
             postSignedUrls={postSignedUrls}
+            handleFollow={handleFollow}
+            user={viewingUser}
           />
         )}
       </div>
@@ -447,7 +444,9 @@ export default function ProfileContent({
     isOwnProfile, 
     status,
     viewingUser,
-    postSignedUrls
+    postSignedUrls,
+    handleFollow,
+    user
   }: {
     purchasedContent: MediaPost[];
     creator: Creator;
@@ -455,6 +454,8 @@ export default function ProfileContent({
     status: 'subscriber' | 'follower' | 'none';
     viewingUser: User
     postSignedUrls: Record<string, string>;
+    handleFollow: (creator: Creator) => Promise<void>
+    user: User
   }) {
     const [activeTab, setActiveTab] = useState(creator ? 'posts' : 'purchased');
     const tabs = [
@@ -495,7 +496,7 @@ export default function ProfileContent({
         {/* Tab Content */}
         <div className="p-6">
           {activeTab === 'posts' && (
-            <PostsGrid creator={creator} status={status} viewingUser={viewingUser} postSignedUrls={postSignedUrls} />
+            <PostsGrid creator={creator} status={status} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user} handleFollow={handleFollow} />
           )}
           {activeTab === 'purchased' && (
             <PurchasedPostsGrid creator={creator} handleFollow={handleFollow} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user}/>
@@ -582,11 +583,12 @@ export default function ProfileContent({
   function MediaGrid({
     creator,
     status,
-    postSignedUrls
+    postSignedUrls,
   }: {
     status: 'subscriber' | 'follower' | 'none';
     creator?: Creator;
     postSignedUrls: Record<string, string>;
+
   }) {
     const allPosts = creator?.posts || [];
   
@@ -645,12 +647,16 @@ export default function ProfileContent({
     creator,
     status,
     viewingUser,
-    postSignedUrls
+    postSignedUrls,
+    handleFollow,
+    user
   }: {
     creator?: Creator;
     status: 'subscriber' | 'follower' | 'none';
     viewingUser: User;
     postSignedUrls: { [key: string]: string };
+    handleFollow: (creator: Creator) => void;
+    user: User
   }) {
     const [users, setUsers] = useState<User[] | null>(null);
     const { data: session} = useSession();
@@ -692,6 +698,8 @@ export default function ProfileContent({
           session={session}
           users={users?.users}
           signedUrl={postSignedUrls[post._id]}
+          user={user}
+          handleFollow={handleFollow}
         />
         ))}
       </div>

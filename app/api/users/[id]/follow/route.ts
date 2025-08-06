@@ -32,7 +32,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
 
     // Check if already following
-    const alreadyFollowing = loggedInUser.following.some(followingId => followingId.toString() === targetUserId);
+    const alreadyFollowing = loggedInUser.following.some((followingId: string) => followingId.toString() === targetUserId);
     
     if (alreadyFollowing) {
       return NextResponse.json({ message: 'Already following this user' }, { status: 400 });
@@ -86,12 +86,12 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     // Remove targetUser from loggedInUser's following list
     loggedInUser.following = loggedInUser.following.filter(
-      (id) => id.toString() !== targetUserId
+      (id: string) => id.toString() !== targetUserId
     );
 
     // Remove loggedInUser from targetUser's followers list
     targetUser.followers = targetUser.followers.filter(
-      (id) => id.toString() !== loggedInUserId
+      (id: string) => id.toString() !== loggedInUserId
     );
 
     await loggedInUser.save();

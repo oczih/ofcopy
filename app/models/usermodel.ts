@@ -15,6 +15,7 @@ export interface Subscription {
   autoRenew: boolean;
 }
 export interface Purchase {
+  id: string
   price: number; 
   creatorId: mongoose.Types.ObjectId
   postId: string;
@@ -135,6 +136,9 @@ const userSchema = new Schema<UserDocument>({
     default: null,
   },
   purchases: [{
+    id: {
+      type: String
+    },
     price: {
       type: Number
     },

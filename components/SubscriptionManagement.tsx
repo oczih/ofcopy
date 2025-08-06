@@ -10,7 +10,7 @@ interface SubscriptionManagementProps {
 }
 
 const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ session }) => {
-  const subscriptions = (session?.user as any)?.subscriptions;
+  const subscriptions = session?.user.subscriptions;
   
   if (!subscriptions || subscriptions.length === 0) {
     return (

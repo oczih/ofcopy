@@ -165,7 +165,7 @@ function SignupModal({ open, onClose, creatorName }: { open: boolean, onClose: (
         <div className="text-center p-6 pb-4">
           <div className="text-4xl mb-3">🔓</div>
           <h2 className="text-2xl font-bold text-white mb-2">
-            Unlock {creatorName}'s Content
+            Unlock {creatorName}&apos;s Content
           </h2>
           <p className="text-gray-300 text-sm">
             Join Fanslio to access exclusive content from your favorite creators
@@ -510,9 +510,9 @@ export function PostCard({
   };
 
   // Helper function to check if user can delete comment
-  const canDeleteComment = (comment: any) => {
+  const canDeleteComment = (comment: Comment) => {
     const isCommentOwner = comment.userId === viewingUser.id;
-    const isPostOwner = viewingUser.id === creator._id || viewingUser.id === creator.id;
+    const isPostOwner = creator.id;
     return isCommentOwner || isPostOwner;
   };
   
@@ -706,7 +706,7 @@ export function PostCard({
                               <Button 
                                 variant="ghost" 
                                 className="w-full justify-start text-left text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
-                                onClick={() => handleDeleteComment(commentId)}
+                                onClick={() => handleDeleteComment(comment.commentId)}
                               >
                                 Delete Comment
                               </Button>
