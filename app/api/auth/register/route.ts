@@ -3,8 +3,14 @@ import { connectDB } from '@/lib/mongoose';
 import OFUser from '@/app/models/usermodel';
 import { hashPassword, createVerificationToken } from '@/lib/auth-utils';
 import { sendVerificationEmail } from '@/lib/email';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth-client';
 
 export async function POST(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   console.log(request.body)
   try {
     const { email, password, username } = await request.json();

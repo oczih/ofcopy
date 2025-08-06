@@ -5,8 +5,8 @@ import OFUser from '@/app/models/usermodel';
 import { auth } from '@/lib/auth-client';
 
 export async function GET() {
-  await connectDB();
   
+  await connectDB();
   try {
     // Calculate real stats from the database
     const [

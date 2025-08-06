@@ -5,6 +5,7 @@ import Creator from '@/app/models/creatormodel';
 import OFUser from '@/app/models/usermodel';
 
 export async function POST(request: NextRequest) {
+  
   try {
     await connectDB();
   } catch (error) {

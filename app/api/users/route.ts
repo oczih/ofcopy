@@ -8,10 +8,6 @@ import { auth } from '@/lib/auth-client';
 export async function GET() {
   await connectDB();
   
-  /* const session = await auth();
-  if (!session) {
-    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
-  } */
   try {
     // tee tähän populate
     const users = await OFUser.find({})

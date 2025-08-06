@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongoose';
 import OFUser, { VerificationToken } from '@/app/models/usermodel';
+import { authOptions } from '@/lib/auth-client';
+import { getServerSession } from 'next-auth/next';
 
 export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');

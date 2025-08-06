@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongoose';
 import Post from '@/app/models/postmodel';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth-client';
 
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
@@ -20,6 +22,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+if (!session || session.user.email !== process.env.SECEMAIL) {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
   await connectDB();
   const { id } = params;
   const body = await req.json();
@@ -64,6 +70,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+if (!session || session.user.email !== process.env.SECEMAIL) {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
   await connectDB();
   const { id } = params;
 

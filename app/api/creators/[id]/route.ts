@@ -29,9 +29,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 
   const session = await getServerSession(authOptions);
-  if (!session) {
-    console.log("[API] No session found - Unauthorized");
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = params;
@@ -60,10 +59,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
     const { id } = await params;
     console.log("sessariL:", session.user)
     console.log("iidee:", id)

@@ -5,6 +5,8 @@ import Creator from '@/app/models/creatormodel';
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import mongoose from 'mongoose';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth-client';
 const s3 = new S3Client({
   region: "eu-north-1",
   credentials: {
@@ -50,6 +52,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   await connectDB();
   const { s3Key, caption, creatorId, type, width, height, viewable, price } = await req.json();
   if ((!s3Key && !caption) || !creatorId) {
@@ -83,6 +89,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   await connectDB();
   const username = req.nextUrl.searchParams.get('username');
   const { postId, liker, comment, unlike } = await req.json();

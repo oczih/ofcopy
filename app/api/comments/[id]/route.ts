@@ -4,6 +4,7 @@ import Post from '@/app/models/postmodel';
 import mongoose from 'mongoose';
 
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  
   await connectDB();
   const params = await context.params;
   const commentId = params.id;

@@ -3,10 +3,16 @@ import { connectDB } from '@/lib/mongoose';
 import OFUser, { VerificationToken } from "@/app/models/usermodel";
 import { createVerificationToken } from '@/lib/auth-utils';
 import { sendPasswordResetEmail, sendPasswordAddEmail } from '@/lib/email';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth-client";
 
 const MIN_RESEND_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 export async function POST(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const { email } = await request.json();
 

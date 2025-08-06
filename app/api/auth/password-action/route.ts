@@ -4,8 +4,14 @@ import OFUser, { VerificationToken } from "@/app/models/usermodel";
 import { createVerificationToken } from '@/lib/auth-utils';
 import { sendPasswordResetEmail, sendPasswordAddConfirmationEmail } from '@/lib/email';
 import bcrypt from 'bcryptjs';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth-client';
 
 export async function POST(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
     try {
       const { email, password } = await request.json();
     console.log("email", email)

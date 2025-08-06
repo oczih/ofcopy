@@ -3,6 +3,8 @@ import { NextRequest } from 'next/server';
 import mongoose from 'mongoose';
 import { connectDB } from '@/lib/mongoose';
 import Creator from '@/app/models/creatormodel';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth-client';
 
 
 export async function GET(request: NextRequest) {

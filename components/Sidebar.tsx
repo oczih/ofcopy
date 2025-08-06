@@ -40,7 +40,7 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
   const menuItems = [
     { id: "feed", label: "Home Feed", icon: Home, color: "pink", href: "/home" },
     { id: "discover", label: "Discover", icon: Compass, color: "purple", href: "/discover" },
-    { id: "messages", label: "Messages", icon: MessageCircle, color: "blue", href: "/messages" },
+    { id: "messages", label: "Messages (Coming Soon!)", icon: MessageCircle, color: "blue", href: "/messages" },
     { id: "notifications", label: "Notifications", icon: Bell, color: "red", href: "/notifications" },
     { id: "subscriptions", label: "Subscriptions", icon: Crown, color: "yellow", href: "/subscriptions" },
     { id: "settings", label: "Settings", icon: Settings, color: "green", href: "/settings" },
