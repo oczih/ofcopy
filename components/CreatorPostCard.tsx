@@ -5,7 +5,7 @@ import Image from "next/image";
 import { MoreHorizontal, Heart, MessageCircle, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
-import { Session } from "@auth/core/types";
+import { Session } from "next-auth";
 import { Comment, Creator, Post, User} from "../app/types";
 import postservice from "../app/services/postservice";
 import { Skeleton } from "@/components/ui/skeleton"
