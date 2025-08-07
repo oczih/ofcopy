@@ -4,7 +4,13 @@ import { connectDB } from '@/lib/mongoose';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import Creator from '@/app/models/creatormodel';
 import Post from '@/app/models/postmodel';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-client';
 export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   await connectDB();
   
   try {

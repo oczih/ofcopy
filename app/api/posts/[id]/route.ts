@@ -9,6 +9,10 @@ export async function GET(request: NextRequest, context: unknown) {
   // Cast context as unknown then extract params carefully
   // OR just treat as any but keep the cast local and limited
   const { params } = context as { params: { id: string } };
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   await connectDB();
   const { id } = params;
 
