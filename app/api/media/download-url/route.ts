@@ -63,8 +63,6 @@
         dateLessThan: expirationTime 
       });
 
-      console.log("Generated signed URL:", signedUrl);
-
       // Validate the generated signed URL
       try {
         new URL(signedUrl);

@@ -1,0 +1,9 @@
+{
+    "rewrites": [
+      {
+        "source": "/uploads/:path*",
+        "destination": "http://d3toysp9th2qqz.cloudfront.net//uploads/:path*"
+      }
+    ]
+  }
+  

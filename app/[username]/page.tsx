@@ -15,7 +15,7 @@ const RESERVED_ROUTES = [
   'models', 'services', 'context', 'favicon.ico',
   'globals.css', 'layout.tsx', 'page.tsx', 'public',
   'lib', 'ui', 'auth', 'creators', 'stats', 'media',
-  'users', 'upload',
+  'users', 'upload','uploads'
 ];
 interface Params {
   username: string;
