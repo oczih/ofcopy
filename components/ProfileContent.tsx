@@ -528,20 +528,23 @@ export default function ProfileContent({
     handleFollow: (creator: Creator) => void;
     user: User
   }) {
-    const [users, setUsers] = useState<User[] | null>(null);
+    interface UsersResponse {
+      users: User[];
+    }
+    const [users, setUsers] = useState<UsersResponse | null>(null);
     
     const allPosts = creator?.posts || [];
     useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const fetchedUsers = await userservice.get();
-        setUsers(fetchedUsers);
-      } catch (error) {
-        console.error("Couldn't fetch data: ", error);
-      }
-    };
-    fetchData();
-  }, []);
+  const fetchData = async () => {
+    try {
+      const fetchedUsers = await userservice.get();  // this should return { users: User[] }
+      setUsers({ users: fetchedUsers });
+    } catch (error) {
+      console.error("Couldn't fetch data: ", error);
+    }
+  };
+  fetchData();
+}, []);
   const { data: session} = useSession();
   if (!creator) return null;
     // Filter posts based on relationship status
@@ -571,7 +574,7 @@ export default function ProfileContent({
             isFollower={isFollower}
             isSubscriber={isSubscriber}
             session={session}
-            users={users ?? []}
+            users={users?.users ?? []}
             user={user}
             signedUrl={postSignedUrls[post._id]}
             handleFollow={handleFollow}
@@ -658,13 +661,16 @@ export default function ProfileContent({
     handleFollow: (creator: Creator) => void;
     user: User
   }) {
-    const [users, setUsers] = useState<User[] | null>(null);
+    interface UsersResponse {
+      users: User[];
+    }
+    const [users, setUsers] = useState<UsersResponse | null>(null);
     const { data: session} = useSession();
     useEffect(() => {
       const fetchData = async () => {
         try {
           const fetchedUsers = await userservice.get();
-          setUsers(fetchedUsers);
+          setUsers({users: fetchedUsers});
         } catch (error) {
           console.error("Couldn't fetch data: ", error);
         }
@@ -696,7 +702,8 @@ export default function ProfileContent({
           isFollower={isFollower}
           isSubscriber={isSubscriber}
           session={session}
-          users={users?.users}
+          
+          users={users?.users ?? []}
           signedUrl={postSignedUrls[post._id]}
           user={user}
           handleFollow={handleFollow}

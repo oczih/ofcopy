@@ -1,5 +1,4 @@
 import creatorservice from "@/app/services/creatorservice";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl as getCloudFrontSignedUrl } from "@aws-sdk/cloudfront-signer";
 import { getSignedUrl } from "@aws-sdk/cloudfront-signer";
 import { NextRequest, NextResponse } from "next/server";
@@ -10,6 +9,7 @@ import { Creator } from "@/app/types";
 
 
 export async function GET(req: NextRequest) {
+  if(!req) return;
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
 
 
 export async function POST(req: NextRequest) {
-  const { s3Key, fileType } = await req.json();
+  const { s3Key } = await req.json();
 
 
   const signedUrl = getCloudFrontSignedUrl({

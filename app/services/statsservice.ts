@@ -33,6 +33,8 @@ const get = async (): Promise<Stats> => {
   }
 };
 
-export default {
+const statsservice = {
   get
 }; 
+
+export default statsservice

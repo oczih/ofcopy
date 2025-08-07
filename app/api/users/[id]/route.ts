@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '../../../../lib/mongoose';
 import WalkUser from '@/app/models/usermodel';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import mongoose from 'mongoose';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth-client";
@@ -129,9 +128,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     // Save and return updated user
     try {
       await user.save();
-    } catch (err: any) {
-      console.error("Mongoose validation failed:", err.message, err.errors);
-      return NextResponse.json({ error: 'Validation failed', details: err.message }, { status: 500 });
+    } catch (err) {
+      console.error("Mongoose validation failed:", err);
+      return NextResponse.json({ error: 'Validation failed', details: err }, { status: 500 });
     }
 
     return NextResponse.json({ user });

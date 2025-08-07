@@ -1,6 +1,5 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -51,6 +50,7 @@ function EditPost() {
         setCaption(fetchedPost.caption || '');
         setViewable(fetchedPost.viewableFor || 'followers');
       } catch (err) {
+        console.error(err)
         setError('Failed to load post.');
       } finally {
         setLoading(false);
@@ -84,11 +84,12 @@ function EditPost() {
     setSaving(true);
     setSaveMessage('');
     try {
-      await postservice.update(postId, { caption, viewable });
+      await postservice.update(postId, { caption, viewableFor: viewable });
       setSaveMessage('Post updated!');
       setTimeout(() => setSaveMessage(''), 2000);
       router.push("/home")
     } catch (err) {
+      console.error(err)
       setSaveMessage('Failed to update post.');
     } finally {
       setSaving(false);
@@ -117,7 +118,7 @@ function EditPost() {
               <div className="relative w-72 h-72 bg-slate-900 rounded-xl flex items-center justify-center overflow-hidden">
                 {postUrl ? (
                   <Image
-                    src={resolveImageUrl(postUrl)}
+                    src={resolveImageUrl(postUrl) || ""}
                     alt={caption || 'Post image'}
                     fill
                     style={{ objectFit: 'contain' }}

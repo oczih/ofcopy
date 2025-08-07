@@ -1,5 +1,4 @@
 'use client'
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -33,9 +32,6 @@ export const Header = () => {
     router.push('/');
     toast.success('Signed out successfully');
   };
-  const handleSignIn = () => {
-    router.push("/signup")
-  }
   return (
     <>
       <header className="bg-black/20 backdrop-blur-xl border-b border-white/10 sticky top-0 z-50 shadow-2xl">

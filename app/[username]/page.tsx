@@ -2,11 +2,12 @@ import { notFound } from 'next/navigation';
 import { connectDB } from '@/lib/mongoose';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-client';
-import User from '@/app/models/usermodel';
-import Purchase from '@/app/models/purchasemodel';
+import UserModel from '@/app/models/usermodel';
+import PurchaseModel from '@/app/models/purchasemodel';
 import AppWrapper from '@/components/AppWrapper';
 import ProfileContent from '@/components/ProfileContent';
 import CreatorModel from '@/app/models/creatormodel'; // Assuming this is your creator model
+import { Purchase, Subscription, User } from '../types';
 
 const RESERVED_ROUTES = [
   'discover', 'messages', 'settings', 'subscriptions', 'notifications', 'api', 'components',
@@ -26,7 +27,7 @@ export default async function UserProfilePage({ params }: { params: Promise<Para
  
   if (RESERVED_ROUTES.includes(username)) notFound();
 
-  const user = await User.findOne({ username });
+  const user = await UserModel.findOne({ username });
   if (!user) notFound();
   console.log("useri: ",user)
   const isOwnProfile = session?.user?.username === user.username;
@@ -44,10 +45,10 @@ export default async function UserProfilePage({ params }: { params: Promise<Para
     // Determine relationship regardless of whose profile it is
     if (creator && viewerId) {
       const isSubscriber = Array.isArray(creator.subscriptions) &&
-        creator.subscriptions.some(sub => sub.userId?.toString() === viewerId);
+        creator.subscriptions.some((sub: Subscription) => sub.toString() === viewerId);
   
       const isFollower = Array.isArray(creator.followers) &&
-        creator.followers.some(fol => fol.userId?.toString() === viewerId);
+        creator.followers.some((fol: User) => fol.id.toString() === viewerId);
   
       if (isSubscriber) {
         relationshipStatus = 'subscriber';
@@ -60,8 +61,8 @@ export default async function UserProfilePage({ params }: { params: Promise<Para
   }
 
   if (session?.user?.id) {
-    const purchases = await Purchase.find({ userId: session.user.id }).populate('mediaId');
-    purchasedContent = purchases.map((p: any) => p.mediaId).filter(Boolean);
+    const purchases = await PurchaseModel.find({ userId: session.user.id }).populate('mediaId');
+    purchasedContent = purchases.map((p: Purchase) => p.).filter(Boolean);
   }
   
   return (

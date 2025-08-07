@@ -2,19 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
-import { Badge } from "../../components/ui/badge";
-import { Settings, User, Shield, Bell, Palette, CreditCard, LogOut, Save, ChevronRight, Calendar, Mail, Eye, EyeOff, Trash2, Star, Wallet, History, X, ExternalLink, AlertCircle } from "lucide-react";
+import {CreditCard, ChevronRight, Calendar, Mail, Trash2, Wallet, ExternalLink, AlertCircle } from "lucide-react";
 import { SessionProvider, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppWrapper from "../../components/AppWrapper";
 import SubscriptionManagement from "@/components/SubscriptionManagement";
 import PaymentHistory from "@/components/PaymentHistory";
-import { VerificationToken } from "../models/usermodel";
-import { createVerificationToken } from "@/lib/auth-utils";
-import AddPassword from "@/components/AddPassword";
-import ResetPasswordPage from "../reset-password/page";
 import toast from "react-hot-toast";
 
 export default function SettingsPage() {
@@ -34,16 +27,12 @@ function SettingsApp() {
   const [activeSubTab, setActiveSubTab] = useState("");
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
-  const [name, setName] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
-  const [username, setUsername] = useState(session?.user.username || "");
   const [form, setForm] = useState({
     currentPassword: "",
     password: "",
     confirm: ""
   });
-  const [isAddingPassword, setIsAddingPassword] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const router = useRouter();
@@ -56,7 +45,6 @@ function SettingsApp() {
   useEffect(() => {
     if (session?.user) {
       setEmail(session.user.email ?? "");
-      setName(session.user.name ?? "");
     }
   }, [session?.user]);
   useEffect(() => {
@@ -73,8 +61,6 @@ function SettingsApp() {
         const data = await res.json();
         
         if (res.ok) {
-          setConfirmed(true);
-          setIsAddingPassword(data.isAddingPassword);
           const actionType = data.isAddingPassword ? 'Password setup' : 'Password reset';
           toast.success(`${actionType} confirmed! You can now log in with your ${data.isAddingPassword ? 'new' : 'updated'} password.`);
         } else {
@@ -82,6 +68,7 @@ function SettingsApp() {
           setTimeout(() => router.push('/login'), 2000);
         }
       } catch (error) {
+        console.error(error)
         toast.error('Something went wrong');
       }
     };
@@ -97,14 +84,18 @@ function SettingsApp() {
     { id: "payments", label: "Payment & Subscriptions" },
     { id: "legal", label: "Privacy & Terms" },
   ];
-
-  const accountSubTabs = [
+  type SubTab = {
+    id: string;
+    label: string;
+    href?: string;
+  };
+  const accountSubTabs: SubTab[] = [
     { id: "info", label: "Account Info" },
     { id: "password", label: "Password" },
     { id: "delete", label: "Delete Account" },
   ];
 
-  const paymentSubTabs = [
+  const paymentSubTabs: SubTab[]  = [
     { id: "subscriptions", label: "Subscriptions" },
     { id: "history", label: "Payment History" },
     { id: "wallet", label: "Wallet" },
@@ -220,6 +211,7 @@ const validate = () => {
         // Don't redirect yet - wait for email confirmation
       }
     } catch (err) {
+      console.error(err)
       toast.error("Something went wrong.");
     } finally {
       setLoading(false);
@@ -294,18 +286,18 @@ const validate = () => {
                     <Mail className="w-5 h-5 text-green-500" />
                     <div>
                       <p className="text-gray-400 text-sm">Email Address</p>
-                      <p className="text-white font-medium">{session.user.email}</p>
+                      <p className="text-white font-medium">{session?.user.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Calendar className="w-5 h-5 text-green-500" />
                     <div>
                       <p className="text-gray-400 text-sm">Member Since</p>
-                      <p className="text-white font-medium">{new Date(session.user?.createdAt).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}</p>
+                      <p className="text-white font-medium">{new Date(session?.user?.createdAt ?? '').toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+})}</p>
                     </div>
                   </div>
                 </div>
@@ -465,7 +457,7 @@ const validate = () => {
                 <li>• Use at least 8 characters</li>
                 <li>• Include uppercase and lowercase letters</li>
                 <li>• Add numbers and special characters</li>
-                <li>• Don't reuse passwords from other accounts</li>
+                <li>• Don&#39;t reuse passwords from other accounts</li>
               </ul>
             </div>
           </div>

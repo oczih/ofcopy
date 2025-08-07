@@ -1,11 +1,10 @@
 "use client";
 import * as React from 'react';
 import { useState } from "react";
-import { Header } from "../../components/Header";
 import { Sidebar } from "../../components/Sidebar";
 import { Button } from "../../components/ui/button";
 import { SessionProvider, useSession } from "next-auth/react";
-import { redirect, useRouter } from "next/navigation";
+import {  useRouter } from "next/navigation";
 import { uploadContent } from "@/app/services/uploadmediaservice";
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
@@ -13,6 +12,7 @@ import Select, { SelectChangeEvent } from '@mui/material/Select';
 import { useEffect } from 'react';
 import creatorservice from '../services/creatorservice';
 import { Creator } from '../types';
+import Image from 'next/image';
 
 export default function UploadingPage() {
     return (
@@ -31,7 +31,7 @@ function UploadPage() {
     const [uploading, setUploading] = useState(false);
     const [viewable, setViewable] = useState("followers");
     const [creator, setCreator] = useState<Creator>();
-    const [price, setPrice] = useState('');
+    const [price, setPrice] = useState<number>(0);
     const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
     const [tempPrice, setTempPrice] = useState('');
     const [loading, setLoading] = useState(true);
@@ -222,7 +222,7 @@ function UploadPage() {
         setFiles([]);
         setPreviews([]);
         setCaption("");
-        setPrice('');
+        setPrice(0);
         router.push("/");
       } catch (err) {
         console.error("Upload failed", err);
@@ -240,15 +240,6 @@ function UploadPage() {
       fileInputRef.current?.click();
     };
     
-    const handleRemoveAll = () => {
-      setFiles([]);
-      setPreviews([]);
-      setPrice('');
-      setShowDim(false); // Hide dim when clearing files
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    };
     
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
@@ -348,7 +339,7 @@ function UploadPage() {
                             </button>
 
                             {files[index]?.type.startsWith("image") ? (
-                              <img
+                              <Image
                                 src={preview}
                                 alt={`Preview ${index}`}
                                 className="max-w-xs max-h-40 rounded-xl border border-white/20 mb-2"

@@ -65,7 +65,7 @@ function App() {
           creatorservice.get(),
           statsservice.get()
         ]);
-        const fetchedUsers = await userservice.get();
+        const fetchedUsers: User[] = await userservice.get();
         setUsers(fetchedUsers);
         
         if (fetchedCreators) {
@@ -187,6 +187,20 @@ function App() {
       </div>
     );
   }
+   
+  const handleFollow = async (creator: Creator) => {
+    if (!creator) return;
+  
+    try {
+      const alreadyFollowing = session?.user?.following?.some(f => f.creatorId === creator.id);
+      if (alreadyFollowing) return;
+  
+      await creatorservice.followCreator(creator.id);
+  
+    } catch (err) {
+      console.error('Error following creator:', err);
+    }
+  };
   
   const handleResendVerification = async () => {
     try {
@@ -297,13 +311,13 @@ function App() {
             <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-2" />
             <h1 className="text-base font-semibold text-white mb-1">Check Your Email</h1>
             <p className="text-gray-300">
-              We've sent a link to <strong className="text-pink-400">{session?.user.email}</strong>
+             We&apos;ve sent a link to <strong className="text-pink-400">{session?.user.email}</strong>
             </p>
           </div>
           
           <div className="text-xs text-gray-400 space-y-1 text-center">
             <p>Click the link in your email to verify your account.</p>
-            <p>Didn’t get it? Check spam or resend below.</p>
+            <p>Didn&apos;t get it? Check spam or resend below.</p>
           </div>
 
           <div className="mt-4 flex justify-center">
@@ -338,12 +352,13 @@ function App() {
                               creator={creator}
                               post={post}
                               session={session}
-                              user={session?.user}
+                              user={session.user as User}
                               isCreator={isCreator}
-                              isFollower={isFollower}
+                              isFollower={isFollower ?? false}
                               isSubscriber={isSubscriber}
-                              users={users.users}
+                              users={users}
                               signedUrl={postSignedUrls[post._id]}
+                              handleFollow={handleFollow}
                             />
                           </div>
                         );

@@ -1,15 +1,6 @@
 import axios from 'axios';
 import { Creator } from '@/app/types';
 
-interface CreatorDocument {
-    _id: string;
-    name: string;
-    username?: string;
-    image?: string;
-    subscribers?: number;
-    price?: number;
-    category?: string;
-}
 const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/creators`;
 
 const get = async () => {

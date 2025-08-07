@@ -31,7 +31,8 @@ if (!session || session.user.email !== process.env.SECEMAIL) {
   const body = await req.json();
 
   try {
-    let update: any = {};
+    const update: Partial<{ caption: string; viewable: boolean; likes: string[] }> = {};
+
 
     // Add support for caption and viewable
     if (typeof body.caption === 'string') {

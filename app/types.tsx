@@ -136,7 +136,7 @@ export type Post = {
 };
 declare module "next-auth" {
   interface User {
-    id?: string;
+    id: string;
     username?: string;
     age?: number;
     googleId?: string;

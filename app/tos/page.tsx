@@ -20,7 +20,7 @@ export default function TermsOfServicePage() {
             <span className="text-gray-400">[Insert Date]</span>
           </div>
           <p>
-            Welcome to Fanslio, operated by <span className="font-semibold">[Your Legal Entity Name]</span>, a company incorporated in Finland ("we," "us," or "our"). These Terms of Service govern your use of our platform and services. By accessing or using Fanslio, you agree to these terms.
+            Welcome to Fanslio, operated by <span className="font-semibold">[Your Legal Entity Name]</span>, a company incorporated in Finland (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;). These Terms of Service govern your use of our platform and services. By accessing or using Fanslio, you agree to these terms.
           </p>
           <div>
             <h3 className="font-bold text-pink-400 mb-1">1. Eligibility</h3>
@@ -75,7 +75,7 @@ export default function TermsOfServicePage() {
           <div>
             <h3 className="font-bold text-pink-400 mb-1">8. Disclaimers and Liability</h3>
             <ul className="list-disc list-inside ml-4 text-gray-300">
-              <li>Fanslio is provided "as is." We do not guarantee uninterrupted service.</li>
+              <li>Fanslio is provided &quot;as is.&quot; We do not guarantee uninterrupted service.</li>
               <li>We are not liable for content uploaded by users.</li>
             </ul>
           </div>

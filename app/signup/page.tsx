@@ -78,7 +78,6 @@ export default function SignupPage() {
       }
       return prev;
     });
-    // eslint-disable-next-line
   }, []);
 
   const [errors, setErrors] = useState<Record<string, string>>({});

@@ -41,6 +41,7 @@ export default function ForgotPasswordPage() {
         toast.error(data.error || "Something went wrong");
       }
     } catch (err) {
+      console.error(err)
       toast.error("Internal server error");
       setLoading(false);
     }

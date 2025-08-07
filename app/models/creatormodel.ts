@@ -1,5 +1,5 @@
 import mongoose, { Schema, model, Types } from "mongoose";
-import Post, {PostDocument} from "./postmodel"; // Assuming you have PostDocument exported
+import {PostDocument} from "./postmodel"; // Assuming you have PostDocument exported
 export interface Subscriber {
   userId: mongoose.Types.ObjectId;
   username: string;

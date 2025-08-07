@@ -4,7 +4,6 @@ import { connectDB } from '@/lib/mongoose';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import Creator from '@/app/models/creatormodel';
 import Post from '@/app/models/postmodel';
-import { auth } from '@/lib/auth-client';
 export async function GET() {
   await connectDB();
   

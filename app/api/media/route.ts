@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongoose';
-import Post from '@/app/models/postmodel';
+import PostModel from '@/app/models/postmodel';
 import Creator from '@/app/models/creatormodel';
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import mongoose from 'mongoose';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-client';
+import { Post } from '@/app/types';
 const s3 = new S3Client({
   region: "eu-north-1",
   credentials: {
@@ -28,8 +29,8 @@ export async function GET(req: NextRequest) {
 
   // Generate signed URLs for each post:
   const postsWithSignedUrls = await Promise.all(
-    (creator.posts || []).map(async (post: typeof Post) => {
-      if (!post.s3key) return post;
+    (creator.posts || []).map(async (post: Post) => {
+      if (!post.s3Key) return post;
       try {
         const command = new GetObjectCommand({
           Bucket: process.env.AWS_BUCKET_NAME!,
@@ -37,12 +38,12 @@ export async function GET(req: NextRequest) {
         });
         const signedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
         return {
-          ...post.toObject(),
+          ...post,
           signedUrl,
         };
       } catch (err) {
         console.error("Failed to get signed URL for post:", post._id, err);
-        return post.toObject(); // fallback: return without signed URL
+        return post; // fallback: return without signed URL
       }
     })
   );
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
     }
   }
   // Create the post
-  const post = await Post.create({
+  const post = await PostModel.create({
     creator: creator._id,
     s3Key: s3Key || null,
     type: type || null,
@@ -117,7 +118,7 @@ export async function PUT(req: NextRequest) {
     const userObjectId = liker?.userId ? new mongoose.Types.ObjectId(liker.userId) : null;
 
     if (comment) {
-      updatedPost = await Post.findByIdAndUpdate(
+      updatedPost = await PostModel.findByIdAndUpdate(
         postId,
         { $push: { comments: comment } },
         { new: true }
@@ -125,14 +126,14 @@ export async function PUT(req: NextRequest) {
     } else if (liker) {
       if (unlike) {
         // REMOVE like
-        updatedPost = await Post.findByIdAndUpdate(
+        updatedPost = await PostModel.findByIdAndUpdate(
           postId,
           { $pull: { likes: { userId: userObjectId } } },
           { new: true }
         );
       } else {
         // ADD like if not already liked
-        updatedPost = await Post.findOneAndUpdate(
+        updatedPost = await PostModel.findOneAndUpdate(
           { _id: postId, 'likes.userId': { $ne: userObjectId } },
           { $push: { likes: { userId: userObjectId } } },
           { new: true }
@@ -140,7 +141,7 @@ export async function PUT(req: NextRequest) {
 
         if (!updatedPost) {
           // Already liked — just return the existing post
-          updatedPost = await Post.findById(postId);
+          updatedPost = await PostModel.findById(postId);
         }
       }
     } else {
@@ -150,7 +151,7 @@ export async function PUT(req: NextRequest) {
     // Re-fetch creator’s posts with signed URLs
     const freshCreator = await Creator.findOne({ username }).populate('posts');
     const postsWithSignedUrls = await Promise.all(
-      (freshCreator.posts || []).map(async (post: any) => {
+      (freshCreator.posts || []).map(async (post: Post) => {
         if (!post.s3Key) return post;
         try {
           const command = new GetObjectCommand({
@@ -160,13 +161,13 @@ export async function PUT(req: NextRequest) {
           const signedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
 
           return {
-            ...post.toObject(),
+            ...post,
             signedUrl,
             ...(post._id.toString() === postId ? updatedPost.toObject() : {}),
           };
         } catch (err) {
           console.error('Failed to get signed URL for post:', post._id, err);
-          return post.toObject();
+          return post;
         }
       })
     );

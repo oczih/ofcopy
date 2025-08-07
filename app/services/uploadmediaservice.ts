@@ -89,10 +89,11 @@ const updatePost = async (id: string, newData: Partial<Post>): Promise<Post> => 
     throw error;
   }
 };
-
-export default {
+const uploadmediaservice = {
   createPostWithUpload,
   uploadContent,
   updatePost,
   getDownloadUrl,
 };
+
+export default uploadmediaservice;

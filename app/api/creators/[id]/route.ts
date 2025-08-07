@@ -5,17 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-client';
 import { connectDB } from '../../../../lib/mongoose';
 import mongoose from 'mongoose';
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { Post } from "@/app/types";
 
-const s3 = new S3Client({
-  region: "eu-north-1",
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY!,
-    secretAccessKey: process.env.AWS_SECRET_KEY!,
-  },
-});
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   console.log("[API] GET /api/creators/[id] - Starting request");

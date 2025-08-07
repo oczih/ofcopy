@@ -3,19 +3,19 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Sidebar } from '@/components/Sidebar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import AppWrapper from '@/components/AppWrapper';
 import { SessionProvider, useSession } from 'next-auth/react';
-import Cropper from 'react-easy-crop';
+import Cropper, { Area } from 'react-easy-crop';
 import { ZoomIn, ZoomOut, X } from 'lucide-react';
 import getCroppedImg from '@/lib/utils'
 import userservice from '@/app/services/userservice';
-import { getDownloadUrl, uploadContent } from '@/app/services/uploadmediaservice';
+import { uploadContent } from '@/app/services/uploadmediaservice';
 import creatorservice from '@/app/services/creatorservice';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Creator } from '@/app/types';
+import { resolveImageUrl } from '@/components/resolveImageUrl';
 export default function EditProfilePage() {
     return (
         <AppWrapper>
@@ -28,14 +28,12 @@ export default function EditProfilePage() {
 
 function EditProfile() {
   const { data: session } = useSession()  
-  const [profilePic, setProfilePic] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [croppedImage, setCroppedImage] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
   const [creator, setCreator] = useState<Creator | null>(null)
   useEffect(() => {
@@ -43,38 +41,70 @@ function EditProfile() {
       if (session?.user?.creator) {
         try {
           const creators = await creatorservice.get(); // now awaited
-          const rightCreator = creators.creators.find(c => c.user === session.user.id);
-          console.log("Creatorit", creators)
-          console.log("rightcreator", rightCreator)
-          setProfilePic(rightCreator.image|| null);
+          const rightCreator = creators.creators.find((c: Creator) => c.user === session.user.id);
+          try {
+            setImageLoading(true);
+    
+            const key = creator?.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
+            const res = await fetch("/api/media/download-url", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({ s3Key: key }),
+            });
+    
+            const data = await res.json();
+    
+            if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
+              setAvatarUrl(data.downloadUrl);
+            } else {
+              console.error("Invalid download URL:", data.downloadUrl);
+            }
+          } catch (error) {
+            console.error("Error fetching avatar URL:", error);
+          }
           setCreator(rightCreator)
         } catch (err) {
           console.error("Failed to fetch creator data:", err);
-          setProfilePic(null);
+          setAvatarUrl(null);
         }
       } else if (session?.user) {
-        setProfilePic(session?.user.avatar);
+        try {
+          setImageLoading(true);
+  
+          const key = session.user.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
+          const res = await fetch("/api/media/download-url", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ s3Key: key }),
+          });
+  
+          const data = await res.json();
+  
+          if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
+            setAvatarUrl(data.downloadUrl);
+          } else {
+            console.error("Invalid download URL:", data.downloadUrl);
+          }
+        } catch (error) {
+          console.error("Error fetching avatar URL:", error);
+        }
       } else if (session?.user?.name) {
-        setProfilePic(null); // Will show fallback
+        setAvatarUrl(null); // Will show fallback
       }
     };
   
     fetchCreator();
-  }, [session]);
+  }, [session, creator]);
   const handleFileChange = (key: string, file: File | null) => {
     if (file) {
       setSelectedImage(file);
       setCropModalOpen(true);
     }
   };
-  function blobToBase64(blob: Blob): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }
   const links = [
     {
       title: 'Profile Info',
@@ -119,9 +149,9 @@ function EditProfile() {
               )}
 
               {/* Show the image (it loads behind the loading state) */}
-              {(croppedImage || profilePic) && (
+              {(avatarUrl) && (
                 <Image
-                  src={croppedImage || profilePic}
+                  src={resolveImageUrl(avatarUrl) || "" }
                   alt="Profile Picture"
                   fill
                   className="object-cover rounded-full z-10"
@@ -131,7 +161,7 @@ function EditProfile() {
               )}
 
               {/* Show fallback initials only if there's no image and not loading */}
-              {!imageLoading && !croppedImage && !profilePic && (
+              {!imageLoading && !avatarUrl && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-700 text-white text-3xl rounded-full z-10">
                   {session?.user?.name?.charAt(0).toUpperCase() || "U"}
                 </div>
@@ -238,6 +268,11 @@ function EditProfile() {
                   if (!session?.user?.id) throw new Error("User ID not found");
 
                   // 1. Get cropped image as a Blob
+                  if (!croppedAreaPixels) {
+                    console.error("Please select an area to crop.");
+                    return;
+                  }
+                  
                   const croppedBlob = await getCroppedImg(
                     URL.createObjectURL(selectedImage),
                     croppedAreaPixels
@@ -250,18 +285,29 @@ function EditProfile() {
                   const s3Key = await uploadContent(croppedFile);
 
                   // 4. Construct public S3 URL (via your backend or using known format)
-                  const avatarUrl = await getDownloadUrl(s3Key); // or `https://yourbucket.s3.amazonaws.com/${s3Key}`
+                  
 
                   // 5. Save avatar URL to user profile
                   await userservice.update(session.user.id, {
-                    avatar: avatarUrl,
+                    avatarKey: s3Key,
                   });
-                  if (session.user.creator && creator?.id) {
-                    await creatorservice.update(creator.id, { image: avatarUrl });
-                  }
                   // 6. Update frontend state
-                  setCroppedImage(avatarUrl);
-                  setProfilePic(avatarUrl);
+                  const key = creator?.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
+                  const res = await fetch("/api/media/download-url", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ s3Key: key }),
+                  });
+          
+                  const data = await res.json();
+          
+                  if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
+                    setAvatarUrl(data.downloadUrl);
+                  } else {
+                    console.error("Invalid download URL:", data.downloadUrl);
+                  }
                   setCropModalOpen(false);
                 } catch (err) {
                   console.error("Failed to update user avatar:", err);

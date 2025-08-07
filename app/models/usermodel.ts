@@ -1,4 +1,4 @@
-import mongoose, { Schema, model } from "mongoose";
+import mongoose, { Schema, model} from "mongoose";
 import { Message } from "./messagemodel";
 
 // Subscription interface for better type safety
@@ -240,13 +240,17 @@ const userSchema = new Schema<UserDocument>({
 }, { timestamps: true });
 
 userSchema.set('toJSON', {
-    transform: (_doc, ret: any) => {
-      ret.id = ret._id?.toString();
-      delete ret._id;
-      delete ret.__v;
-      delete ret.password;
-    },
-  });
+  transform: function (
+    _doc: mongoose.Document,
+    ret: Partial<UserDocument> & { _id?: string; id?: string; __v?: number; password?: string }
+  ) {
+    ret.id = ret._id?.toString();
+    delete ret._id;
+    delete ret.__v;
+    delete ret.password;
+    return ret;
+  },
+});
 
 const verificationTokenSchema = new mongoose.Schema({
   token: { type: String, required: true, unique: true },

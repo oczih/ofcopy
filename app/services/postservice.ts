@@ -43,9 +43,11 @@ const deletePost = async (id:string): Promise<{post: Post}> => {
         throw error;
     }
 }
-export default {
+const postservice = {
     get, 
     getOne,
     deletePost,
     update
 }
+
+export default postservice

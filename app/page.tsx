@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import { 
   Sparkles, 
   TrendingUp, 
@@ -12,18 +12,13 @@ import {
   Video, 
   Heart,
   ArrowRight,
-  Play,
   Zap,
   Bot,
   ChevronDown,
-  ChevronUp,
   ExternalLink,
-  Award
 } from "lucide-react";
 import Link from "next/link";
 import heroImage from "@/assets/hero-image.jpg";
-import aiCreator from "@/assets/ai-creator.png";
-import humanCreator from "@/assets/human-creator.png";
 import productHuntFeatured from "@/assets/product-hunt-featured.png";
 import { SessionProvider, useSession } from "next-auth/react";
 import FeaturesSection from "@/components/FeaturesSection";
@@ -87,23 +82,24 @@ const features = [
 
 // Consistent animation variants
 const fadeInUp = {
-  hidden: { 
-    opacity: 0, 
-    y: 30,
-    filter: "blur(10px)"
+  hidden: {
+    opacity: 0,
+    y: 20,
+    filter: 'blur(4px)',
   },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
-    filter: "blur(0px)",
+    filter: 'blur(0px)',
     transition: {
-      type: "spring",
+      type: 'spring',
       stiffness: 100,
-      damping: 15,
-      mass: 1
-    }
-  }
-};
+      damping: 20,
+      mass: 1,
+    },
+  },
+} as const satisfies Variants;
+
 
 const staggerContainer = {
   hidden: { opacity: 0 },
@@ -132,7 +128,7 @@ const scaleIn = {
       damping: 20
     }
   }
-};
+} as const satisfies Variants;
 
 export default function LandingPage() {
   return (
@@ -151,7 +147,7 @@ function Landing() {
     if (typeof window !== "undefined") {
       router.push("/home");
     }
-  }, []);
+  }, [router]);
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -506,7 +502,7 @@ function Landing() {
               className="text-center mt-12"
             >
               <p className="text-white mb-6 text-lg">
-                Still have questions? We're here to help!
+                Still have questions? We&#39;re here to help!
               </p>
               <Link href="/signup">
                 <Button 

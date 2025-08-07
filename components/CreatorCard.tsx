@@ -1,7 +1,6 @@
 import { Button } from "./ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Users, Heart, Star, Verified, Crown, Sparkles } from "lucide-react";
-import { Creator } from "../app/types";
+import { Heart, Verified, Crown, Sparkles } from "lucide-react";
+import { Creator } from  "../app/types";
 import Link from "next/link";
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 interface CreatorCardProps {

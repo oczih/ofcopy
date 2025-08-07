@@ -48,8 +48,6 @@ export function CreatorPostCard({
   const [commentModalOpen, setCommentModalOpen] = useState<string | null>(null);
   const [likes, setLikes] = useState(post.likes ?? []);
   const [comments, setComments] = useState(post.comments ?? []);
-  const [showcomment, setShowComments] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const handleLike = async (post: Post) => {
       try {
@@ -213,7 +211,7 @@ useEffect(() => {
       fetchUserAvatarUrl(user);
     }
   });
-}, [users]);
+}, [userAvatars, users]);
 
   const isLikedByCurrentUser = likes.some(
     (like) => like.userId.toString() === session?.user?.id?.toString()
@@ -224,9 +222,6 @@ useEffect(() => {
   const handleModalOpen = () => {
     setModalOpen((open) => !open)
   }
-  const handleRepostContent = () => {
-    setShowConfirm(true);
-  };
   const handleSendComment = async () => {
     if (!commentText.trim()) return;
     setSending(true);
@@ -349,13 +344,13 @@ useEffect(() => {
         Edit Post
       </Button>
     </Link>
-    <Button
+    {/* <Button
       variant="ghost"
       onClick={handleRepostContent}
       className="w-full justify-start text-left hover:bg-gray-100 dark:hover:bg-slate-600 cursor-pointer"
     >
       Repost Content
-    </Button>
+    </Button>*/}
     <Button
       variant="ghost"
       onClick={() => handleDeletePost(post._id)}
@@ -491,7 +486,7 @@ useEffect(() => {
     </div>
 
     {/* Comments Section */}
-    {(commentOpen || showcomment) && (
+    {(commentOpen) && (
       <div className="w-full px-5 pb-4 mt-5 mb-5 space-y-4 animate-fade-in-fast">
         {/* Comments List */}
         <div className="space-y-2">
@@ -501,14 +496,16 @@ useEffect(() => {
               return (
                 <div key={comment.commentId || idx} className="flex items-start gap-3 bg-slate-800/60 rounded-lg p-3">
                   <div className="flex items-center gap-2 min-w-0">
-                  <Avatar className="w-8 h-8">
-                      <AvatarImage 
+                    <Avatar className="w-8 h-8">
+                      {!avatarsLoading ? <div><AvatarImage 
                         src={userAvatars[userObj?.id || ''] || userObj?.avatarKey || ''} 
                         alt={userObj?.name || userObj?.username || 'User'} 
                       />
                       <AvatarFallback>
                         {userObj?.name?.[0] || userObj?.username?.[0] || 'U'}
-                      </AvatarFallback> 
+                      </AvatarFallback></div> : <Skeleton
+          className="w-full h-full rounded-none bg-gray-200 dark:bg-gray-700"
+        />  }
                     </Avatar>
                       <span className="text-xs text-pink-300 font-semibold truncate">{comment.username}</span>
                     </div>

@@ -6,11 +6,12 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Camera, X, ZoomIn, ZoomOut } from 'lucide-react';
 import userservice from "../services/userservice";
-import Cropper from 'react-easy-crop';
+import Cropper, { Area } from 'react-easy-crop';
 import getCroppedImg from '@/lib/utils'
 import { uploadContent } from "@/app/services/uploadmediaservice";
 import Image from "next/image";
 import { User } from "../types";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function ApplyCreator() {
   return (
@@ -30,10 +31,9 @@ function ApplyCreatorPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [croppedImage, setCroppedImage] = useState<Blob | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [formData, setFormData] = useState({
     s3Key: "",
     country: "",
@@ -43,9 +43,9 @@ function ApplyCreatorPage() {
     displayName: "",
     bio: "",
     subscriptionPrice: "3.99",
-    idFrontPhoto: null as File | null,
-    idBackPhoto: null as File | null,
-    selfieWithId: null as File | null,
+    idFrontPhoto: null as string | null,
+    idBackPhoto: null as string | null,
+    selfieWithId: null as string | null,
     birthDate: "",
     fullLegalName: ""
   });
@@ -56,9 +56,8 @@ function ApplyCreatorPage() {
       if (!formData.handle) return;
   
       try {
-        const users = await userservice.get();
-        console.log(users)
-        const userfound = users.users.find((u: User) => u.username === formData.handle)
+        const fetchedUsers: User[] = await userservice.get();
+        const userfound = fetchedUsers.find((u: User) => u.username === formData.handle)
         if(userfound){
           setUsernameAvailable(false)
         }
@@ -560,17 +559,25 @@ function ApplyCreatorPage() {
                           <button
                             className="flex-1 px-6 py-3 rounded-xl text-sm font-medium bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white transition-all duration-200 shadow-lg"
                             onClick={async () => {
+                              if (!croppedAreaPixels) {
+                                toast.error("Please select an area to crop.");
+                                return;
+                              }
+                            
                               const cropped = await getCroppedImg(
                                 URL.createObjectURL(selectedImage),
                                 croppedAreaPixels
                               );
-                              setCroppedImage(cropped);
+                            
+                            
                               setFormData((prev) => ({
                                 ...prev,
                                 profilePic: new File([cropped], "profile.jpg"),
                               }));
+                            
                               setCropModalOpen(false);
                             }}
+                            
                           >
                             Apply Changes
                           </button>
@@ -852,6 +859,10 @@ function ApplyCreatorPage() {
 
   return (
     <div className="min-h-screen w-full bg-[#3b0364]">
+      <Toaster
+      position="top-center"
+      reverseOrder={false}
+    />
       <div className="flex max-w-7xl mx-auto px-6 py-8 gap-8 relative z-10">
         <main className="flex-1 flex items-center justify-center">
           <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl max-w-2xl w-full animate-fade-in overflow-hidden s">

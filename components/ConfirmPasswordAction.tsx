@@ -40,6 +40,7 @@ export default function ConfirmPasswordAction() {
           setTimeout(() => router.push('/login'), 2000);
         }
       } catch (error) {
+        console.error(error)
         toast.error('Something went wrong');
         setTimeout(() => router.push('/login'), 2000);
       } finally {

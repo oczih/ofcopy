@@ -1,8 +1,7 @@
 'use client'
 
-import creatorservice from "@/app/services/creatorservice";
 import userservice from "@/app/services/userservice";
-import { Creator } from "@/app/types";
+import { User } from "@/app/types";
 import AppWrapper from "@/components/AppWrapper";
 import { ArrowLeft } from "lucide-react";
 import { SessionProvider, useSession } from "next-auth/react";
@@ -28,7 +27,6 @@ function EditProfileInfo() {
     const { data: session, status } = useSession()
     const router = useRouter()
     const [loading, setLoading] = useState(true);
-    const [creator, setCreator] = useState<Creator | null>(null);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
     
@@ -63,10 +61,9 @@ function EditProfileInfo() {
           if (!formData.handle) return;
       
           try {
-            const users = await userservice.get();
-            console.log(users)
-            const userfound = users.users.find((u) => u.username === formData.handle)
-            if(userfound.username === formData.handle) return;
+            const fetchedUsers: User[] = await userservice.get();
+            const userfound = fetchedUsers.find((u) => u.username === formData.handle)
+            if(userfound?.username === formData.handle) return;
             if(userfound){
               setUsernameAvailable(false)
             }
@@ -100,7 +97,7 @@ function EditProfileInfo() {
           setSaving(false);
         }
       };
-      const handleInputChange = (field: string, value: any) => {
+      const handleInputChange = (field: string, value: string) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
         setError("");
       };
@@ -221,7 +218,7 @@ function EditProfileInfo() {
                     </button>
             </div>
             <div className="space-y-6">
-              
+              <h2 className="text-red font-bold">{error}</h2>
               <div>
                 <label className="block mb-2 text-white font-medium">Name</label>
                 <input

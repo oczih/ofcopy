@@ -1,12 +1,18 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { useEffect } from 'react';
+import { FC } from 'react';
 
+interface Feature {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+}
 
+interface FeaturesSectionProps {
+  features: Feature[];
+}
 
-
-export default function FeaturesSection({ features }) {
+const FeaturesSection: FC<FeaturesSectionProps> = ({ features }) => {
   return (
     <section className="px-12 py-50 bg-[#151515]">
       <div className="max-w-7xl mx-auto">
@@ -29,4 +35,6 @@ export default function FeaturesSection({ features }) {
       </div>
     </section>
   );
-}
+};
+
+export default FeaturesSection;

@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     await connectDB();
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
-    const query: any = {};
+    const query: Partial<{ status: string }> = {};
     if (status && status !== "all") query.status = status;
 
     const applications = await CreatorApplication.find(query).sort({ createdAt: -1 });

@@ -38,14 +38,14 @@ export default function ApplyCreatorForm() {
       });
       if (!res.ok) throw new Error("Failed to submit application");
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      console.error(err)
     } finally {
       setLoading(false);
     }
   };
 
-  if (success) return <div className="max-w-lg mx-auto py-12">Application submitted! We'll review it soon.</div>;
+  if (success) return <div className="max-w-lg mx-auto py-12">Application submitted! We&apos;ll review it soon.</div>;
 
   return (
     <div className="max-w-lg mx-auto py-12">
