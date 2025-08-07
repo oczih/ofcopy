@@ -1,21 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth-client"; 
+import { authOptions } from "@/lib/auth-client";
 import { connectDB } from '@/lib/mongoose';
+import UserModel from '@/app/models/usermodel'
 import Creator from '@/app/models/creatormodel';
-import User from '@/app/models/usermodel';
+import { Follower, Following } from '@/app/types';
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
-  const { id: creatorId } = params;
+export async function POST(request: NextRequest, context: unknown) {
+  // Cast context as unknown then extract params carefully
+  // OR just treat as any but keep the cast local and limited
+  const { params } = context as { params: { id: string } };
+  const creatorId = params.id;
+
   const session = await getServerSession(authOptions);
+
   if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   await connectDB();
 
-  // Find user and creator
-  const user = await User.findById(session.user.id);
+  const user = await UserModel.findById(session.user.id);
   const creator = await Creator.findById(creatorId);
 
   if (!user || !creator) {
@@ -23,7 +28,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   }
 
   // Check if user already follows creator
-  if (user.following.some(f => f.creatorId.toString() === creatorId)) {
+  if (user.following.some((f: Following) => f.creatorId.toString() === creatorId)) {
     return NextResponse.json({ message: "Already following" }, { status: 400 });
   }
 
@@ -50,8 +55,11 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   return NextResponse.json({ message: "Followed creator" });
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  const { id: creatorId } = params;
+export async function DELETE(request: NextRequest, context: unknown) {
+  // Cast context as unknown then extract params carefully
+  // OR just treat as any but keep the cast local and limited
+  const { params } = context as { params: { id: string } };
+  const creatorId = params.id;
   const session = await getServerSession(authOptions);
   if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -59,7 +67,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
   await connectDB();
 
-  const user = await User.findById(session.user.id);
+  const user = await UserModel.findById(session.user.id);
   const creator = await Creator.findById(creatorId);
 
   if (!user || !creator) {
@@ -67,10 +75,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   }
 
   // Remove creator from user's following list
-  user.following = user.following.filter(f => f.creatorId.toString() !== creatorId);
+  user.following = user.following.filter((f: Following) => f.creatorId.toString() !== creatorId);
 
   // Remove user from creator's followers list
-  creator.followers = creator.followers.filter(f => f.userId.toString() !== user.id);
+  creator.followers = creator.followers.filter((f: Follower) => f.userId.toString() !== user.id);
 
   await user.save();
   await creator.save();

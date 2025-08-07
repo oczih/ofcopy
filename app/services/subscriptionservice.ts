@@ -1,7 +1,7 @@
 import OFUser from '../models/usermodel';
 import Creator from '../models/creatormodel';
 import { Subscription } from '../types';
-
+import { v4 as uuidv4 } from 'uuid';
 export class SubscriptionService {
   /**
    * Add a subscription for a user to a creator
@@ -20,10 +20,10 @@ export class SubscriptionService {
 
       // Create subscription object
       const subscription: Subscription = {
+        id: uuidv4(),
         creatorId: creatorId,
         creatorName: creator.name,
         creatorUsername: creator.username,
-        creatorImage: creator.image,
         subscriptionDate: new Date(),
         price: price,
         status: 'active',
@@ -123,7 +123,7 @@ export class SubscriptionService {
       }
 
       return user.subscriptions.some(
-        sub => sub.creatorId === creatorId && sub.status === 'active'
+        (sub: Subscription) => sub.creatorId === creatorId && sub.status === 'active'
       );
     } catch (error) {
       console.error('Error checking subscription status:', error);
@@ -167,7 +167,7 @@ export class SubscriptionService {
         return 0;
       }
 
-      return user.subscriptions.filter(sub => sub.status === 'active').length;
+      return user.subscriptions.filter((sub: Subscription) => sub.status === 'active').length;
     } catch (error) {
       console.error('Error getting subscription count:', error);
       return 0;

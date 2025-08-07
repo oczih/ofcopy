@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Button } from "../../components/ui/button";
 import {CreditCard, ChevronRight, Calendar, Mail, Trash2, Wallet, ExternalLink, AlertCircle } from "lucide-react";
 import { SessionProvider, useSession } from "next-auth/react";
@@ -12,11 +12,13 @@ import toast from "react-hot-toast";
 
 export default function SettingsPage() {
   return (
+    <Suspense>
     <SessionProvider>
       <AppWrapper>
         <SettingsApp/>
       </AppWrapper>
     </SessionProvider>
+    </Suspense>
   );
 }
 

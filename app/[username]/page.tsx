@@ -7,7 +7,8 @@ import PurchaseModel from '@/app/models/purchasemodel';
 import AppWrapper from '@/components/AppWrapper';
 import ProfileContent from '@/components/ProfileContent';
 import CreatorModel from '@/app/models/creatormodel'; // Assuming this is your creator model
-import { Purchase, Subscription, User } from '../types';
+import { MediaPost,Subscriber,  Purchase, Follower } from '../types';
+import { PostDocument } from '../models/postmodel';
 
 const RESERVED_ROUTES = [
   'discover', 'messages', 'settings', 'subscriptions', 'notifications', 'api', 'components',
@@ -34,7 +35,7 @@ export default async function UserProfilePage({ params }: { params: Promise<Para
 
   let relationshipStatus: 'subscriber' | 'follower' | 'none' = 'none';
   let totalSpent = 0;
-  let purchasedContent = [];
+  let purchasedContent: MediaPost[] = [];
   let creator = null;
 
   if (user.creator) {
@@ -42,13 +43,12 @@ export default async function UserProfilePage({ params }: { params: Promise<Para
   
     const viewerId = session?.user?.id;
   
-    // Determine relationship regardless of whose profile it is
     if (creator && viewerId) {
-      const isSubscriber = Array.isArray(creator.subscriptions) &&
-        creator.subscriptions.some((sub: Subscription) => sub.toString() === viewerId);
+      const isSubscriber = Array.isArray(creator.subscribers) &&
+        creator.subscribers.some((sub: Subscriber) => sub.userId.toString() === viewerId);
   
       const isFollower = Array.isArray(creator.followers) &&
-        creator.followers.some((fol: User) => fol.id.toString() === viewerId);
+        creator.followers.some((fol: Follower) => fol.userId.toString() === viewerId);
   
       if (isSubscriber) {
         relationshipStatus = 'subscriber';
@@ -59,10 +59,25 @@ export default async function UserProfilePage({ params }: { params: Promise<Para
       totalSpent = await getTotalSpentOnCreator(viewerId, creator._id.toString());
     }
   }
-
+  function isPostDocument(post: PostDocument): post is PostDocument {
+    return post && typeof post === 'object' && '_id' in post;
+  }
+  function transformPostDocumentToMediaPost(postDoc: PostDocument): MediaPost {
+    const postObject = postDoc.toObject ? postDoc.toObject() : postDoc;
+    return {
+      ...postObject,
+      _id: postObject._id.toString(),
+    };
+  }
   if (session?.user?.id) {
-    const purchases = await PurchaseModel.find({ userId: session.user.id }).populate('mediaId');
-    purchasedContent = purchases.map((p: Purchase) => p.).filter(Boolean);
+    // Tell TS that purchases have populated postId as PostDocument or string
+    const purchases = await PurchaseModel.find({ userId: session.user.id }).populate('postId') as Purchase<PostDocument>[];
+
+  
+    purchasedContent = purchases
+    .map(p => p.postId)
+    .filter(isPostDocument)
+    .map(transformPostDocumentToMediaPost);
   }
   
   return (
@@ -70,7 +85,7 @@ export default async function UserProfilePage({ params }: { params: Promise<Para
       <ProfileContent
         userViewed={user && JSON.parse(JSON.stringify(user)) || null  }
         viewingUser={session?.user && JSON.parse(JSON.stringify(session?.user)) || null}
-        purchasedContent={JSON.parse(JSON.stringify(purchasedContent))}
+        purchasedContent={purchasedContent}
         totalSpent={totalSpent}
         relationshipStatus={relationshipStatus}
         isOwnProfile={isOwnProfile}
@@ -80,6 +95,6 @@ export default async function UserProfilePage({ params }: { params: Promise<Para
 }
 
 async function getTotalSpentOnCreator(viewerId: string, creatorId: string) {
-  const purchases = await Purchase.find({ userId: viewerId, creatorId });
-  return purchases.reduce((sum: number, p: { amount: number }) => sum + p.amount, 0);
+  const purchases = await PurchaseModel.find({ userId: viewerId, creatorId });
+  return purchases.reduce((sum: number, p: { price: number }) => sum + p.price, 0);
 }

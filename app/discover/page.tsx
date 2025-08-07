@@ -229,7 +229,7 @@ function DiscoverApp() {
                     <div key={creator.id} className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
                       <div className="flex items-center gap-3">
                         <Image
-                          src={resolveImageUrl(creator.image)}
+                          src={resolveImageUrl(creator.image) || ""}
                           alt={creator.name}
                           width={48}
                           height={48}

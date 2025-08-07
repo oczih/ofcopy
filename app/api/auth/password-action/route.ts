@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
         15 * 60 * 1000 // 15 minutes
       );
   
-      await VerificationToken.findByIdAndUpdate(confirmationToken._id, {
+      await VerificationToken.findByIdAndUpdate(confirmationToken, {
         tempPassword: hashedPassword,
         originalAction: isAddingPassword ? 'add' : 'reset',
         expiresAt: {
@@ -54,9 +54,9 @@ export async function POST(request: NextRequest) {
   
       // Send appropriate email
       if (isAddingPassword) {
-        await sendPasswordAddConfirmationEmail(email, confirmationToken.token);
+        await sendPasswordAddConfirmationEmail(email, confirmationToken);
       } else {
-        await sendPasswordResetEmail(email, confirmationToken.token);
+        await sendPasswordResetEmail(email, confirmationToken);
       }
   
       return NextResponse.json({

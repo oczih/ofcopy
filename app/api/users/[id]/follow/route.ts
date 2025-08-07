@@ -4,7 +4,10 @@ import User from '@/app/models/usermodel';
 import { auth } from '@/lib/auth-client';
 import mongoose from 'mongoose';
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, context: unknown) {
+  // Cast context as unknown then extract params carefully
+  // OR just treat as any but keep the cast local and limited
+  const { params } = context as { params: { id: string } };
   const session = await auth();
   if (!session) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -55,7 +58,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: unknown) {
+  // Cast context as unknown then extract params carefully
+  // OR just treat as any but keep the cast local and limited
+  const { params } = context as { params: { id: string } };
   // Unfollow logic: Remove follower/following relationship
 
   const session = await auth();

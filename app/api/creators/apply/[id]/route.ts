@@ -6,7 +6,10 @@ import OFUser from '@/app/models/usermodel';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-client';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, context: unknown) {
+  // Cast context as unknown then extract params carefully
+  // OR just treat as any but keep the cast local and limited
+  const { params } = context as { params: { id: string } };
   const session = await getServerSession(authOptions);
   if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -14,7 +17,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   try {
     await connectDB();
 
-    const { action } = await req.json();
+    const { action } = await request.json();
     const { id } = params;
 
     if (!id) {

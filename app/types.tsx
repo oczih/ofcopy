@@ -39,11 +39,11 @@ export type User = {
     nextBillingDate?: Date;
     autoRenew: boolean;
   }
-  export interface Purchase {
+  export interface Purchase<TPost = string> {
     id: string;
     price: number; 
-    creatorId: mongoose.Types.ObjectId
-    postId: string;
+    creatorId: mongoose.Types.ObjectId;
+    postId: TPost;
     date: Date;
   }
   export  enum Gender {

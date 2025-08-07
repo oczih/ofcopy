@@ -6,7 +6,10 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth-client";
 import OFUser from '@/app/models/usermodel';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, context: unknown) {
+  // Cast context as unknown then extract params carefully
+  // OR just treat as any but keep the cast local and limited
+  const { params } = context as { params: { id: string } };
   console.log("[API] GET /api/users/[id] - Starting request");
   
   try {
@@ -141,12 +144,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-  export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, context: unknown) {
+  // Cast context as unknown then extract params carefully
+  // OR just treat as any but keep the cast local and limited
+  const { params } = context as { params: { id: string } };
     const session = await getServerSession(authOptions);
     if (!session) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
-    const { id } = await params;
+    const { id } = params;
     if (session.user?.id !== id) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }

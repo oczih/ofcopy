@@ -1,5 +1,6 @@
 import mongoose, { Schema, model} from "mongoose";
 import { Message } from "./messagemodel";
+import { PostDocument } from "./postmodel";
 
 // Subscription interface for better type safety
 export interface Subscription {
@@ -15,10 +16,10 @@ export interface Subscription {
   autoRenew: boolean;
 }
 export interface Purchase {
-  id: string
-  price: number; 
-  creatorId: mongoose.Types.ObjectId
-  postId: string;
+  id: string;
+  price: number;
+  creatorId: mongoose.Types.ObjectId;
+  postId: string | PostDocument;  // allow populated or unpopulated
   date: Date;
 }
 // Following interface (reference only)

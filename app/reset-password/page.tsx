@@ -1,11 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast, Toaster } from "react-hot-toast";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
 
-export default function ResetPasswordPage() {
+export default function ResetPasswordPageWrapper() {
+  return (
+    <Suspense fallback={<div className="text-white text-center">Loading...</div>}>
+      <ResetPasswordPage />
+    </Suspense>
+  );
+}
+function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -46,6 +53,7 @@ export default function ResetPasswordPage() {
         router.push("/login");
       }
     } catch (err) {
+      console.error(err)
       toast.error("Something went wrong.");
     } finally {
       setLoading(false);

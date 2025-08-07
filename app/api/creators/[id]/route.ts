@@ -7,7 +7,10 @@ import { connectDB } from '../../../../lib/mongoose';
 import mongoose from 'mongoose';
 
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: unknown) {
+  // Cast context as unknown then extract params carefully
+  // OR just treat as any but keep the cast local and limited
+  const { params } = context as { params: { id: string } };
   console.log("[API] GET /api/creators/[id] - Starting request");
 
   try {

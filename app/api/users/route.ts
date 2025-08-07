@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongoose';
 // Import WalkRoute first to ensure it's registered
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import Creator from '@/app/models/creatormodel';
 import OFUser from '@/app/models/usermodel';
-import { auth } from '@/lib/auth-client';
 export async function GET() {
   await connectDB();
   

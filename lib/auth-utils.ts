@@ -14,9 +14,13 @@ export async function verifyPassword(password: string, hashedPassword: string): 
   return bcrypt.compare(password, hashedPassword);
 }
 
-export async function createVerificationToken(email: string, type: 'email_verification' | 'password_reset') {
+export async function createVerificationToken(
+  email: string,
+  type: 'email_verification' | 'password_reset' | 'password_confirm' | 'password_add',
+  expiresInMs: number = 24 * 60 * 60 * 1000 // default 24 hours
+) {
   const token = generateVerificationToken();
-  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  const expires = new Date(Date.now() + expiresInMs);
 
   await VerificationToken.create({
     email,

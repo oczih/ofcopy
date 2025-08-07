@@ -78,7 +78,6 @@ export default function AdminDashboard() {
     if (session && session.user.email === ADMIN_EMAIL) {
       fetchApplications(tab);
     }
-    // eslint-disable-next-line
   }, [session, tab]);
 
   async function fetchApplications(status: string) {

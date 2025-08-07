@@ -54,7 +54,8 @@ type UserProfileData = {
   viewingUser: User,
   purchasedContent: MediaPost[],
   totalSpent: number,
-  isOwnProfile: boolean
+  isOwnProfile: boolean,
+  relationshipStatus: 'subscriber' | 'follower' | 'none'  // Add this line
 }
 export default function ProfileContent({ 
   userViewed, 
@@ -62,6 +63,7 @@ export default function ProfileContent({
   purchasedContent, 
   totalSpent, 
   isOwnProfile, 
+  relationshipStatus
 }: UserProfileData) {
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -71,7 +73,9 @@ export default function ProfileContent({
   const [currentUser, setCurrentUser] = useState<User>(viewingUser);
   const [status, setStatus] = useState<'subscriber' | 'follower' | 'none'>('none');
   const [userStatsLoading, setUserStatsLoading] = useState(true);
-
+  useEffect(() => {
+    setStatus(relationshipStatus);
+  }, [relationshipStatus]);
   useEffect(() => {
     async function fetchCreator() {
       const creators = await creatorservice.get();

@@ -5,7 +5,10 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-client';
 
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: unknown) {
+  // Cast context as unknown then extract params carefully
+  // OR just treat as any but keep the cast local and limited
+  const { params } = context as { params: { id: string } };
   await connectDB();
   const { id } = params;
 
@@ -21,14 +24,17 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: unknown) {
+  // Cast context as unknown then extract params carefully
+  // OR just treat as any but keep the cast local and limited
+  const { params } = context as { params: { id: string } };
   const session = await getServerSession(authOptions);
 if (!session || session.user.email !== process.env.SECEMAIL) {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 }
   await connectDB();
   const { id } = params;
-  const body = await req.json();
+  const body = await request.json();
 
   try {
     const update: Partial<{ caption: string; viewable: boolean; likes: string[] }> = {};
@@ -70,7 +76,10 @@ if (!session || session.user.email !== process.env.SECEMAIL) {
 }
 
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: unknown) {
+  // Cast context as unknown then extract params carefully
+  // OR just treat as any but keep the cast local and limited
+  const { params } = context as { params: { id: string } };
   const session = await getServerSession(authOptions);
 if (!session || session.user.email !== process.env.SECEMAIL) {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

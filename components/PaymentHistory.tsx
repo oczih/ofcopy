@@ -20,7 +20,7 @@ interface PaymentHistoryProps {
 
 const PaymentHistory: React.FC<PaymentHistoryProps> = ({ session }) => {
 
-  const purchases = session?.user.purchases || [];
+  const purchases = (session?.user.purchases || []) as unknown as Purchase[];
   const subscriptions = session?.user?.subscriptions || [];
 
   // Combine purchases and subscription payments into a unified history

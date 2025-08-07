@@ -1,4 +1,4 @@
-import NextAuth, { NextAuthOptions } from "next-auth";
+import NextAuth, { NextAuthOptions, RequestInternal, Session, User } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import TwitterProvider from "next-auth/providers/twitter";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -32,48 +32,52 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(
+        credentials: Record<"email" | "password", string> | undefined,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        _req: Pick<RequestInternal, "headers" | "body" | "query" | "method">
+      ): Promise<User | null> {
+
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email and password are required");
         }
-
+    
         try {
           await connectDB();
-
+    
           const user = await OFUser.findOne({ 
             email: credentials.email,
             oauthProvider: "credentials" // Only credentials users
           });
-
+    
           if (!user || !user.password) {
             throw new Error("Invalid email or password");
           }
-
-          // Check if email is verified
+    
           if (!user.emailVerified) {
             throw new Error("Please verify your email before signing in. Check your inbox for the verification link.");
           }
-
+    
           const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
-
+    
           if (!isPasswordValid) {
             throw new Error("Invalid email or password");
           }
-
+    
+          // Return properly typed User object
           return {
             id: user._id.toString(),
             email: user.email,
             name: user.name,
-            username: user.username,
-            image: user.image,
-            membership: user.membership
-          };
+            image: user.image ?? null,
+          } as User;
         } catch (error) {
           console.error("Credentials auth error:", error);
           throw error;
         }
       }
     })
+    
   ],
   debug: process.env.NODE_ENV === 'development',
   session: {
@@ -122,7 +126,8 @@ export const authOptions: NextAuthOptions = {
 
         user.id = existingUser._id.toString();
         user.email = existingUser.email;
-        user.membership = existingUser.membership;
+        // Type assertion to add custom properties
+        (user as User).membership = existingUser.membership;
       }
 
       if (provider === "twitter") {
@@ -147,7 +152,8 @@ export const authOptions: NextAuthOptions = {
 
         user.id = existingUser._id.toString();
         user.email = existingUser.email;
-        user.membership = existingUser.membership;
+        // Type assertion to add custom properties
+        (user as User).membership = existingUser.membership;
       }
 
       if (provider === "credentials") {
@@ -176,9 +182,9 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         console.log("[JWT] Setting token ID:", token.id, "from user object");
-        token.username = user.username;
+        token.username = (user as User).username;
         token.email = user.email;
-        token.membership = user.membership ?? false;
+        token.membership = (user as User).membership ?? false;
       } else {
         console.log("[JWT] No user object, preserving existing token ID:", token.id);
       }
@@ -226,31 +232,32 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         console.log("[Session] Found user:", user._id.toString(), "Token ID:", token.id);
       
-        session.user.id = user._id.toString();
-        session.user.username = user.username;
+        // Type assertion to add custom properties to session
+        (session.user as User).id = user._id.toString();
+        (session.user as User).username = user.username;
         session.user.email = user.email;
-        session.user.password = user.password
-        session.user.avatarKey = user.avatarKey;
+        (session.user as User).password = user.password;
+        (session.user as User).avatarKey = user.avatarKey;
         session.user.name = user.name;
-        session.user.age = user.age;
-        session.user.googleId = user.googleId;
-        session.user.membership = user.membership;
-        session.user.hasAccess = user.hasAccess;
-        session.user.lastUsernameChange = user.lastUsernameChange;
-        session.user.isUsernameChangeBlocked = user.isUsernameChangeBlocked;
-        session.user.subscriptions = user.subscriptions || [];
-        session.user.notifications = user.notifications || [];
-        session.user.following = user.following || [];
-        session.user.creator = isCreator;
-        session.user.bio = user.bio
-        session.user.emailVerified = user.emailVerified;
-        session.user.location = user.location
-        session.user.createdAt = user.createdAt
+        (session.user as User).age = user.age;
+        (session.user as User).googleId = user.googleId;
+        (session.user as User).membership = user.membership;
+        (session.user as User).hasAccess = user.hasAccess;
+        (session.user as User).lastUsernameChange = user.lastUsernameChange;
+        (session.user as User).isUsernameChangeBlocked = user.isUsernameChangeBlocked;
+        (session.user as User).subscriptions = user.subscriptions || [];
+        (session.user as User).notifications = user.notifications || [];
+        (session.user as User).following = user.following || [];
+        (session.user as User).creator = isCreator;
+        (session.user as User).bio = user.bio;
+        (session.user as User).emailVerified = user.emailVerified;
+        (session.user as User).location = user.location;
+        (session.user as User).createdAt = user.createdAt;
       } else {
         console.log("[Session] No user found in database");
       }
       
-      session.accessToken = token.accessToken as string;
+      (session as Session).accessToken = token.accessToken as string;
       
       return session;
     },

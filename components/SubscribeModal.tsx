@@ -1,17 +1,15 @@
+import { Creator } from '@/app/types';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
-export default function SubscribeModal({ open, onClose, creator, avatarUrl }) {
+export default function SubscribeModal({ open, onClose, creator, avatarUrl }: {open: boolean,
+  onClose: () => void, creator: Creator | null, avatarUrl: string | null
+}) {
   const [step, setStep] = useState('select');
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   useEffect(() => {
-    if (open) {
-      // Lock scroll
+
       document.body.style.overflow = 'hidden';
-    } else {
-      // Unlock scroll
-      document.body.style.overflow = 'unset';
-    }
 
     // Cleanup function to ensure scroll is unlocked when component unmounts
     return () => {
@@ -71,7 +69,7 @@ export default function SubscribeModal({ open, onClose, creator, avatarUrl }) {
                         <div className="w-full h-full rounded-full overflow-hidden bg-slate-800">
                           <Image
                             src={avatarUrl || ""}
-                            alt={creator.name || creator.username}
+                            alt={creator?.name || creator?.username || ""}
                             className="w-full h-full object-cover"
                             style={{ imageRendering: 'auto' }}
                             height={200}
@@ -84,7 +82,7 @@ export default function SubscribeModal({ open, onClose, creator, avatarUrl }) {
 
                   <div className="mb-8 space-y-2">
                     <h3 className="text-xl font-semibold text-white">
-                      {creator.name || creator.username}
+                      {creator?.name || creator?.username}
                     </h3>
                     <p className="text-gray-400">
                       Subscribe to access exclusive content and support your favorite creator
@@ -119,9 +117,9 @@ export default function SubscribeModal({ open, onClose, creator, avatarUrl }) {
                   <div className='border border-slate-700/40 rounded-md p-2 mb-5 flex items-center justify-center'>
   <div>
     <div className='flex flex-col text-left'>
-      <span className='text-white text-xl font-bold'>${creator.price}/MONTH</span>
+      <span className='text-white text-xl font-bold'>${creator?.price }/MONTH</span>
       <span className='text-gray-400 text-sm mt-1'>
-        Renews for ${creator.price}/month on {formattedDate}. Risk free, cancel anytime
+        Renews for ${creator?.price}/month on {formattedDate}. Risk free, cancel anytime
       </span>
     </div>
   </div>
@@ -176,8 +174,10 @@ export default function SubscribeModal({ open, onClose, creator, avatarUrl }) {
     </>
   );
 }
-
-function PayPanel({ onCancel }) {
+interface PayPanelProps {
+  onCancel: () => void;
+}
+function PayPanel({ onCancel }: PayPanelProps) {
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">

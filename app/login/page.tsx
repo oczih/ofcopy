@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { signIn, getSession, useSession } from "next-auth/react";
 import { toast, Toaster } from 'react-hot-toast';
@@ -7,7 +7,15 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 
-export default function LoginPage() {
+export default function LoginPageWrapper() {
+  return (
+    <Suspense fallback={<div className="text-white text-center">Loading...</div>}>
+      <LoginPage />
+    </Suspense>
+  );
+}
+
+  function LoginPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();

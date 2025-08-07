@@ -50,7 +50,7 @@ function MessagesApp() {
       creator: {
         name: subscription.creatorName,
         username: subscription.creatorUsername,
-        avatar: subscription.creatorImage || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+        avatar: subscription.avatarKey || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
         isOnline: Math.random() > 0.5 // Random online status for demo
       },
       lastMessage: messages[Math.floor(Math.random() * messages.length)],
@@ -58,16 +58,21 @@ function MessagesApp() {
       unreadCount: Math.floor(Math.random() * 3)
     };
   }) || [];
-  type Conversation = {
+  type ActualConversation = {
     id: number,
-    sender: string,
-    content: string,
+    creator: {
+      name: string,
+      username: string,
+      avatar: string,
+      isOnline: boolean
+    },
+    lastMessage: string,
     timestamp: string,
-    isRead: boolean
+    unreadCount: number
   }
-  const handleConversationClick = (conversation: Conversation) => {
-    setSelectedConversation(conversation.id)
-    setSelected(true)
+  const handleConversationClick = (conversation: ActualConversation) => {
+    setSelectedConversation(conversation.id);
+    setSelected(true);
   }
   // Generate messages based on selected conversation
   const messages = selectedConversation >= 0 && conversations[selectedConversation] ? [
