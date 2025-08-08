@@ -100,7 +100,6 @@ function DiscoverApp() {
     fetchCreators();
   }, []);
 
-  console.log("Creators: ", creators);
 
   const filteredCreators = creators?.filter(creator => {
     const matchesSearch = creator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

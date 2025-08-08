@@ -44,9 +44,6 @@ function UploadPage() {
         const rightcreator = creators.creators.find(
           (c: Creator) => c.user === session?.user.id
         );
-        console.log("Creators", rightcreator)
-        console.log(session?.user.id)
-        console.log(creators.creators[0])
         if (!rightcreator) {
           return (
             <div>Creator not found</div>

@@ -56,7 +56,7 @@ function ApplyCreatorPage() {
       if (!formData.handle) return;
   
       try {
-        const fetchedUsers: User[] = await userservice.get();
+        const fetchedUsers: User[] = await userservice.getPublicUsers();
         const userfound = fetchedUsers.find((u: User) => u.username === formData.handle)
         if(userfound){
           setUsernameAvailable(false)
@@ -170,7 +170,6 @@ function ApplyCreatorPage() {
         }
         break;
       case 6:
-        console.log(formData)
         if (!formData.idFrontPhoto || !formData.selfieWithId || !formData.birthDate || !formData.fullLegalName) {
           setError("Please complete all identity verification requirements");
           return false;

@@ -14,8 +14,6 @@ export async function POST(request: NextRequest) {
   }
     try {
       const { email, password } = await request.json();
-    console.log("email", email)
-    console.log("password", password)
       if (!email || !password) {
         return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
       }
@@ -23,7 +21,6 @@ export async function POST(request: NextRequest) {
       await connectDB();
   
       const user = await OFUser.findOne({ email });
-      console.log("here's user:", user)
       if (!user) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }

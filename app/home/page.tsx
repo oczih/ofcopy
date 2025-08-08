@@ -32,7 +32,10 @@ function App() {
   const { data: session, status } = useSession();
   const [creators, setCreators] = useState<Creator[] | null>(null);
   const [page, setPage] = useState("Feed");
-  const [users, setUsers] = useState<User[] | null>(null);
+  interface UsersResponse {
+    users: User[];
+  }
+  const [users, setUsers] = useState<UsersResponse[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [showBanner, setShowBanner] = useState(true);
   const [stats, setStats] = useState({
@@ -45,7 +48,6 @@ function App() {
     averageSubscribers: 0,
     averagePrice: 0
   });
-  console.log("creatorit: ", users)
   const HIDE_DURATION = 2 * 60 * 1000;
   useEffect(() => {
     if (status !== 'loading') {
@@ -75,8 +77,8 @@ function App() {
         } else {
           fetchedUsers = await userservice.getPublicUsers();
         }
-  
-        setUsers(fetchedUsers.users);
+        
+        setUsers({users: fetchedUsers});
         
         if (fetchedCreators) {
           const sortedCreators = fetchedCreators.creators.map((creator: Creator) => ({

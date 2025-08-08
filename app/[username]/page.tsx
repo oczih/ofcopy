@@ -30,7 +30,6 @@ export default async function UserProfilePage({ params }: { params: Promise<Para
 
   const user = await UserModel.findOne({ username });
   if (!user) notFound();
-  console.log("useri: ",user)
   const isOwnProfile = session?.user?.username === user.username;
 
   let relationshipStatus: 'subscriber' | 'follower' | 'none' = 'none';

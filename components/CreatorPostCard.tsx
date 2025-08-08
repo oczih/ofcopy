@@ -260,7 +260,7 @@ useEffect(() => {
   }
   const handleDeletePost = (id: string) => {
     try {
-      postservice.deletePost(id)}
+      postservice.getPrivatePostById(id)}
       catch(error){
         console.error(error)
         alert('Failed to delete post')
