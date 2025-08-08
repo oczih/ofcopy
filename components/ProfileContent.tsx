@@ -541,7 +541,7 @@ export default function ProfileContent({
     useEffect(() => {
   const fetchData = async () => {
     try {
-      const fetchedUsers = await userservice.get();  // this should return { users: User[] }
+      const fetchedUsers = await userservice.getPublicUsers();  // this should return { users: User[] }
       setUsers({ users: fetchedUsers });
     } catch (error) {
       console.error("Couldn't fetch data: ", error);
@@ -673,7 +673,7 @@ export default function ProfileContent({
     useEffect(() => {
       const fetchData = async () => {
         try {
-          const fetchedUsers = await userservice.get();
+          const fetchedUsers = await userservice.getPublicUsers();
           setUsers({users: fetchedUsers});
         } catch (error) {
           console.error("Couldn't fetch data: ", error);
