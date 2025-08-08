@@ -12,12 +12,8 @@ export async function GET() {
     }
 
     // Get all public creators (public only)
-    const publicCreators = await getAllCreators(false);
-
-    // Get nonpublic creators that belong to this user (private)
-    const nonPublicCreators = await getNonPublicCreatorsByUserId(session.user.id);
-
-    // Merge arrays
+    const publicCreators = await getAllCreators(true); // fullFields = true
+    const nonPublicCreators = await getNonPublicCreatorsByUserId(session.user.id, true);
     const combinedCreators = [...publicCreators, ...nonPublicCreators];
 
     return NextResponse.json({ creators: combinedCreators });

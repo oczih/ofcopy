@@ -35,7 +35,6 @@ function DiscoverApp() {
       try {
         setLoading(true);
         const fetchedCreators = await creatorservice.get();
-  
         const creatorsWithMedia = await Promise.all(
           fetchedCreators.creators.map(async (creator: Creator) => {
             let image = creator.image;

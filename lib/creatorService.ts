@@ -39,10 +39,25 @@ export function sanitizeCreator(creator: LeanCreator): PublicCreator {
     user: creator.user.toString(), // include user id as string
   };
 }
+export type CreatorWithPosts = PublicCreator & {
+  posts?: any[]; // adjust type as needed
+};
+
+export function sanitizeCreatorWithPosts(creator: any): CreatorWithPosts {
+  return {
+    ...sanitizeCreator(creator),
+    posts: creator.posts ?? [],
+  };
+}
 
 export async function getAllCreators(fullFields: boolean = false) {
   if (fullFields) {
-    return CreatorModel.find({}).populate("followers").lean();
+    const creators = await CreatorModel.find({})
+  .populate("followers")
+  .populate("posts")
+  .lean();
+  
+    return creators.map(sanitizeCreatorWithPosts);
   }
 
   // Include 'user' field explicitly
