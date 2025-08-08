@@ -117,9 +117,11 @@ function App() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ s3Key: post.s3Key }),
             });
-  
+            
+            
             if (res.ok) {
               const data = await res.json();
+              console.log("ressi", data)
               signedUrlsMap[post._id] = data.downloadUrl;  // <-- use signedUrl here
             }
           } catch (error) {

@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "www.fanslio.com",
+        hostname: "cdn.fanslio.com",
         pathname: "/**",
       },
       {

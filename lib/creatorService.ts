@@ -1,6 +1,6 @@
 import CreatorModel from "@/app/models/creatormodel";
 import mongoose from "mongoose";
-import { Follower, Gender } from "@/app/types";
+import { Creator, Follower, Gender, Post } from "@/app/types";
 
 type PublicCreator = {
   id: string;
@@ -15,7 +15,7 @@ type PublicCreator = {
 };
 
 type LeanCreator = {
-  _id: mongoose.Types.ObjectId;
+  id: mongoose.Types.ObjectId;
   username: string;
   name: string;
   bio: string;
@@ -28,7 +28,7 @@ type LeanCreator = {
 
 export function sanitizeCreator(creator: LeanCreator): PublicCreator {
   return {
-    id: creator._id.toString(),
+    id: creator.id.toString(),
     username: creator.username,
     name: creator.name,
     bio: creator.bio,
@@ -40,10 +40,10 @@ export function sanitizeCreator(creator: LeanCreator): PublicCreator {
   };
 }
 export type CreatorWithPosts = PublicCreator & {
-  posts?: any[]; // adjust type as needed
+  posts?: Post[]; // adjust type as needed
 };
 
-export function sanitizeCreatorWithPosts(creator: any): CreatorWithPosts {
+export function sanitizeCreatorWithPosts(creator: Creator): CreatorWithPosts {
   return {
     ...sanitizeCreator(creator),
     posts: creator.posts ?? [],
