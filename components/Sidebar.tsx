@@ -35,7 +35,7 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
   const [loading, setLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
-  
+    console.log("moro: ", session?.user)
   const menuItems = [
     { id: "feed", label: "Home Feed", icon: Home, color: "pink", href: "/home" },
     { id: "discover", label: "Discover", icon: Compass, color: "purple", href: "/discover" },
@@ -85,7 +85,7 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
             body: JSON.stringify({ s3Key: key }),
           });
           
-          console.log("res:", res)
+          console.log("res:", res.body)
           
           if (!res.ok) {
             throw new Error(`Failed to fetch avatar URL: ${res.status}`);
@@ -253,11 +253,11 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
           {creator && session?.user && !isCollapsed && (
             <div className="flex gap-8 mt-4 justify-center items-center opacity-100 transition-opacity duration-300">
               <div className="flex flex-col items-center">
-                <span className="text-white font-bold text-lg">{creator.followers.length ?? 0}</span>
+                <span className="text-white font-bold text-lg">{creator.followersCount ?? 0}</span>
                 <span className="text-xs text-gray-400">Followers</span>
               </div>
               <div className="flex flex-col items-center">
-                <span className="text-pink-400 font-bold text-lg">{creator.subscribers.length ?? 0}</span>
+                <span className="text-pink-400 font-bold text-lg">{creator.subscribersCount ?? 0}</span>
                 <span className="text-xs text-gray-400">Subscribers</span>
               </div>
             </div>

@@ -45,6 +45,7 @@ function App() {
     averageSubscribers: 0,
     averagePrice: 0
   });
+  console.log("creatorit: ", creators)
   const HIDE_DURATION = 2 * 60 * 1000;
   useEffect(() => {
     if (status !== 'loading') {
@@ -62,10 +63,19 @@ function App() {
     const fetchData = async () => {
       try {
         const [fetchedCreators, fetchedStats] = await Promise.all([
-          creatorservice.get(),
+          creatorservice.getCombined(),
           statsservice.get()
         ]);
-        const fetchedUsers: User[] = await userservice.get();
+        
+        let fetchedUsers: User[] = [];
+  
+        // If user is authenticated, fetch private users, else fetch public users
+        if (status === 'authenticated') {
+          fetchedUsers = await userservice.getPrivateUsers();
+        } else {
+          fetchedUsers = await userservice.getPublicUsers();
+        }
+  
         setUsers(fetchedUsers);
         
         if (fetchedCreators) {
@@ -79,7 +89,7 @@ function App() {
         } else {
           setCreators([]);
         }
-
+  
         setStats(fetchedStats);
       } catch (error) {
         console.error("Couldn't fetch data: ", error);
@@ -87,7 +97,8 @@ function App() {
       }
     };
     fetchData();
-  }, []);
+  }, [status]);
+  
   const [postSignedUrls, setPostSignedUrls] = useState<Record<string, string>>({});
   useEffect(() => {
     async function fetchSignedUrls() {

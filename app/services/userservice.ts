@@ -1,34 +1,65 @@
 import axios from 'axios';
 import { User } from '@/app/types';
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/users`;
 
-const get = async (): Promise<User[]> => {
-    try {
-        const reponse = await axios.get(API_URL)
-        return reponse.data
-    }catch(error){
-        console.error('Error fetching users:', error)
-        throw error
-    }
-}
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
-const getOne = async (id: string): Promise<{ user: User }> => {
-    try {
-        const response = await axios.get(`${API_URL}/${id}`);
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching user:', error);
-        throw error;
-    }
-}
+const publicUsersUrl = `${BASE_URL}/api/public-users`;
+const privateUsersUrl = `${BASE_URL}/api/users`; // Your private users API
+
+const getPublicUsers = async (): Promise<User[]> => {
+  try {
+    const response = await axios.get(publicUsersUrl);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching public users:', error);
+    throw error;
+  }
+};
+
+const getPrivateUsers = async (): Promise<User[]> => {
+  try {
+    const response = await axios.get(privateUsersUrl, {
+      // Add auth if needed, e.g. headers or withCredentials
+      // headers: { Authorization: `Bearer ${token}` },
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching private users:', error);
+    throw error;
+  }
+};
+
+const getOne = async (id: string, isPublic = false): Promise<{ user: User }> => {
+  try {
+    const url = isPublic ? `${publicUsersUrl}/${id}` : `${privateUsersUrl}/${id}`;
+    const response = await axios.get(url, {
+      withCredentials: !isPublic,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching user ${id}:`, error);
+    throw error;
+  }
+};
+
 const update = async (id: string, newData: Partial<User>): Promise<{ user: User }> => {
-    const response = await axios.put(`${API_URL}/${id}`, newData);
-    return response.data; // { user: updatedUser }
-  };
+  try {
+    const response = await axios.put(`${privateUsersUrl}/${id}`, newData, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating user ${id}:`, error);
+    throw error;
+  }
+};
 
-// eslint-disable-next-line import/no-anonymous-default-export
-export default {
-    update,
-    getOne,
-    get,
-}
+const userService = {
+  getPublicUsers,
+  getPrivateUsers,
+  getOne,
+  update,
+};
+
+export default userService

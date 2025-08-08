@@ -1,0 +1,94 @@
+import { NextRequest, NextResponse } from "next/server";
+import { connectDB } from "@/lib/mongoose";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth-client";
+import OFUser from "@/app/models/usermodel";
+import mongoose from "mongoose";
+
+async function getCurrentUserId() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return null;
+  return session.user.id;
+}
+
+export async function GET() {
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    await connectDB();
+    const user = await OFUser.findById(userId).lean();
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ user });
+  } catch (error) {
+    console.error("Error fetching my user:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    await connectDB();
+
+    const body = await request.json();
+    const allowedUpdates = ["username", "bio", "avatarKey", "gender"] as const;
+    type AllowedUpdateFields = typeof allowedUpdates[number];
+
+    const updates: Partial<Record<AllowedUpdateFields, any>> = {};
+    for (const field of allowedUpdates) {
+      if (body[field] !== undefined) {
+        updates[field] = body[field];
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
+    }
+
+    const updatedUser = await OFUser.findByIdAndUpdate(
+      userId,
+      { $set: updates },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ user: updatedUser });
+  } catch (error) {
+    console.error("Error updating my user:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function DELETE() {
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+    }
+
+    await connectDB();
+    await OFUser.findByIdAndDelete(userId);
+
+    return NextResponse.json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting my user:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
