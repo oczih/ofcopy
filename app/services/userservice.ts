@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { User } from '@/app/types';
+import { getSession } from 'next-auth/react';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -17,17 +18,17 @@ const getPublicUsers = async (): Promise<User[]> => {
 };
 
 const getPrivateUsers = async (): Promise<User[]> => {
-  try {
-    const response = await axios.get(privateUsersUrl, {
-      // Add auth if needed, e.g. headers or withCredentials
-      // headers: { Authorization: `Bearer ${token}` },
-      withCredentials: true,
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching private users:', error);
-    throw error;
-  }
+  const session = await getSession();
+  console.log("Session data:", session);
+  const token = session?.accessToken; // depends on how your NextAuth is configured
+  
+  const response = await axios.get(privateUsersUrl, {
+    headers: { 
+      Authorization: `Bearer ${token}`,
+    },
+    withCredentials: true, // only if cookies are also needed
+  });
+  return response.data;
 };
 
 const getOne = async (id: string, isPublic = false): Promise<{ user: User }> => {

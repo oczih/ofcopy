@@ -28,7 +28,7 @@ type LeanCreator = {
 
 export function sanitizeCreator(creator: LeanCreator): PublicCreator {
   return {
-    id: creator.id.toString(),
+    id: creator.id,
     username: creator.username,
     name: creator.name,
     bio: creator.bio,

@@ -25,7 +25,6 @@ async function getSignedUrl(fileName: string, contentType: string): Promise<Sign
     s3Key: `uploads/${fileName}`,
     contentType,
   });
-  console.log(response.data)
   return response.data;
 }
 

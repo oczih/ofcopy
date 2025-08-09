@@ -51,11 +51,13 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
     const fetchCreator = async () => {
       if (session?.user?.id) {
         try {
-          const creatorsData = await creatorservice.get();
-          console.log("Creatordata:", creatorsData)
-          const found = creatorsData.creators.find((c: Creator) => c.user === session.user.id);
-          console.log("Found:", found)
-          setCreator(found || null);
+          const res = await fetch("/api/creators");
+          if (res.ok) {
+            const data = await res.json();
+            const found = data.creators.find((c: Creator) => c.user === session.user.id);
+            setCreator(found || null);
+          }
+          
         } catch (error) {
           setCreator(null);
           throw error
@@ -253,11 +255,11 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
           {creator && session?.user && !isCollapsed && (
             <div className="flex gap-8 mt-4 justify-center items-center opacity-100 transition-opacity duration-300">
               <div className="flex flex-col items-center">
-                <span className="text-white font-bold text-lg">{creator.followers.length ?? 0}</span>
+                <span className="text-white font-bold text-lg">{creator?.followers?.length ?? 0}</span>
                 <span className="text-xs text-gray-400">Followers</span>
               </div>
               <div className="flex flex-col items-center">
-                <span className="text-pink-400 font-bold text-lg">{creator.subscribers.length ?? 0}</span>
+                <span className="text-pink-400 font-bold text-lg">{creator?.subscribers?.length ?? 0}</span>
                 <span className="text-xs text-gray-400">Subscribers</span>
               </div>
             </div>

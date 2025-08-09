@@ -33,12 +33,10 @@
 
       // Clean the s3Key - remove leading slashes and ensure it's a string
       const cleanedKey = s3Key.toString().replace(/^\/+/, "");
-      console.log("Cleaned s3Key:", cleanedKey);
 
       // Construct the full URL
       const cfDomain = process.env.CF_DOMAIN.replace(/\/$/, ""); // Remove trailing slash
       const fullUrl = `${cfDomain}/${cleanedKey}`;
-      console.log("Full URL:", fullUrl);
 
       // Validate that we have a proper URL structure
       try {
@@ -53,7 +51,6 @@
       
       // Generate expiration time (1 hour from now)
       const expirationTime = new Date(Date.now() + 3600 * 1000);
-      console.log("Expiration time:", expirationTime.toISOString());
 
       // Generate the signed URL
       const signedUrl = getSignedUrl({

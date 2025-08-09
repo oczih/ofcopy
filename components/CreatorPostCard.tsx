@@ -206,11 +206,13 @@ const fetchUserAvatarUrl = async (user: User) => {
   }
 };
 useEffect(() => {
-  users.forEach(user => {
-    if (user.avatarKey && !userAvatars[user.id]) {
-      fetchUserAvatarUrl(user);
-    }
-  });
+  if (Array.isArray(users)) {
+    users.forEach(user => {
+      if (user.avatarKey && !userAvatars[user.id]) {
+        fetchUserAvatarUrl(user);
+      }
+    });
+  }
 }, [userAvatars, users]);
 
   const isLikedByCurrentUser = likes.some(
