@@ -18,7 +18,7 @@ interface AppProps {
   users: User[];
 }
 
-export default function App({ creators, users, session}: AppProps) {
+export default function App({ creators, session}: AppProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [showBanner, setShowBanner] = useState(true);

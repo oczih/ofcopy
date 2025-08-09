@@ -56,6 +56,9 @@ type UserProfileData = {
   totalSpent: number,
   isOwnProfile: boolean,
   relationshipStatus: 'subscriber' | 'follower' | 'none'  // Add this line
+  users: User[],
+  creators: Creator[],
+  session: any
 }
 export default function ProfileContent({ 
   userViewed, 
@@ -63,7 +66,10 @@ export default function ProfileContent({
   purchasedContent, 
   totalSpent, 
   isOwnProfile, 
-  relationshipStatus
+  relationshipStatus,
+  users,
+  creators,
+  session
 }: UserProfileData) {
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -78,9 +84,8 @@ export default function ProfileContent({
   }, [relationshipStatus]);
   useEffect(() => {
     async function fetchCreator() {
-      const creators = await creatorservice.get();
-      // Find creator where userViewed.id matches either c.user or c.user.id
-      const found = creators.creators.find(
+
+      const found = creators.find(
         (c: Creator) => c.user === userViewed.id
       );
       if (found) {
@@ -92,7 +97,7 @@ export default function ProfileContent({
       setUserStatsLoading(false);
     }
     if (userViewed?.id) fetchCreator();
-  }, [userViewed]);
+  }, [userViewed, creators]);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
@@ -434,6 +439,8 @@ export default function ProfileContent({
             postSignedUrls={postSignedUrls}
             handleFollow={handleFollow}
             user={viewingUser}
+            users={users}
+            session={session}
           />
         )}
       </div>
@@ -450,7 +457,9 @@ export default function ProfileContent({
     viewingUser,
     postSignedUrls,
     handleFollow,
-    user
+    user,
+    users,
+    session
   }: {
     purchasedContent: MediaPost[];
     creator: Creator;
@@ -459,7 +468,9 @@ export default function ProfileContent({
     viewingUser: User
     postSignedUrls: Record<string, string>;
     handleFollow: (creator: Creator) => Promise<void>
-    user: User
+    user: User,
+    users: User[],
+    session: any
   }) {
     const [activeTab, setActiveTab] = useState(creator ? 'posts' : 'purchased');
     const tabs = [
@@ -500,7 +511,7 @@ export default function ProfileContent({
         {/* Tab Content */}
         <div className="p-6">
           {activeTab === 'posts' && (
-            <PostsGrid creator={creator} status={status} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user} handleFollow={handleFollow} />
+            <PostsGrid creator={creator} status={status} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user} handleFollow={handleFollow} users={users} session={session} />
           )}
           {activeTab === 'purchased' && (
             <PurchasedPostsGrid creator={creator} handleFollow={handleFollow} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user}/>
@@ -540,15 +551,19 @@ export default function ProfileContent({
     const allPosts = creator?.posts || [];
     useEffect(() => {
   const fetchData = async () => {
-    try {
-      const fetchedUsers = await userservice.getPublicUsers();  // this should return { users: User[] }
-      setUsers({ users: fetchedUsers });
+    try {  // this should return { users: User[] }
+      if(!users){
+        setUsers(null)
+      }
+      else{
+        setUsers({ users });
+      }
     } catch (error) {
       console.error("Couldn't fetch data: ", error);
     }
   };
   fetchData();
-}, []);
+}, [users]);
   const { data: session} = useSession();
   if (!creator) return null;
     // Filter posts based on relationship status
@@ -578,7 +593,7 @@ export default function ProfileContent({
             isFollower={isFollower}
             isSubscriber={isSubscriber}
             session={session}
-            users={users?.users ?? []}
+            users={users ?? []}
             user={user}
             signedUrl={postSignedUrls[post._id]}
             handleFollow={handleFollow}
@@ -656,31 +671,19 @@ export default function ProfileContent({
     viewingUser,
     postSignedUrls,
     handleFollow,
-    user
+    user,
+    users,
+    session
   }: {
     creator?: Creator;
     status: 'subscriber' | 'follower' | 'none';
     viewingUser: User;
     postSignedUrls: { [key: string]: string };
     handleFollow: (creator: Creator) => void;
-    user: User
+    user: User,
+    users: User[],
+    session: any
   }) {
-    interface UsersResponse {
-      users: User[];
-    }
-    const [users, setUsers] = useState<UsersResponse | null>(null);
-    const { data: session} = useSession();
-    useEffect(() => {
-      const fetchData = async () => {
-        try {
-          const fetchedUsers = await userservice.getPublicUsers();
-          setUsers({users: fetchedUsers});
-        } catch (error) {
-          console.error("Couldn't fetch data: ", error);
-        }
-      };
-      fetchData();
-    }, []);
     if (!creator) return null;
     
     const allPosts = creator.posts || [];
@@ -707,7 +710,7 @@ export default function ProfileContent({
           isSubscriber={isSubscriber}
           session={session}
           
-          users={users?.users ?? []}
+          users={users ?? []}
           signedUrl={postSignedUrls[post._id]}
           user={user}
           handleFollow={handleFollow}
