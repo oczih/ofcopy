@@ -441,7 +441,7 @@ export function PostCard({
 
   const handleDeletePost = async (id: string) => {
     try {
-      await postservice.deletePost(id);
+      await postservice.deletePrivatePost(id);
       alert('Post deleted');
     } catch (error) {
       console.error(error);

@@ -7,7 +7,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth-client";
 import mongoose from "mongoose";
 
-export async function POST(request: NextRequest, context: { params: { id: string } }) {
+export async function POST(request: NextRequest, context: unknown) {
+  const { params } = context as { params: { id: string } };
   try {
     // ✅ Only system/admin can approve or reject
     const session = await getServerSession(authOptions);
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest, context: { params: { id: string
 
     await connectDB();
 
-    const { id } = context.params;
+    const { id } = params;
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid application ID" }, { status: 400 });
     }

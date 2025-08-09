@@ -64,7 +64,7 @@ function EditProfile() {
           } catch (error) {
             console.error("Error fetching avatar URL:", error);
           }
-          setCreator(rightCreator)
+          setCreator(rightCreator ?? null)
         } catch (err) {
           console.error("Failed to fetch creator data:", err);
           setAvatarUrl(null);

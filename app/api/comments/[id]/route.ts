@@ -5,10 +5,12 @@ import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-client";
 
+
 export async function DELETE(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: unknown
 ) {
+  const { params } = context as { params: { id: string } };
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -16,9 +18,10 @@ export async function DELETE(
     }
 
     await connectDB();
-    const commentId = context.params.id;
+    const { id } = params;
+    const commentId = new URL(req.url).searchParams.get('userId');
 
-    if (!commentId || !mongoose.Types.ObjectId.isValid(commentId)) {
+    if (!commentId || !id  || !mongoose.Types.ObjectId.isValid(commentId)) {
       return NextResponse.json({ error: "Invalid commentId" }, { status: 400 });
     }
 

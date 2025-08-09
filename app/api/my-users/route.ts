@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongoose";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-client";
-import OFUser from "@/app/models/usermodel";
+import OFUser, { OFUserDocument } from "@/app/models/usermodel";
 import mongoose from "mongoose";
 
 async function getCurrentUserId() {
@@ -31,6 +31,7 @@ export async function GET() {
   }
 }
 
+
 export async function PUT(request: NextRequest) {
   try {
     const userId = await getCurrentUserId();
@@ -41,12 +42,15 @@ export async function PUT(request: NextRequest) {
     await connectDB();
 
     const body = await request.json();
-    const allowedUpdates = ["username", "bio", "avatarKey", "gender"] as const;
+
+    const allowedUpdates = ["username", "bio", "avatarKey"] as const;
     type AllowedUpdateFields = typeof allowedUpdates[number];
 
-    const updates: Partial<Record<AllowedUpdateFields, any>> = {};
+    type AllowedUpdatesType = Pick<OFUserDocument, AllowedUpdateFields>;
+
+    const updates: Partial<AllowedUpdatesType> = {};
     for (const field of allowedUpdates) {
-      if (body[field] !== undefined) {
+      if (field in body) {
         updates[field] = body[field];
       }
     }
@@ -71,6 +75,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+
 
 export async function DELETE() {
   try {

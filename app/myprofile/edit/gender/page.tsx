@@ -37,8 +37,9 @@ function EditGender() {
         const fetchData = async () => {
             try {
                 const fetchedCreators = await creatorservice.get()
-                const rightCreator = fetchedCreators.find((c: Creator) => c.id === session?.user.id)
-                setCreator(rightCreator)
+                const rightCreator = fetchedCreators.creators.find((c: Creator) => c.id === session?.user.id)
+
+                setCreator(rightCreator ?? null);
                 if (rightCreator?.gender) {
                     setSelectedGender(rightCreator.gender);
                 }

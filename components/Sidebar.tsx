@@ -253,11 +253,11 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
           {creator && session?.user && !isCollapsed && (
             <div className="flex gap-8 mt-4 justify-center items-center opacity-100 transition-opacity duration-300">
               <div className="flex flex-col items-center">
-                <span className="text-white font-bold text-lg">{creator.followersCount ?? 0}</span>
+                <span className="text-white font-bold text-lg">{creator.followers.length ?? 0}</span>
                 <span className="text-xs text-gray-400">Followers</span>
               </div>
               <div className="flex flex-col items-center">
-                <span className="text-pink-400 font-bold text-lg">{creator.subscribersCount ?? 0}</span>
+                <span className="text-pink-400 font-bold text-lg">{creator.subscribers.length ?? 0}</span>
                 <span className="text-xs text-gray-400">Subscribers</span>
               </div>
             </div>

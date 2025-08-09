@@ -61,7 +61,7 @@ function EditProfileInfo() {
           if (!formData.handle) return;
       
           try {
-            const fetchedUsers: User[] = await userservice.get();
+            const fetchedUsers: User[] = await userservice.getPublicUsers();
             const userfound = fetchedUsers.find((u) => u.username === formData.handle)
             if(userfound?.username === formData.handle) return;
             if(userfound){

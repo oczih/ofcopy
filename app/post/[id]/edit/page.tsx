@@ -35,7 +35,7 @@ function EditPost() {
       setLoading(true);
       setError('');
       try {
-        const fetchedPostResponse = await postservice.getOne(postId);
+        const fetchedPostResponse = await postservice.getPrivatePostById(postId);
         const fetchedPost = fetchedPostResponse.post;
         if (fetchedPost.s3Key) {
           const res = await fetch('/api/media/download-url', {
@@ -84,7 +84,7 @@ function EditPost() {
     setSaving(true);
     setSaveMessage('');
     try {
-      await postservice.update(postId, { caption, viewableFor: viewable });
+      await postservice.updatePrivatePost(postId, { caption, viewableFor: viewable });
       setSaveMessage('Post updated!');
       setTimeout(() => setSaveMessage(''), 2000);
       router.push("/home")

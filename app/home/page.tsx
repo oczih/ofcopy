@@ -32,10 +32,7 @@ function App() {
   const { data: session, status } = useSession();
   const [creators, setCreators] = useState<Creator[] | null>(null);
   const [page, setPage] = useState("Feed");
-  interface UsersResponse {
-    users: User[];
-  }
-  const [users, setUsers] = useState<UsersResponse[] | null>(null);
+  const [users, setUsers] = useState<User[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [showBanner, setShowBanner] = useState(true);
   const [stats, setStats] = useState({
@@ -78,7 +75,7 @@ function App() {
           fetchedUsers = await userservice.getPublicUsers();
         }
         
-        setUsers({users: fetchedUsers});
+        setUsers(fetchedUsers);
         
         if (fetchedCreators) {
           const sortedCreators = fetchedCreators.creators.map((creator: Creator) => ({

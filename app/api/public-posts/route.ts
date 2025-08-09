@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongoose";
 import Post from "@/app/models/postmodel";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth-client";
+
 
 export async function GET(request: NextRequest) {
   if(!request) return;
   await connectDB();
-
-  const session = await getServerSession(authOptions);
-  const userEmail = session?.user?.email || null;
 
   try {
     // Find all posts that are either public or viewable to followers/subs, 

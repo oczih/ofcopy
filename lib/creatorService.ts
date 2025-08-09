@@ -1,6 +1,6 @@
 import CreatorModel from "@/app/models/creatormodel";
 import mongoose from "mongoose";
-import { Creator, Follower, Gender, Post } from "@/app/types";
+import { Follower, Gender, Post } from "@/app/types";
 
 type PublicCreator = {
   id: string;
@@ -43,7 +43,7 @@ export type CreatorWithPosts = PublicCreator & {
   posts?: Post[]; // adjust type as needed
 };
 
-export function sanitizeCreatorWithPosts(creator: Creator): CreatorWithPosts {
+export function sanitizeCreatorWithPosts(creator: LeanCreator & { posts?: Post[] }): CreatorWithPosts {
   return {
     ...sanitizeCreator(creator),
     posts: creator.posts ?? [],
@@ -55,7 +55,7 @@ export async function getAllCreators(fullFields: boolean = false) {
     const creators = await CreatorModel.find({})
   .populate("followers")
   .populate("posts")
-  .lean();
+  .lean<LeanCreator[]>();
   
     return creators.map(sanitizeCreatorWithPosts);
   }
@@ -66,7 +66,7 @@ export async function getAllCreators(fullFields: boolean = false) {
     "username name bio avatarKey gender price followers user"
   )
     .populate("followers")
-    .lean<LeanCreator>();
+    .lean<LeanCreator[]>();
 
   return creators.map(sanitizeCreator);
 }
@@ -88,7 +88,28 @@ export async function getNonPublicCreatorsByUserId(userId: string, fullFields: b
     "username name bio avatarKey gender price followers user"
   )
     .populate("followers")
-    .lean<LeanCreator>();
+    .lean<LeanCreator[]>();
+
+  return creators.map(sanitizeCreator);
+}
+export async function getCreatorsByUser(userId: string, fullFields: boolean = false) {
+  const query = { user: new mongoose.Types.ObjectId(userId) };
+
+  if (fullFields) {
+    const creators = await CreatorModel.find(query)
+      .populate("followers")
+      .populate("posts")
+      .lean<(LeanCreator & { posts?: Post[] })[]>(); 
+
+    return creators.map(sanitizeCreatorWithPosts);
+  }
+
+  const creators = await CreatorModel.find(
+    query,
+    "username name bio avatarKey gender price followers user"
+  )
+    .populate("followers")
+    .lean<LeanCreator[]>();
 
   return creators.map(sanitizeCreator);
 }
