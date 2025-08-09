@@ -18,7 +18,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname} from "next/navigation";
 import Image from "next/image";
-import creatorservice from "../app/services/creatorservice";
 import { Creator } from "../app/types";
 import { Skeleton } from "@/components/ui/skeleton"
 
