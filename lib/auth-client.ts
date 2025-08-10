@@ -45,11 +45,12 @@ export const authOptions: NextAuthOptions = {
         try {
           await connectDB();
     
-          const user = await OFUser.findOne({ 
+          const user = await OFUser.findOne({
             email: credentials.email,
-            oauthProvider: "credentials" // Only credentials users
-          });
-    
+            oauthProvider: "credentials"
+          }).select("+password");
+          console.log("usseri", user)
+          console.log("Fetched user password hash:", user?.password);
           if (!user || !user.password) {
             throw new Error("Invalid email or password");
           }
@@ -65,12 +66,9 @@ export const authOptions: NextAuthOptions = {
           }
     
           // Return properly typed User object
-          return {
-            id: user._id.toString(),
-            email: user.email,
-            name: user.name,
-            image: user.image ?? null,
-          } as User;
+          const fullUser = user.toObject();
+          fullUser.id = user._id.toString();
+          return fullUser as User
         } catch (error) {
           console.error("Credentials auth error:", error);
           throw error;
@@ -221,7 +219,7 @@ export const authOptions: NextAuthOptions = {
           { _id: token.id } // Also search by ID for credentials users
         ],
       });
-
+      console.log("helsinki:", user)
       // Check if user is a creator
       let isCreator = false;
       if (user) {
@@ -233,24 +231,24 @@ export const authOptions: NextAuthOptions = {
         console.log("[Session] Found user:", user._id.toString(), "Token ID:", token.id);
       
         // Type assertion to add custom properties to session
-        (session.user as User).id = user._id.toString();
-        (session.user as User).username = user.username;
+        session.user.id = user._id.toString();
+        session.user.username = user.username;
         session.user.email = user.email;
-        (session.user as User).avatarKey = user.avatarKey;
+        session.user.avatarKey = user.avatarKey;
         session.user.name = user.name;
-        (session.user as User).age = user.age;
-        (session.user as User).membership = user.membership;
-        (session.user as User).hasAccess = user.hasAccess;
-        (session.user as User).lastUsernameChange = user.lastUsernameChange;
-        (session.user as User).isUsernameChangeBlocked = user.isUsernameChangeBlocked;
-        (session.user as User).subscriptions = user.subscriptions || [];
-        (session.user as User).notifications = user.notifications || [];
-        (session.user as User).following = user.following || [];
-        (session.user as User).creator = isCreator;
-        (session.user as User).bio = user.bio;
-        (session.user as User).emailVerified = user.emailVerified;
-        (session.user as User).location = user.location;
-        (session.user as User).createdAt = user.createdAt;
+        session.user.age = user.age;
+        session.user.membership = user.membership;
+        session.user.hasAccess = user.hasAccess;
+        session.user.lastUsernameChange = user.lastUsernameChange;
+        session.user.isUsernameChangeBlocked = user.isUsernameChangeBlocked;
+        session.user.subscriptions = user.subscriptions || [];
+        session.user.notifications = user.notifications || [];
+        session.user.following = user.following || [];
+        session.user.creator = isCreator;
+        session.user.bio = user.bio;
+        session.user.emailVerified = user.emailVerified;
+        session.user.location = user.location;
+        session.user.createdAt = user.createdAt;
       } else {
         console.log("[Session] No user found in database");
       }

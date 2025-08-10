@@ -1,19 +1,13 @@
-'use client';
-import { SessionProvider} from "next-auth/react";
+import React from "react";
+import AppWrapper from "@/components/AppWrapper";
+import App from "./subscriptionsPage";
+import { fetchPageData } from "@/lib/fetchDataPage";
 
-export default function SubscriptionsPage() {
+export default async function Page() {
+  const { creators, users, safeSession } = await fetchPageData();
   return (
-    <SessionProvider>
-      <Subscriptions />
-    </SessionProvider>
-  );
-}
-
-function Subscriptions() {
-
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-hidden">
-    </div>
+    <AppWrapper creators={creators} users={users} session={safeSession}>
+      <App creators={creators} users={users} session={safeSession} />
+    </AppWrapper>
   );
 }

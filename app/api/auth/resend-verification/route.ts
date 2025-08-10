@@ -10,8 +10,8 @@ const MIN_RESEND_INTERVAL = 5 * 60 * 1000;
 
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
+  const session = await getServerSession(authOptions); // <-- no `request` param in App Router
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
@@ -54,7 +54,11 @@ export async function POST(request: NextRequest) {
     await VerificationToken.deleteMany({ email, type: 'email_verification' });
 
     // Create new verification token
-    const verificationToken = await createVerificationToken(email, 'email_verification');
+    const verificationToken = await createVerificationToken(
+      user._id.toString(),  // or user._id (mongoose should accept both)
+      email,
+      'email_verification'
+    );
 
     // Send verification email
     await sendVerificationEmail(email, verificationToken);

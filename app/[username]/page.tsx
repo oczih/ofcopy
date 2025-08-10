@@ -8,6 +8,7 @@ import AppWrapper from "@/components/AppWrapper";
 import App from "./usernamePage"; // Your client component
 import { redirect } from "next/navigation";
 import type { Creator, User } from "../types";
+import { fetchPageData } from "@/lib/fetchDataPage";
 
 interface PageProps {
   params: {
@@ -16,6 +17,7 @@ interface PageProps {
 }
 
 export default async function Page({ params }: PageProps) {
+  const { creators, users, safeSession } = await fetchPageData();
   const { username } = params;
 
   const session = await getServerSession(authOptions);
@@ -31,7 +33,7 @@ export default async function Page({ params }: PageProps) {
   // Sanitize your data if needed here
 
   return (
-    <AppWrapper>
+    <AppWrapper creators={creators} users={users} session={safeSession}>
       <App creators={creatorsRaw} users={usersRaw} session={session} username={username.toLowerCase()} />
     </AppWrapper>
   );

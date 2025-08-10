@@ -7,7 +7,7 @@ export default async function Page() {
   const { creators, users, safeSession } = await fetchPageData();
 
   return (
-    <AppWrapper>
+    <AppWrapper creators={creators} users={users} session={safeSession}>
       <App creators={creators} users={users} session={safeSession} />
     </AppWrapper>
   );

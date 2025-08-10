@@ -18,23 +18,25 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname} from "next/navigation";
 import Image from "next/image";
-import { Creator } from "../app/types";
+import { Creator, User } from "../app/types";
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface SidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
+  session: any
+  creators: Creator[]
+  users: User[]
 }
 
-export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
+export const Sidebar = ({ onCollapseChange, session,creators, users }: SidebarProps) => {
   const pathname = usePathname();
-  const { data: session, status } = useSession();
+  const status = session ? "authenticated" : "unauthenticated";
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
-    console.log("moro: ", session?.user)
   const menuItems = [
     { id: "feed", label: "Home Feed", icon: Home, color: "pink", href: "/home" },
     { id: "discover", label: "Discover", icon: Compass, color: "purple", href: "/discover" },
@@ -50,10 +52,8 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
     const fetchCreator = async () => {
       if (session?.user?.id) {
         try {
-          const res = await fetch("/api/creators");
-          if (res.ok) {
-            const data = await res.json();
-            const found = data.creators.find((c: Creator) => c.user === session.user.id);
+          if (creators) {
+            const found = creators.find((c: Creator) => c.user === session.user.id);
             setCreator(found || null);
           }
           
@@ -64,7 +64,7 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
       }
     };
     fetchCreator();
-  }, [session?.user?.id]);
+  }, [session?.user?.id, creators]);
   useEffect(() => {
     if (status !== 'loading') {
       setLoading(false);
@@ -157,10 +157,14 @@ export const Sidebar = ({ onCollapseChange }: SidebarProps) => {
         />
       );
     }
-
+    type Char = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' 
+    | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' 
+    | 'y' | 'z' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' 
+    | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' 
+    | 'Y' | 'Z'
     // Fallback: show user initials or default avatar
     const initials = session.user.name 
-      ? session.user.name.split(' ').map(n => n[0]).join('').toUpperCase()
+      ? session.user.name.split(' ').map((n: Char) => n[0]).join('').toUpperCase()
       : session.user.username 
         ? session.user.username[0].toUpperCase()
         : 'U';

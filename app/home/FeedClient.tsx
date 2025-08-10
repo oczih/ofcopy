@@ -1,8 +1,7 @@
 'use client';
 
 import { Button } from "../../components/ui/button";
-import { MessageCircle, Sparkles } from "lucide-react";
-import { useSession } from "next-auth/react";
+import { CheckCircle, MessageCircle, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Creator, Following, Subscription, User } from "../types";
 import { Badge } from "../../components/ui/badge";
@@ -18,7 +17,7 @@ interface AppProps {
   users: User[];
 }
 
-export default function App({ creators, session}: AppProps) {
+export default function App({ creators, session, users}: AppProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [showBanner, setShowBanner] = useState(true);
@@ -76,7 +75,7 @@ export default function App({ creators, session}: AppProps) {
       const response = await fetch("/api/auth/resend-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: session?.user.email }),
+        body: JSON.stringify({ email: session?.user.email, userId: session.user.id }),
       });
 
       const data = await response.json();
@@ -95,7 +94,6 @@ export default function App({ creators, session}: AppProps) {
       setLoading(false);
     }
   };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -197,140 +195,134 @@ export default function App({ creators, session}: AppProps) {
           )}
 
           {/* Dashboard */}
-          {page === "Dashboard" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mb-8">
-              {[
-                { value: stats.totalRevenue, label: "Total Earnings", color: "green", prefix: "$" },
-                { value: stats.totalSubscriptions, label: "Subscribers", color: "pink" },
-                { value: stats.totalCreators, label: "Total Creators", color: "purple" },
-                { value: stats.activeCreators, label: "Active Creators", color: "yellow" },
-                { value: stats.premiumCreators, label: "Premium Creators", color: "cyan" },
-                { value: stats.totalUsers, label: "Total Users", color: "blue" },
-              ].map((stat, idx) => (
-                <div
-                  key={idx}
-                  className={`group bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-xl hover:bg-white/15 transition-all duration-500 hover:scale-105 hover:shadow-2xl relative overflow-hidden`}
-                >
-                  <div
-                    className={`absolute inset-0 bg-gradient-to-r ${
-                      stat.color === "green"
-                        ? "from-green-400 to-green-600"
-                        : stat.color === "pink"
-                        ? "from-pink-400 to-pink-600"
-                        : stat.color === "purple"
-                        ? "from-purple-400 to-purple-600"
-                        : stat.color === "yellow"
-                        ? "from-yellow-400 to-yellow-600"
-                        : stat.color === "cyan"
-                        ? "from-cyan-400 to-cyan-600"
-                        : stat.color === "blue"
-                        ? "from-blue-400 to-blue-600"
-                        : "from-gray-400 to-gray-600"
-                    } opacity-30 rounded-3xl -z-10`}
-                  ></div>
-                  <p className="text-lg font-semibold mb-1 text-white/70">
-                    {stat.label}
-                  </p>
-                  <p className="text-3xl font-extrabold text-white">
-                    {stat.prefix || ""}{stat.value ?? "N/A"}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
+          {!session?.user?.emailVerified && showBanner && session?.user.oauthProvider === "credentials" &&  (
+      <div className="flex justify-center z-30 px-4">
+        <div className="w-full max-w-md bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-lg relative overflow-hidden group text-sm">
+          <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-cyan-500/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+          
+          <div className="mb-4 text-center">
+            <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-2" />
+            <h1 className="text-base font-semibold text-white mb-1">Check Your Email</h1>
+            <p className="text-gray-300">
+             We&apos;ve sent a link to <strong className="text-pink-400">{session?.user.email}</strong>
+            </p>
+          </div>
+          
+          <div className="text-xs text-gray-400 space-y-1 text-center">
+            <p>Click the link in your email to verify your account.</p>
+            <p>Didn&apos;t get it? Check spam or resend below.</p>
+          </div>
 
+          <div className="mt-4 flex justify-center">
+            <button
+              onClick={handleResendVerification}
+              className="bg-pink-600 hover:bg-pink-700 text-white text-xs py-1.5 px-4 rounded-md transition disabled:opacity-50 cursor-pointer"
+            >
+              Resend Email
+            </button>
+          </div>
+        </div>
+      </div>
+  )}
           {/* Feed */}
           {page === "Feed" && (
-            <>
-              {/* Email verification banner */}
-              {showBanner && session?.user?.emailVerified === false && (
-                <div className="flex items-center justify-between rounded-lg bg-yellow-100 p-4 mb-4 text-yellow-700 border border-yellow-300">
-                  <div className="flex items-center gap-2">
-                    <Sparkles />
-                    <span>Please verify your email to unlock all features.</span>
+          <>
+            {/* Creators and their posts with enhanced spacing */}
+            <div className="space-y-10 mt-10">
+              {filteredCreators && filteredCreators.length > 0 && users && session ? (
+                filteredCreators.map((creator) => (
+                  <div key={creator.id} className="space-y-8">
+                    {creator.posts && creator.posts.length > 0 && (
+                      creator.posts.map(post => {
+                        const isCreator = session?.user?.id === creator.user;
+                        
+                        const isFollower = session?.user?.following?.some((f: Following) => f.creatorId.toString() === creator.id);
+                        const isSubscriber = !!session?.user?.subscriptions?.some((s: Subscription) => s.creatorId.toString() === creator.id);
+                        return (
+                          <div key={post._id} className="transform transition-transform duration-300">
+                            <CreatorPostCard
+                              creator={creator}
+                              post={post}
+                              session={session}
+                              user={session?.user}
+                              isCreator={isCreator}
+                              isFollower={isFollower}
+                              isSubscriber={isSubscriber}
+                              users={users}
+                              handleFollow={handleFollow}
+                              signedUrl={postSignedUrls[post._id]}
+                            />
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleResendVerification}
-                  >
-                    Resend Email
-                  </Button>
-                </div>
-              )}
-
-              {/* Creator list */}
-              {filteredCreators.length === 0 ? (
-                <div className="text-center mt-8 text-white/60">
-                  <MessageCircle className="mx-auto mb-2" size={64} />
-                  <p>No creators followed yet. Explore and follow some!</p>
-                  <Link href="/discover" className="text-pink-400 hover:underline">
-                    Discover Creators
+                ))
+              ) : (
+                <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 text-center group hover:bg-white/10 transition-all duration-500">
+                <div className="mb-4">
+                  <Sparkles className="w-16 h-16 text-gray-400 mx-auto mb-4 group-hover:text-pink-400 transition-colors duration-300" />
+                  <h3 className="text-xl font-bold text-white mb-2">No Subscriptions or Follows Yet</h3>
+                  <p className="text-gray-400 mb-6">Start exploring creators and subscribe to their content to see it here.</p>
+                  <Link href="/discover">
+                    <Button className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                      Discover Creators
+                    </Button>
                   </Link>
                 </div>
-              ) : (
-                <div className="flex flex-col gap-6">
-                  {filteredCreators.map((creator) => (
-                    <div
-                      key={creator.id}
-                      className="rounded-lg p-4 bg-white/10 backdrop-blur-lg border border-white/20 shadow-lg"
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-4">
-                          {creator.avatar ? (
-                            <Image
-                              src={creator.avatar}
-                              alt={creator.name}
-                              width={64}
-                              height={64}
-                              className="rounded-full object-cover"
-                              unoptimized
-                            />
-                          ) : (
-                            <div className="w-16 h-16 rounded-full bg-gray-600 flex items-center justify-center text-white text-xl font-bold">
-                              {creator.name[0].toUpperCase()}
+              </div>
+              )}
+            </div>
+
+            {/* Enhanced User Subscriptions Section */}
+              <div className="space-y-6">
+                {session?.user.subscriptions && session?.user.subscriptions.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {session?.user.subscriptions.slice(0, 6).map((subscription: Subscription) => (
+                      <div 
+                        key={subscription.creatorId} 
+                        className="group bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden hover:bg-white/10 transition-all hover:scale-[1.02] shadow-2xl hover:shadow-pink-500/10 duration-300"
+                      >
+                        <div className="p-6">
+                          <div className="flex items-center gap-4 mb-4">
+                            <div className="relative">
+                              <Image 
+                                src={subscription.avatarKey || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"} 
+                                alt={subscription.creatorName}
+                                width={50}
+                                height={50}
+                                className="w-12 h-12 rounded-full border-2 border-pink-500/50 group-hover:border-pink-400 transition-colors duration-300"
+                              />
+                              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-slate-950 animate-pulse"></div>
                             </div>
-                          )}
-                          <div>
-                            <h2 className="text-xl font-semibold text-white">{creator.name}</h2>
-                            <div className="flex flex-wrap gap-1">
-                              {creator.tags?.map((tag) => (
-                                <Badge
-                                  key={tag}
-                                  className="uppercase text-xs font-semibold bg-pink-600/80 text-white"
-                                >
-                                  {tag}
-                                </Badge>
-                              ))}
+                            <div className="flex-1">
+                              <h3 className="text-white font-bold text-lg group-hover:text-pink-300 transition-colors duration-300">{subscription.creatorName}</h3>
+                              <p className="text-gray-400 text-sm">{subscription.creatorUsername}</p>
                             </div>
+                            <Badge variant="secondary" className="bg-green-500/20 text-green-200 border-green-500/30 group-hover:bg-green-500/30 transition-colors duration-300">
+                              ${subscription.price}/month
+                            </Badge>
+                          </div>
+                          <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                            <div className="text-sm text-gray-400">
+                              <p>Status: <span className="text-green-400 capitalize">{subscription.status}</span></p>
+                              <p>Next billing: {new Date(subscription.nextBillingDate || subscription.subscriptionDate).toLocaleDateString()}</p>
+                            </div>
+                            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 transition-all duration-300 rounded-full px-4 py-2">
+                              <MessageCircle className="w-4 h-4 mr-2" />
+                              Message
+                            </Button>
                           </div>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleFollow(creator)}
-                        >
-                          Follow
-                        </Button>
                       </div>
-
-                      {/* Posts */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {creator.posts?.map((post) => (
-                          <CreatorPostCard
-                            key={post._id}
-                            post={post}
-                            signedUrl={postSignedUrls[post._id] || ""}
-                            
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
+                    ))}
+                  </div>
+                )
+                }
+              </div>
+          </>
+        )}
         </main>
       </div>
     </div>

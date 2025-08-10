@@ -35,15 +35,26 @@ export async function fetchPageData() {
   if (!session) {
     redirect("/login");
   }
-
+  console.log("vittu",session)
   await connectDB();
-
+  let dbUser = null;
+  if (session.user?.id) {
+    dbUser = await UserModel.findById(session.user.id).lean();
+  } else if (session.user?.email) {
+    dbUser = await UserModel.findOne({ email: session.user.email }).lean();
+  }
+  
   const creatorsRaw = await CreatorModel.find({}).populate("posts").lean();
   const usersRaw = await UserModel.find({}).lean();
-
+  console.log("kakkak", deepSanitize(creatorsRaw))
+  console.log("vitu", deepSanitize(usersRaw))
+  console.log("homo", session)
   return {
     creators: deepSanitize(creatorsRaw),
     users: deepSanitize(usersRaw),
-    safeSession: deepSanitize(session),
+     safeSession: deepSanitize({
+    ...session,
+    user: { ...session.user, ...dbUser }
+  }),
   };
 }

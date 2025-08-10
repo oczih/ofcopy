@@ -82,30 +82,178 @@ export interface OFUserDocument extends Document {
   lastPasswordResetSentAt: Date;
 }
 
-const userSchema = new Schema<OFUserDocument>({
-  // ... your schema fields unchanged
+const userSchema = new Schema<UserDocument>({
+  name: {
+        type: String,
+        required: [true, "Name is required"]
+      },
+  username: { type: String, required: false, unique: true },
+  password: { type: String, required: true, select: false },
+  email: {
+    type: String,
+    unique: true,
+    required: function() {
+      // Email is required only if no OAuth provider is specified (i.e., for credentials login)
+      return !this.oauthProvider;
+    },
+    match: [
+      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+      "Email is invalid",
+    ],
+  },
+  bio: {type: String},
+  location: {type: String},
+  googleId: {
+    type: String,
+    default: null,
+  },
+  avatarKey: { type: String },
+  oauthProvider: { type: String },
+  oauthId: { type: String },
+  hasAccess: {
+    type: Boolean,
+    default: false,
+  },
+  customerId: {
+    type: String,
+    validate(value: string) {
+      return value.includes("cus_");
+    },
+  },
+  emailVerified: { type: Boolean, default: false },
+  emailVerificationToken: { type: String },
+  emailVerificationExpires: { type: Date },
+  priceId: {
+    type: String,
+    validate(value: string) {
+      return value.includes("price_");
+    },
+  },
+  membership: {
+    type: Boolean,
+    default: false,
+  },
+  lastUsernameChange: {
+    type: Date,
+    default: null,
+  },
+  purchases: [{
+    id: {
+      type: String
+    },
+    price: {
+      type: Number
+    },
+    creatorId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Creator',
+      required: true
+    },
+    postId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Post',
+      required: true
+    },
+    date: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  subscriptions: [{
+    creatorId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Creator',
+      required: true
+    },
+    creatorName: {
+      type: String,
+      required: true
+    },
+    creatorUsername: {
+      type: String,
+      required: true
+    },
+    creatorImage: {
+      type: String
+    },
+    subscriptionDate: {
+      type: Date,
+      default: Date.now
+    },
+    price: {
+      type: Number,
+      required: true
+    },
+    status: {
+      type: String,
+      enum: ['active', 'cancelled', 'expired'],
+      default: 'active'
+    },
+    nextBillingDate: {
+      type: Date
+    },
+    autoRenew: {
+      type: Boolean,
+      default: true
+    }
+  }],
+  following: [{
+    creatorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Creator',
+      required: true
+    },
+    followedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  notifications: [{
+    type: {
+      type: String,
+      enum: ['newsub', 'resub', 'tip', 'subcancel', 'comment', 'like', 'newfollower'],
+      required: true
+    },
+    date: {
+      type: Date,
+      required: true
+    },
+    seen: {
+      type: Boolean,
+      default: false,
+    }
+  }],
+  
+  comments: [
+    {
+      commentId: { type: String, required: true },
+      postId: { type: String, required: true },
+      text: { type: String, required: true },
+      createdAt: { type: Date, default: Date.now },
+      username: { type: String },
+      userId: { type: String },
+    }
+  ],
+  lastVerificationEmailSentAt: {
+    type: Date,
+    default: null
+  },
+  lastPasswordResetSentAt: { type: Date, default: null },
 }, { timestamps: true });
 
 // Hide private fields in JSON
 
 
-userSchema.set("toJSON", {
-  transform: (
-    _doc: Document & OFUserDocument,
-    ret: OFUserDocument & { _id: unknown; __v: number; password?: string },
-  ): void => {
-    // Cast ret to a mutable type for safe modification
-    const mutableRet = ret as Partial<OFUserDocument> & { _id?: { toString: () => string } | string; id?: string; __v?: number; password?: string };
-
-    if (mutableRet._id && typeof mutableRet._id === "object" && "toString" in mutableRet._id) {
-      mutableRet.id = mutableRet._id.toString();
-    } else if (typeof mutableRet._id === "string") {
-      mutableRet.id = mutableRet._id;
-    }
-
-    delete mutableRet._id;
-    delete mutableRet.__v;
-    delete mutableRet.password;
+userSchema.set('toJSON', {
+  transform: function (
+    _doc: mongoose.Document,
+    ret: Partial<OFUserDocument> & { _id?: string; id?: string; __v?: number; password?: string }
+  ) {
+    ret.id = ret._id?.toString();
+    delete ret._id;
+    delete ret.__v;
+    delete ret.password;
+    return ret;
   },
 });
 export interface VerificationTokenDocument extends Document {

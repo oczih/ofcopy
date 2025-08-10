@@ -90,7 +90,7 @@ export default function App({creators}: AppProps ) {
     };
   
     fetchCreators();
-  }, []);
+  }, [creators]);
 
 
   const filteredCreators = creators?.filter(creator => {
@@ -215,8 +215,8 @@ export default function App({creators}: AppProps ) {
                     <TrendingCreatorSkeleton key={index} />
                   ))
                 ) : (
-                  creators.slice(0, 4).map((creator, index) => (
-                    <div key={creator.id} className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
+                  creatorsWithMedia.slice(0, 4).map((creator, index) => (
+                    <div key={index} className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
                       <div className="flex items-center gap-3">
                         <Image
                           src={resolveImageUrl(creator.image) || ""}

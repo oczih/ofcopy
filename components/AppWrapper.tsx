@@ -1,10 +1,22 @@
 "use client";
 import { useState } from "react";
 import { Sidebar } from "./Sidebar";
+import { Creator, User } from "@/app/types";
 
-export default function AppWrapper({ children }: { children: React.ReactNode }) {
+export default function AppWrapper({
+  children,
+  creators,
+  users,
+  session
+}: {
+  children: React.ReactNode;
+  creators: Creator[]; // ideally type these
+  users: User[];
+  session: any;
+}) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
+  console.log("appwrap", session)
+  console.log("kakkawrap", creators)
   return (
     <div className="min-h-screen w-full bg-[#3b0364] relative overflow-hidden">
       {/* Enhanced animated background elements that respond to sidebar */}
@@ -36,7 +48,12 @@ export default function AppWrapper({ children }: { children: React.ReactNode }) 
         ></div>
       </div>
       {/* Sidebar */}
-      <Sidebar onCollapseChange={setSidebarCollapsed} />
+      <Sidebar
+        onCollapseChange={setSidebarCollapsed}
+        creators={creators}
+        users={users}
+        session={session}
+      />
       {/* Main content that responds to sidebar state */}
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-72'}`}>
         {children}

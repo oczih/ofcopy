@@ -17,7 +17,7 @@ const RESERVED_ROUTES = [
 interface AppProps {
     creators: Creator[];
     users: User[];
-    session: Session;
+    session: any;
     username: string;
   }
 export default async function App({ creators, users, session, username }: AppProps) {
@@ -78,7 +78,7 @@ export default async function App({ creators, users, session, username }: AppPro
     }
   
     return (
-      <AppWrapper>
+      <AppWrapper creators={creators} users={users} session={session}>
         <ProfileContent
           userViewed={user && JSON.parse(JSON.stringify(user)) || null}
           viewingUser={session?.user && JSON.parse(JSON.stringify(session?.user)) || null}

@@ -543,10 +543,7 @@ export default function ProfileContent({
     handleFollow: (creator: Creator) => void;
     user: User
   }) {
-    interface UsersResponse {
-      users: User[];
-    }
-    const [users, setUsers] = useState<UsersResponse | null>(null);
+    const [users, setUsers] = useState<User[] | null>(null);
     
     const allPosts = creator?.posts || [];
     useEffect(() => {
@@ -556,7 +553,7 @@ export default function ProfileContent({
         setUsers(null)
       }
       else{
-        setUsers({ users });
+        setUsers(users);
       }
     } catch (error) {
       console.error("Couldn't fetch data: ", error);

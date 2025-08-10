@@ -15,19 +15,22 @@ export async function verifyPassword(password: string, hashedPassword: string): 
 }
 
 export async function createVerificationToken(
+  userId: string,
   email: string,
   type: 'email_verification' | 'password_reset' | 'password_confirm' | 'password_add',
   expiresInMs: number = 24 * 60 * 60 * 1000 // default 24 hours
 ) {
   const token = generateVerificationToken();
-  const expires = new Date(Date.now() + expiresInMs);
+  const expiresAt = new Date(Date.now() + expiresInMs); // match schema field name
 
   await VerificationToken.create({
+    userId,
     email,
     token,
-    expires,
+    expiresAt, // match schema
     type
   });
 
   return token;
 }
+

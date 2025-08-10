@@ -5,9 +5,9 @@ import { fetchPageData } from "@/lib/fetchDataPage";
 
 export default async function Page() {
   const { creators, users, safeSession } = await fetchPageData();
-
+  console.log("seffi", safeSession)
   return (
-    <AppWrapper>
+    <AppWrapper creators={creators} users={users} session={safeSession}>
       <App creators={creators} users={users} session={safeSession} />
     </AppWrapper>
   );
