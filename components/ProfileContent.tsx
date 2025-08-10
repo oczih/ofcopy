@@ -9,7 +9,6 @@ import creatorservice from '@/app/services/creatorservice';
 import { Skeleton } from "@/components/ui/skeleton"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
-import userservice from '@/app/services/userservice';
 
 import { CreatorPostCard } from './CreatorPostCard';
 import { useSession } from 'next-auth/react';
@@ -71,7 +70,7 @@ export default function ProfileContent({
   creators,
   session
 }: UserProfileData) {
-
+  
   const [modalOpen, setModalOpen] = useState(false);
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [creator, setCreator] = useState<Creator | null>(null);
@@ -79,36 +78,40 @@ export default function ProfileContent({
   const [currentUser, setCurrentUser] = useState<User>(viewingUser);
   const [status, setStatus] = useState<'subscriber' | 'follower' | 'none'>('none');
   const [userStatsLoading, setUserStatsLoading] = useState(true);
+  
   useEffect(() => {
     setStatus(relationshipStatus);
   }, [relationshipStatus]);
   useEffect(() => {
     async function fetchCreator() {
-
       const found = creators.find(
-        (c: Creator) => c.user === userViewed.id
+        (c: Creator) => {
+          console.log('Checking creator user:', c.user, 'against userViewed.id:', userViewed.id);
+          return c.user?.toString() === userViewed.id?.toString();
+        }
       );
+      console.log('Found creator:', found);
       if (found) {
         setCreator(found);
       } else {
         setCreator(null);
       }
-      // Set user stats loading to false after creator data is fetched
       setUserStatsLoading(false);
     }
     if (userViewed?.id) fetchCreator();
   }, [userViewed, creators]);
-
+  
+  console.log(creator)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
+  console.log(avatarUrl)
   useEffect(() => {
     const fetchAvatarUrl = async () => {
       if (userViewed?.avatarKey) {
         try {
           setImageLoading(true);
           
-          const key = creator ? creator?.image : userViewed?.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
-          
+          const key = creator ? creator?.avatarKey : userViewed?.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
+          console.log(key)
           const res = await fetch("/api/media/download-url", {
             method: "POST",
             headers: {
@@ -174,20 +177,22 @@ export default function ProfileContent({
   
     fetchSignedUrls();
   }, [creator?.posts]);
-  
+
   useEffect(() => {
-    if (!creator?.id || !viewingUser?.id || !viewingUser) {
+    if (!creator || !viewingUser?.id) {
       setStatus('none');
       return;
     }
-  
     const isSubscriber =
-        Array.isArray(creator.subscribers) &&
-        creator.subscribers.some(
-          (sub: Subscriber) => sub.userId.toString() === viewingUser.id
-        );
-    const isFollower = Array.isArray(creator.followers) &&
-      creator.followers.some((fol: Follower) => fol.userId === viewingUser.id);
+      Array.isArray(creator.subscribers) &&
+      creator.subscribers.some(
+        (sub: Subscriber) => sub.userId.toString() === viewingUser._id.toString()
+      );
+    const isFollower =
+      creator.followers &&
+      creator.followers.some(
+        (fol: Follower) => fol.userId.toString() === viewingUser._id.toString()
+      );
   
     if (isSubscriber) {
       setStatus('subscriber');
@@ -198,6 +203,9 @@ export default function ProfileContent({
     }
   }, [creator, viewingUser]);
   
+  
+  
+
   // Calculate stats
   const getCreatorStats = () => {
     if (!creator) return { posts: 0, videos: 0, likes: 0 };
@@ -215,12 +223,16 @@ export default function ProfileContent({
   
   const handleFollow = async (creator: Creator) => {
     if (!creator) return;
-  
+    console.log("clicked")
+    console.log("mmoroa", ...creator.followers)
     try {
-      const alreadyFollowing = viewingUser.following.some(f => f.creatorId === creator.id);
-      if (alreadyFollowing) return;
-  
-      await creatorservice.followCreator(creator.id);
+    
+    console.log("fitta", viewingUser)
+      const alreadyFollowing = viewingUser.following.some(f => f.creatorId === creator._id);
+      console.log(creator.followers)
+      console.log(alreadyFollowing)
+      console.log("perkele", creator)
+      await creatorservice.followCreator(creator._id);
       setCurrentUser({
         ...currentUser,
         following: [...currentUser.following, { 
@@ -232,7 +244,7 @@ export default function ProfileContent({
       console.error('Error following creator:', err);
     }
   };
-
+console.log(status)
   const handleUnfollow = async (creator: Creator) => {
     if (!creator || !viewingUser) return;
 
@@ -249,7 +261,7 @@ export default function ProfileContent({
       console.error('Error unfollowing creator:', err);
     }
   };
-
+  const resolvedSrc = resolveImageUrl(avatarUrl);
   return (
     <div>
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -263,12 +275,15 @@ export default function ProfileContent({
       <div className="relative w-30 h-30 rounded-full overflow-hidden">
         {!userViewed ? (
           <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700" />
-        ) : avatarUrl || userViewed.avatarKey? (
+        ) : avatarUrl || userViewed.avatarKey ? (
           <>
+           
+
             <Image
-              src={resolveImageUrl(avatarUrl) || ""}
+              src={resolvedSrc ?? ""}
               alt={userViewed.username || "User profile image"}
               fill
+              sizes="(max-width: 768px) 100vw, 40vw"
               className="rounded-full border border-black shadow-lg transition-all duration-300 object-cover"
               onLoad={() => setImageLoading(false)}
               onError={() => setImageLoading(false)}
@@ -535,13 +550,15 @@ export default function ProfileContent({
     viewingUser,
     postSignedUrls,
     handleFollow,
-    user
+    user,
+    status
   }: {
     creator?: Creator;
     viewingUser: User;
     postSignedUrls: Record<string, string>;
     handleFollow: (creator: Creator) => void;
-    user: User
+    user: User,
+    status: 'follower' | 'subscriber' | 'none',
   }) {
     const [users, setUsers] = useState<User[] | null>(null);
     
@@ -567,16 +584,13 @@ export default function ProfileContent({
     const visiblePosts = allPosts.filter((post) =>
       viewingUser.purchases?.some((purchase) => purchase.postId === post._id)
     );
-    const isCreator = viewingUser && viewingUser.id === creator.user;
-    const isFollower = viewingUser.following?.some(f => f.creatorId.toString() === creator.id);
-    const isSubscriber = !!viewingUser.subscriptions?.some(s => s.creatorId.toString() === creator.id);
     
     return (
       <div>
         {visiblePosts.length === 0 && (
           <div className='flex flex-col items-center'>
               <h1 className="text-2xl font-bold text-white mb-2">
-                  You &quot;haven&apos;t&quot; purchased anything from this person yet!
+                  You haven&apos;t purchased anything from this person yet!
                 </h1>
           </div>
         )}
@@ -586,9 +600,7 @@ export default function ProfileContent({
             key={post._id}
             post={post}
             creator={creator}
-            isCreator={isCreator}
-            isFollower={isFollower}
-            isSubscriber={isSubscriber}
+            status={status}
             session={session}
             users={users ?? []}
             user={user}
@@ -670,7 +682,7 @@ export default function ProfileContent({
     handleFollow,
     user,
     users,
-    session
+    session,
   }: {
     creator?: Creator;
     status: 'subscriber' | 'follower' | 'none';
@@ -691,9 +703,7 @@ export default function ProfileContent({
       if (status === 'follower') return post.viewableFor === 'followers';
       return post.viewableFor === 'followers'; // show blurred for public
     });
-    const isCreator = viewingUser && viewingUser.id === creator.user;
-    const isFollower = viewingUser && viewingUser.following?.some(f => f.creatorId.toString() === creator.id);
-    const isSubscriber = !!viewingUser && viewingUser.subscriptions?.some(s => s.creatorId.toString() === creator.id);
+    
     
     return (
       <div className="grid grid-cols-1 gap-6">
@@ -702,11 +712,8 @@ export default function ProfileContent({
           key={post._id}
           post={post}
           creator={creator}
-          isCreator={isCreator}
-          isFollower={isFollower}
-          isSubscriber={isSubscriber}
+          status={status}
           session={session}
-          
           users={users ?? []}
           signedUrl={postSignedUrls[post._id]}
           user={user}

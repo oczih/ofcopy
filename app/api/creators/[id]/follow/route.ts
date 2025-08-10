@@ -9,17 +9,16 @@ import { Follower, Following } from '@/app/types';
 export async function POST(request: NextRequest, context: unknown) {
   // Cast context as unknown then extract params carefully
   // OR just treat as any but keep the cast local and limited
-  const { params } = context as { params: { id: string } };
-  const creatorId = params.id;
+  const { params } = context as { params: { creatorId: string } };
 
   const session = await getServerSession(authOptions);
 
-  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   await connectDB();
-
+  const creatorId = params.creatorId;
   const user = await UserModel.findById(session.user.id);
   const creator = await Creator.findById(creatorId);
 
@@ -61,7 +60,7 @@ export async function DELETE(request: NextRequest, context: unknown) {
   const { params } = context as { params: { id: string } };
   const creatorId = params.id;
   const session = await getServerSession(authOptions);
-  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

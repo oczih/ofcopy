@@ -15,8 +15,6 @@ export default function AppWrapper({
   session: any;
 }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  console.log("appwrap", session)
-  console.log("kakkawrap", creators)
   return (
     <div className="min-h-screen w-full bg-[#3b0364] relative overflow-hidden">
       {/* Enhanced animated background elements that respond to sidebar */}

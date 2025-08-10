@@ -17,9 +17,7 @@ export function CreatorPostCard({
   creator,
   post,
   session,
-  isCreator,
-  isFollower,
-  isSubscriber,
+  status,
   user,
   users,
   signedUrl,
@@ -28,9 +26,7 @@ export function CreatorPostCard({
   creator: Creator;
   post: Post;
   session: Session | null;
-  isCreator: boolean;
-  isFollower: boolean;
-  isSubscriber: boolean | undefined;
+  status: 'follower' | 'subscriber' | 'none',
   user: User
   users: User[]
   signedUrl: string
@@ -39,7 +35,7 @@ export function CreatorPostCard({
   // Restriction logic
   const isFollowersOnly = post.viewableFor === "followers";
   const isSubscribersOnly = post.viewableFor === "subscribers";
-  const canView = !isFollowersOnly && !isSubscribersOnly || isCreator || isFollower || isSubscriber;
+  const canView = !isFollowersOnly && !isSubscribersOnly || session?.user.creator || status === 'follower' || status === 'subscriber';
   // Like and comment modal state
   const [commentOpen, setCommentOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false)

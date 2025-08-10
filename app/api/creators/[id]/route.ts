@@ -21,10 +21,6 @@ export async function GET(request: NextRequest, context: unknown) {
     return NextResponse.json({ message: "Database connection failed" }, { status: 500 });
   }
 
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   const { id } = params;
   const userId = new URL(request.url).searchParams.get('userId');

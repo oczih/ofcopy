@@ -3,7 +3,7 @@ import { Creator } from '@/app/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
-const PUBLIC_CREATORS_ENDPOINT = `${API_BASE}/api/public-creators`;
+const PUBLIC_CREATORS_ENDPOINT = `${API_BASE}/api/my-creators`;
 
 const get = async (): Promise<{ creators: Creator[] }> => {
   try {
@@ -38,7 +38,7 @@ const getById = async (id: string): Promise<{ creator: Creator }> => {
 
 const followCreator = async (creatorId: string): Promise<void> => {
   try {
-    await axios.post(`${PUBLIC_CREATORS_ENDPOINT}/${creatorId}/follow`);
+    await axios.post(`${API_BASE}/api/creators/${creatorId}/follow`);
   } catch (error) {
     console.error('Error following creator:', error);
     throw new Error('Failed to follow creator');
@@ -47,7 +47,7 @@ const followCreator = async (creatorId: string): Promise<void> => {
 
 const unfollowCreator = async (creatorId: string): Promise<void> => {
   try {
-    await axios.delete(`${PUBLIC_CREATORS_ENDPOINT}/${creatorId}/follow`);
+    await axios.delete(`${API_BASE}/creators/${creatorId}/follow`);
   } catch (error) {
     console.error('Error unfollowing creator:', error);
     throw new Error('Failed to unfollow creator');

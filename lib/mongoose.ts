@@ -3,9 +3,7 @@ import mongoose from "mongoose";
 
 let isConnected: boolean = false;
 
-export const connectDB = async () => {
-  console.log("🔗 Attempting to connect to MongoDB...");
-  console.log("Current connection status:", isConnected);
+export const connectDB = async () => {  
   
   if (isConnected) {
     console.log("✅ Already connected to MongoDB");

@@ -40,11 +40,11 @@ export default async function App({ creators, users, session, username }: AppPro
   
       if (creator && viewerId) {
         const isSubscriber = Array.isArray(creator.subscribers) &&
-          creator.subscribers.some((sub: Subscriber) => sub.userId.toString() === viewerId);
-  
-        const isFollower = Array.isArray(creator.followers) &&
-          creator.followers.some((fol: Follower) => fol.userId.toString() === viewerId);
-  
+  creator.subscribers.some((sub: Subscriber) => sub.userId.toString() === viewerId);
+
+const isFollower = creator.followers &&
+  creator.followers.some((fol: Follower) => fol.userId.toString() === viewerId);
+        console.log("isfollower:", isFollower)
         if (isSubscriber) {
           relationshipStatus = 'subscriber';
         } else if (isFollower) {

@@ -4,7 +4,6 @@ export type User = {
     id: string,
     avatarKey?: string;
     username: string
-    password: string
     email: string,
     bio?: string;
     name: string,
@@ -142,7 +141,6 @@ declare module "next-auth" {
     googleId?: string;
     membership?: boolean;
     bio?: string;
-    password: string;
     createdAt: string;
     location: string;
     hasAccess?: boolean;

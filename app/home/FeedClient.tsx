@@ -10,10 +10,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { CreatorPostCard } from "../../components/CreatorPostCard";
 import { useRouter } from "next/navigation";
-
+import { Session } from "next-auth";
 interface AppProps {
   creators: Creator[];
-  session: any;
+  session: Session | null;
   users: User[];
 }
 
@@ -75,7 +75,7 @@ export default function App({ creators, session, users}: AppProps) {
       const response = await fetch("/api/auth/resend-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: session?.user.email, userId: session.user.id }),
+        body: JSON.stringify({ email: session?.user.email, userId: session?.user.id }),
       });
 
       const data = await response.json();
@@ -266,7 +266,7 @@ export default function App({ creators, session, users}: AppProps) {
                   <h3 className="text-xl font-bold text-white mb-2">No Subscriptions or Follows Yet</h3>
                   <p className="text-gray-400 mb-6">Start exploring creators and subscribe to their content to see it here.</p>
                   <Link href="/discover">
-                    <Button className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                    <Button className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer">
                       Discover Creators
                     </Button>
                   </Link>

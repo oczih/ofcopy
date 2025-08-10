@@ -166,12 +166,6 @@ export const authOptions: NextAuthOptions = {
     },
 
     async jwt({ token, user, account }) {
-      console.log("[JWT] Callback triggered with:", { 
-        hasUser: !!user, 
-        hasAccount: !!account, 
-        currentTokenId: token.id,
-        currentTokenEmail: token.email 
-      });
     
       if (account) {
         token.accessToken = account.access_token;

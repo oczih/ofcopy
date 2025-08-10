@@ -6,29 +6,42 @@ import CreatorModel from "@/app/models/creatormodel";
 import UserModel from "@/app/models/usermodel";
 import { redirect } from "next/navigation";
 
-function deepSanitize(obj: any): any {
+function deepSanitize<T>(obj: T, seen = new WeakSet()): T | null {
   if (obj === null || obj === undefined) return obj;
 
-  if (typeof obj?.toString === "function" && obj._bsontype === "ObjectID") {
-    return obj.toString();
+  if (typeof obj === "object") {
+    if (seen.has(obj)) {
+      return null;
+    }
+    seen.add(obj);
+  }
+
+  // @ts-expect-error ObjectId has _bsontype but TS doesn't know
+  if (obj && obj._bsontype === "ObjectId") {
+    return obj.toString() as unknown as T;
   }
 
   if (obj instanceof Date) {
-    return obj.toISOString();
+    return obj.toISOString() as unknown as T;
   }
 
   if (Array.isArray(obj)) {
-    return obj.map((item) => deepSanitize(item));
+    return obj.map((item) => deepSanitize(item, seen)) as unknown as T;
   }
 
   if (typeof obj === "object") {
-    return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [key, deepSanitize(value)])
-    );
+    const sanitizedObj: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      sanitizedObj[key] = deepSanitize(value, seen);
+    }
+    return sanitizedObj as T;
   }
 
   return obj;
 }
+
+
+
 
 export async function fetchPageData() {
   const session = await getServerSession(authOptions);
@@ -44,8 +57,11 @@ export async function fetchPageData() {
     dbUser = await UserModel.findOne({ email: session.user.email }).lean();
   }
   
-  const creatorsRaw = await CreatorModel.find({}).populate("posts").lean();
-  const usersRaw = await UserModel.find({}).lean();
+  const creatorsRaw = await CreatorModel.find({})
+  .populate("posts")
+  .lean({ virtuals: true });
+
+const usersRaw = await UserModel.find({}).lean({ virtuals: true });
   console.log("kakkak", deepSanitize(creatorsRaw))
   console.log("vitu", deepSanitize(usersRaw))
   console.log("homo", session)

@@ -6,8 +6,7 @@ import { getAllCreators } from "@/lib/creatorService";
 
 export async function GET(request: NextRequest) {
   try {
-    verifySystemAccess(request);
-    const creators = await getAllCreators(true);
+    const creators = await CreatorModel.find({})
     return NextResponse.json({ creators });
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
