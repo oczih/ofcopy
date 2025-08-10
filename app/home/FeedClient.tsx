@@ -43,9 +43,9 @@ export default function App({ creators, session, users}: AppProps) {
 
       const allPosts = creators.flatMap((creator) => creator.posts || []);
       const signedUrlsMap: Record<string, string> = {};
-
+      const postsWithKeys = allPosts.filter(post => post.s3Key);
       await Promise.all(
-        allPosts.map(async (post) => {
+        postsWithKeys.map(async (post) => {
           if (!post.s3Key) return;
           try {
             const res = await fetch("/api/media/download-url", {
@@ -64,7 +64,7 @@ export default function App({ creators, session, users}: AppProps) {
         })
       );
 
-      setPostSignedUrls(signedUrlsMap);
+      setPostSignedUrls((prev) => ({ ...prev, ...signedUrlsMap }));
     }
 
     fetchSignedUrls();

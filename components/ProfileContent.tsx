@@ -141,42 +141,54 @@ export default function ProfileContent({
     fetchAvatarUrl();
   }, [creator, userViewed?.avatarKey]);
   
-  const [postSignedUrls, setPostSignedUrls] = useState<Record<string, string>>({});
-  
-  useEffect(() => {
-    async function fetchSignedUrls() {
-      if (!creator?.posts) return;
-  
-      const signedUrlMap: Record<string, string> = {};
-      await Promise.all(
-        creator.posts.map(async (post: Post) => {
-          if (!post.s3Key) return;
-  
-          try {
-            const res = await fetch('/api/media/download-url', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ s3Key: post.s3Key }),
-            });
-  
+  const [postSignedUrls, setPostSignedUrls] = useState<Record<string, { url: string; expiresAt: number }>>({});
+
+  const SIGNED_URL_TTL = 15 * 60 * 1000; // 15 minutes TTL in milliseconds
+
+useEffect(() => {
+  async function fetchSignedUrls() {
+    if (!creators || creators.length === 0) return;
+
+    const allPosts = creators.flatMap((creator) => creator.posts || []);
+    const now = Date.now();
+    const newUrlsMap = { ...postSignedUrls }; // keep existing URLs
+
+    const postsToFetch = allPosts.filter(post => {
+      if (!post.s3Key) return false;
+      const cached = postSignedUrls[post._id];
+      if (!cached) return true; // no cached url
+      if (cached.expiresAt < now) return true; // expired url
+      return false; // url still valid
+    });
+
+    await Promise.all(
+      postsToFetch.map(async (post) => {
+        try {
+          const res = await fetch("/api/media/download-url", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ s3Key: post.s3Key }),
+          });
+
+          if (res.ok) {
             const data = await res.json();
-  
-            if (res.ok && data.downloadUrl) {
-              signedUrlMap[post._id] = data.downloadUrl;
-            }
-          } catch (err) {
-            console.error(`Failed to fetch signed URL for post ${post._id}`, err);
+            newUrlsMap[post._id] = {
+              url: data.downloadUrl,
+              expiresAt: now + SIGNED_URL_TTL,
+            };
           }
-        })
-      );
-  
-      setPostSignedUrls(signedUrlMap);
-    }
-  
-    fetchSignedUrls();
-  }, [creator?.posts]);
+        } catch (error) {
+          console.error("Failed to fetch signed URL for post:", post._id, error);
+        }
+      })
+    );
+
+    setPostSignedUrls(newUrlsMap);
+  }
+
+  fetchSignedUrls();
+}, [creators, SIGNED_URL_TTL, postSignedUrls]);
+
 
   useEffect(() => {
     if (!creator || !viewingUser?.id) {
@@ -279,10 +291,9 @@ console.log(status)
           <>
            
 
-            <Image
-              src={resolvedSrc ?? ""}
+            <img
+              src={resolvedSrc ?? undefined}
               alt={userViewed.username || "User profile image"}
-              fill
               sizes="(max-width: 768px) 100vw, 40vw"
               className="rounded-full border border-black shadow-lg transition-all duration-300 object-cover"
               onLoad={() => setImageLoading(false)}
@@ -529,7 +540,7 @@ console.log(status)
             <PostsGrid creator={creator} status={status} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user} handleFollow={handleFollow} users={users} session={session} />
           )}
           {activeTab === 'purchased' && (
-            <PurchasedPostsGrid creator={creator} handleFollow={handleFollow} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user}/>
+            <PurchasedPostsGrid status={status} creator={creator} handleFollow={handleFollow} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user}/>
           )}
           {activeTab === 'media' && (
             <MediaGrid creator={creator} status={status} postSignedUrls={postSignedUrls}  />
@@ -645,24 +656,23 @@ console.log(status)
               className="relative w-full aspect-square overflow-hidden"
             >
               {/* Blurred Background Layer */}
-              <Image
+              {!isLoaded && (
+              <Skeleton className="absolute inset-0 w-full h-full rounded-none bg-gray-200 dark:bg-gray-700 z-20" />
+            )}
+              <img
                 src={resolveImageUrl(postSignedUrls[p._id]) || ""}
                 alt="blurred background"
-                fill
                 className="object-cover blur-lg scale-110 brightness-50"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
   
               {/* Skeleton while loading */}
-              {!isLoaded && (
-              <Skeleton className="absolute inset-0 w-full h-full rounded-none bg-gray-200 dark:bg-gray-700 z-20" />
-            )}
   
               {/* Foreground Image */}
-              <Image
+              {/*@next/next/no-img-element */}
+              <img
                 src={resolveImageUrl(postSignedUrls[p._id]) || ""}
                 alt={p.caption || 'Media post'}
-                fill
                 className="object-contain z-10 transition-opacity duration-300"
                 onLoad={() => handleImageLoad(p._id)}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
