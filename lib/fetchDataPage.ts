@@ -64,9 +64,7 @@ export async function fetchPageData() {
   const usersRaw = await UserModel.find({}).lean<User>({ virtuals: true });
 const creatorsSanitized = deepSanitize(creatorsRaw) ?? [];
 const usersSanitized = deepSanitize(usersRaw) ?? [];
-  console.log("kakkak", deepSanitize(creatorsRaw))
-  console.log("vitu", deepSanitize(usersRaw))
-  console.log("homo", session)
+
   return {
     creators: creatorsSanitized as Creator[],
     users: usersSanitized as User[],

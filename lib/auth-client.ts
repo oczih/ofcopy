@@ -213,7 +213,6 @@ export const authOptions: NextAuthOptions = {
           { _id: token.id } // Also search by ID for credentials users
         ],
       });
-      console.log("helsinki:", user)
       // Check if user is a creator
       let isCreator = false;
       if (user) {

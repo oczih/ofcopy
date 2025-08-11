@@ -1,46 +1,44 @@
-// lib/mongoose.ts
 import mongoose from "mongoose";
 
-let isConnected: boolean = false;
+let isConnected = false;
 
-export const connectDB = async () => {  
-  
-  if (isConnected) {
+export const connectDB = async () => {
+  if (isConnected || mongoose.connection.readyState === 1) {
     console.log("✅ Already connected to MongoDB");
     return;
   }
 
-  let MONGO_URI = process.env.MONGO_URI;
-  
-  if (!MONGO_URI) {
-    console.log("⚠️ MONGO_URI not found in process.env, trying alternatives...");
-    MONGO_URI = process.env.MONGODB_URI || process.env.MONGODB_URL || process.env.DATABASE_URL;
+  if (mongoose.connection.readyState === 2) {
+    console.log("⏳ MongoDB connection already in progress...");
+    return;
   }
 
+  const MONGO_URI =
+    process.env.MONGO_URI ||
+    process.env.MONGODB_URI ||
+    process.env.MONGODB_URL ||
+    process.env.DATABASE_URL;
 
   if (!MONGO_URI) {
-    console.error("❌ MONGO_URI is undefined or empty");
-    console.error("Available env vars:", Object.keys(process.env));
     throw new Error("❌ MONGO_URI environment variable is not defined");
   }
 
   try {
     console.log("🌐 Connecting to:", MONGO_URI.substring(0, 50) + "...");
-    const db = await mongoose.connect(MONGO_URI);
-    isConnected = db.connections[0].readyState === 1;
-  
-    if (isConnected) {
-      console.log("✅ MongoDB connected successfully");
-  
-      // Always import models AFTER connection
-      await import('@/app/models/usermodel');
-      await import('@/app/models/creatormodel');
-      await import('@/app/models/postmodel');
-  
-    } else {
-      console.log("❌ MongoDB connection failed - readyState:", db.connections[0].readyState);
+    await mongoose.connect(MONGO_URI);
+    isConnected = true;
+    console.log("✅ MongoDB connected successfully");
+
+    // Import models once after connection
+    if (!mongoose.models.User) {
+      await import("@/app/models/usermodel");
     }
-  
+    if (!mongoose.models.Creator) {
+      await import("@/app/models/creatormodel");
+    }
+    if (!mongoose.models.Post) {
+      await import("@/app/models/postmodel");
+    }
   } catch (error) {
     console.error("❌ MongoDB connection error:", error);
     throw error;
