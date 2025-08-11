@@ -68,11 +68,15 @@ export type Creator = {
     posts?: Post[];
     user: string;
   }
-export type Notification = {
-  type: 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comment' | 'like' | 'newfollower',
-  date: Date,
-  seen: boolean
-}
+
+  export type NotificationType = 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comment' | 'like' | 'newfollower'| 'promotion';
+
+  export interface Notification {
+    type: NotificationType;
+    date: Date;
+    seen: boolean;
+    for: User[]; // Either User objects or their ObjectId references
+  }
 export interface Follower {
   userId: string;
   username: string;

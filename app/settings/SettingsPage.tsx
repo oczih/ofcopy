@@ -78,6 +78,7 @@ export default function App({session}: AppProps) {
     { id: "account", label: "Account" },
     { id: "payments", label: "Payment & Subscriptions" },
     { id: "legal", label: "Privacy & Terms" },
+    { id: "payout", label: "Request A Payout", href: "/settings/payouts/request"}
   ];
   type SubTab = {
     id: string;
@@ -238,6 +239,7 @@ const validate = () => {
                       {tab.id === "account" && "Manage your personal information"}
                       {tab.id === "payments" && "Handle subscriptions and payments"}
                       {tab.id === "legal" && "View privacy policy and terms"}
+                      {tab.id === "payout" && "Request a payout with your preferred method"}
                     </p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-green-400 transition-colors" />

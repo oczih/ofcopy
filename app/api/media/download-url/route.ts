@@ -2,7 +2,7 @@
   import { NextRequest, NextResponse } from "next/server";
 
   export async function POST(req: NextRequest) {
-    
+    console.log("POST /api/media/download-url called");
     try {
       // Parse the request body
       const body = await req.json();
@@ -86,6 +86,7 @@
       }
 
       // Generic error for CloudFront signing issues
+      console.log("POST /api/media/download-url completed");
       return NextResponse.json({ 
         error: "Failed to generate download URL", 
         details: process.env.NODE_ENV === 'development' ? error : undefined 

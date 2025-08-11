@@ -6,6 +6,7 @@ import CreatorModel from "@/app/models/creatormodel";
 import UserModel from "@/app/models/usermodel";
 import { redirect } from "next/navigation";
 import { Creator, User } from "@/app/types";
+import NotificationModel from "@/app/models/notificationmodel";
 
 function deepSanitize<T>(obj: T, seen = new WeakSet()): T | null {
   if (obj === null || obj === undefined) return obj;
@@ -59,15 +60,16 @@ export async function fetchPageData() {
   }
   
   const creatorsRaw = await CreatorModel.find({}).populate("posts").lean<Creator>({ virtuals: true });
-
+  const notificationsRaw = await NotificationModel.find({}).populate("users").lean<Notification>({virtuals: true})
 
   const usersRaw = await UserModel.find({}).lean<User>({ virtuals: true });
 const creatorsSanitized = deepSanitize(creatorsRaw) ?? [];
 const usersSanitized = deepSanitize(usersRaw) ?? [];
-
+  const notificationsSanitized = deepSanitize(notificationsRaw) ?? [];
   return {
     creators: creatorsSanitized as Creator[],
     users: usersSanitized as User[],
+    notifications: notificationsSanitized as Notification[], 
     safeSession: deepSanitize({
       ...session,
       user: { ...session.user, ...dbUser }

@@ -88,7 +88,7 @@ const userSchema = new Schema<OFUserDocument>({
         required: [true, "Name is required"]
       },
   username: { type: String, required: false, unique: true },
-  password: { type: String, required: true, select: false },
+  password: { type: String, required: false, select: false },
   email: {
     type: String,
     unique: true,

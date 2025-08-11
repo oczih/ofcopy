@@ -11,6 +11,7 @@ async function generateUniqueUsername(baseUsername: string): Promise<string> {
   let count = 0;
   while (await OFUser.findOne({ username })) {
     count++;
+    console.log(`Trying username: ${username}_${count}`);
     username = `${baseUsername.toLowerCase().replace(/\s+/g, "_")}_${count}`;
   }
   return username;
@@ -125,7 +126,7 @@ export const authOptions: NextAuthOptions = {
         user.id = existingUser._id.toString();
         user.email = existingUser.email;
         // Type assertion to add custom properties
-        (user as User).membership = existingUser.membership;
+        user.membership = existingUser.membership;
       }
 
       if (provider === "twitter") {
@@ -174,9 +175,9 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         console.log("[JWT] Setting token ID:", token.id, "from user object");
-        token.username = (user as User).username;
+        token.username = user.username;
         token.email = user.email;
-        token.membership = (user as User).membership ?? false;
+        token.membership = user.membership ?? false;
       } else {
         console.log("[JWT] No user object, preserving existing token ID:", token.id);
       }

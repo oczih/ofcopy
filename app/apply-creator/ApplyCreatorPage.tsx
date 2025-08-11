@@ -234,7 +234,7 @@ export default function App({ users, session}: AppProps) {
           <div className="space-y-6">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-white mb-2">Country of Residence</h2>
-              <p className="text-gray-300">Let us know where you`&apos;`re located</p>
+              <p className="text-gray-300">Let us know where you&apos;re located</p>
             </div>
             <div>
               <label className="block mb-2 text-white font-medium">Select your country</label>

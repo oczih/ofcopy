@@ -11,7 +11,12 @@ import {
   ChevronLeft,
   ChevronRight, 
   UserCheck,
-  LogOut
+  LogOut,
+  DollarSign,
+  BarChart3,
+  UserCircle,
+  Megaphone,
+  Wallet
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
@@ -38,14 +43,33 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
   const [loading, setLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
-  const menuItems = [
+  const user = session?.user as User | undefined;
+  const isCreator = !!user?.creator; 
+  const baseMenu = [
     { id: "feed", label: "Home Feed", icon: Home, color: "pink", href: "/home" },
     { id: "discover", label: "Discover", icon: Compass, color: "purple", href: "/discover" },
-    { id: "messages", label: "Messages (Coming Soon!)", icon: MessageCircle, color: "blue", href: "/messages" },
     { id: "notifications", label: "Notifications", icon: Bell, color: "red", href: "/notifications" },
-    { id: "subscriptions", label: "Subscriptions", icon: Crown, color: "yellow", href: "/subscriptions" },
+    { id: "messages", label: "Messages (Coming Soon!)", icon: MessageCircle, color: "blue", href: "/messages" },
     { id: "settings", label: "Settings", icon: Settings, color: "green", href: "/settings" },
+    { id: "wallet", label: "Wallet", icon: Wallet, color: "orange", href: "/wallet" },
   ];
+
+  // Menu for non-creators only
+  const userOnlyMenu = [
+    { id: "following", label: "Following", icon: UserCheck, color: "blue", href: "/following" },
+    { id: "promotions", label: "Promotions", icon: Megaphone, color: "pink", href: "/promotions" },
+    { id: "profile", label: "Profile", icon: UserCircle, color: "cyan", href: `/${user?.username}` },
+  ];
+
+  // Menu for creators only
+  const creatorOnlyMenu = [
+    { id: "insights", label: "Insights", icon: BarChart3, color: "indigo", href: "/insights" },
+    { id: "earnings", label: "Earnings", icon: DollarSign, color: "emerald", href: "/earnings" },
+  ];
+
+  const menuItems = isCreator
+    ? [...baseMenu, ...creatorOnlyMenu]
+    : [...baseMenu, ...userOnlyMenu]; 
 
   const [creator, setCreator] = useState<Creator | null>(null);
 
@@ -147,15 +171,16 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
     // If we have a valid avatar URL and no error, show the image
     if (avatarUrl && !avatarError && avatarUrl.startsWith('http')) {
       return (
-        <Image
-          src={avatarUrl}
-          alt={session.user.name || session.user.username || "User profile image"}
-          width={48}
-          height={48}
-          className="w-12 h-12 rounded-full border-2 border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
-          onError={() => setAvatarError(true)}
-          unoptimized
-        />
+        {imageLoading ?
+         <div></div> : <Image
+         src={avatarUrl}
+         alt={session.user.name || session.user.username || "User profile image"}
+         width={48}
+         height={48}
+         className="w-12 h-12 rounded-full border-2 border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
+         onError={() => setAvatarError(true)}
+         unoptimized
+       />}
       );
     }
 

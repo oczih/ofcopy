@@ -1,6 +1,6 @@
 import React from "react";
 import AppWrapper from "@/components/AppWrapper";
-import App from "./MessagesApp"
+import App from "./EarningsPage"
 import { fetchPageData } from "@/lib/fetchDataPage";
 
 export default async function Page() {
