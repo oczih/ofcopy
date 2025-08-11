@@ -159,69 +159,36 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
     onCollapseChange?.(newCollapsedState);
   };
 
-  const renderAvatar = () => {
-    if (imageLoading) {
-      return <Skeleton className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-700" />;
-    }
-
-    if (!session?.user) {
-      return <Skeleton className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-700" />;
-    }
-
-    // If we have a valid avatar URL and no error, show the image
-    if (avatarUrl && !avatarError && avatarUrl.startsWith('http')) {
+    const renderAvatar = () => {
+      if (imageLoading || loading) {
+        return (
+          <Skeleton className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-700" />
+        );
+      }
+    
+      if (!session?.user || avatarError || !avatarUrl) {
+        return (
+          <Skeleton className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-700" />
+        );
+      }
+    
       return (
-        {imageLoading ?
-         <div></div> : <Image
-         src={avatarUrl}
-         alt={session.user.name || session.user.username || "User profile image"}
-         width={48}
-         height={48}
-         className="w-12 h-12 rounded-full border-2 border-pink-500/40 shadow-lg transition-all duration-300 object-cover"
-         onError={() => setAvatarError(true)}
-         unoptimized
-       />}
+        <Image
+          src={avatarUrl}
+          alt={session.user.name || session.user.username || "User profile image"}
+          width={48}
+          height={48}
+          className={`w-12 h-12 rounded-full border-2 border-pink-500/40 shadow-lg transition-opacity duration-500 ease-in-out ${
+            !loading ? "opacity-100" : "opacity-0"
+          }`}
+          onError={() => setAvatarError(true)}
+          onLoadingComplete={() => setLoading(false)}
+          unoptimized
+        />
       );
     }
+  
 
-  const initials = session.user.name
-    ? session.user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
-    : session.user.username
-      ? session.user.username[0].toUpperCase()
-      : 'U';
-
-    return (
-      <div className="w-12 h-12 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center text-white font-semibold border-2 border-pink-500/40 shadow-lg">
-        {initials}
-      </div>
-    );
-  };
-  if(loading){
-    return (
-      <div className="flex items-center justify-center h-full">
-        <svg
-          className="animate-spin h-8 w-8 text-blue-500"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-          />
-        </svg>
-      </div>
-    );
-  }
   return (
     <aside className={`${isCollapsed ? 'w-20' : 'w-72'} h-screen fixed left-0 top-0 z-30 bg-gradient-to-b from-slate-900/80 via-purple-900/70 to-slate-900/90 backdrop-blur-xl border-r border-white/10 shadow-2xl p-6 flex flex-col transition-all duration-300 ease-in-out`}>
       
@@ -257,10 +224,10 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
               {!isCollapsed && (
                 <div className="text-center">
                   <div className="text-lg font-semibold text-white truncate max-w-[12rem]">
-                    {session.user.name}
+                    {user?.name}
                   </div>
                   <div className="text-sm text-pink-400 truncate max-w-[12rem]">
-                    @{session.user.username}
+                    @{user?.username}
                   </div>
                 </div>
               )}
