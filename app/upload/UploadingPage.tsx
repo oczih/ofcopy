@@ -11,14 +11,15 @@ import Select, { SelectChangeEvent } from '@mui/material/Select';
 import { useEffect } from 'react';
 import { Creator, User } from '../types';
 import Image from 'next/image';
+import { Session } from 'next-auth';
 
 interface AppProps {
     creators: Creator[];
-    session: any;
+    session: Session | null;
     users: User[];
   }
 
-export default function App({creators, session, users}: AppProps) {
+export default function App({creators, session}: AppProps) {
     const { status } = useSession();
     const [files, setFiles] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
@@ -157,7 +158,7 @@ export default function App({creators, session, users}: AppProps) {
             body: JSON.stringify({
               s3Key: null,
               caption,
-              creatorId: creator?.id,
+              creatorId: creator?._id,
               type: null,
               viewable,
               width: null,
@@ -192,7 +193,7 @@ export default function App({creators, session, users}: AppProps) {
               body: JSON.stringify({
                 s3Key,
                 caption,
-                creatorId: creator?.id,
+                creatorId: creator?._id,
                 type: file.type,
                 viewable,
                 width,

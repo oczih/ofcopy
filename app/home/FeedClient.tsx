@@ -9,7 +9,6 @@ import toast, { Toaster } from "react-hot-toast";
 import Link from "next/link";
 import Image from "next/image";
 import { CreatorPostCard } from "../../components/CreatorPostCard";
-import { useRouter } from "next/navigation";
 import { Session } from "next-auth";
 interface AppProps {
   creators: Creator[];
@@ -17,9 +16,7 @@ interface AppProps {
   users: User[];
 }
 
-export default function App({ creators, session, users}: AppProps) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
+export default function App({ creators, users, session}: AppProps) {
   const [showBanner, setShowBanner] = useState(true);
   const [postSignedUrls, setPostSignedUrls] = useState<Record<string, string>>({});
   const [page, setPage] = useState("Feed");
@@ -27,14 +24,6 @@ export default function App({ creators, session, users}: AppProps) {
   const HIDE_DURATION = 2 * 60 * 1000;
 
   // Manage loading and redirect on unauthenticated
-  useEffect(() => {
-    if (status !== "loading") {
-      setLoading(false);
-    }
-    if (status === "unauthenticated") {
-      router.push("/login");
-    }
-  }, [router]);
 
   // Fetch signed URLs only client-side when creators are present
   useEffect(() => {
@@ -46,14 +35,13 @@ export default function App({ creators, session, users}: AppProps) {
       const postsWithKeys = allPosts.filter(post => post.s3Key);
       await Promise.all(
         postsWithKeys.map(async (post) => {
-          if (!post.s3Key) return;
           try {
             const res = await fetch("/api/media/download-url", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ s3Key: post.s3Key }),
             });
-
+      
             if (res.ok) {
               const data = await res.json();
               signedUrlsMap[post._id] = data.downloadUrl;
@@ -90,35 +78,11 @@ export default function App({ creators, session, users}: AppProps) {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to resend verification email";
       toast.error(message);
-    } finally {
-      setLoading(false);
     }
   };
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <svg
-          className="animate-spin h-8 w-8 text-blue-500"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-          />
-        </svg>
-      </div>
-    );
+  if (!session) {
+    // Show a fallback or redirect or login prompt if session not passed
+    return <div>Please log in.</div>;
   }
 
   const followedCreatorIds = new Set([
@@ -127,7 +91,7 @@ export default function App({ creators, session, users}: AppProps) {
   ]);
 
   const filteredCreators = creators.filter((creator) => {
-    const isFollowed = followedCreatorIds.has(creator.id);
+    const isFollowed = followedCreatorIds.has(creator._id);
     const isOwnCreator = session?.user?.id === creator.user.toString();
     return isFollowed || isOwnCreator;
   });
@@ -137,7 +101,7 @@ export default function App({ creators, session, users}: AppProps) {
     // This function would still call the backend endpoint directly (if you keep this)
     try {
       // For example, a fetch to /api/follow or something
-      await fetch(`/api/creators/${creator.id}/follow`, {
+      await fetch(`/api/creators/${creator._id}/follow`, {
         method: "POST",
       });
       toast.success(`Followed ${creator.name}`);
@@ -224,42 +188,50 @@ export default function App({ creators, session, users}: AppProps) {
           </div>
         </div>
       </div>
-  )}
+  )}    
           {/* Feed */}
           {page === "Feed" && (
           <>
             {/* Creators and their posts with enhanced spacing */}
             <div className="space-y-10 mt-10">
-              {filteredCreators && filteredCreators.length > 0 && users && session ? (
-                filteredCreators.map((creator) => (
-                  <div key={creator.id} className="space-y-8">
-                    {creator.posts && creator.posts.length > 0 && (
-                      creator.posts.map(post => {
-                        const isCreator = session?.user?.id === creator.user;
-                        
-                        const isFollower = session?.user?.following?.some((f: Following) => f.creatorId.toString() === creator.id);
-                        const isSubscriber = !!session?.user?.subscriptions?.some((s: Subscription) => s.creatorId.toString() === creator.id);
-                        return (
-                          <div key={post._id} className="transform transition-transform duration-300">
-                            <CreatorPostCard
-                              creator={creator}
-                              post={post}
-                              session={session}
-                              user={session?.user}
-                              isCreator={isCreator}
-                              isFollower={isFollower}
-                              isSubscriber={isSubscriber}
-                              users={users}
-                              handleFollow={handleFollow}
-                              signedUrl={postSignedUrls[post._id]}
-                            />
-                          </div>
-                        );
-                      })
-                    )}
+            {filteredCreators && filteredCreators.length > 0 && users && session ? (
+              filteredCreators.map((creator) => {
+                // Determine status for this creator
+                const isSubscribed = session.user.subscriptions?.some(
+                  (sub) => sub.creatorId.toString() === creator._id.toString()
+                );
+                const isFollower = session.user.following?.some(
+                  (f) => f.creatorId.toString() === creator._id.toString()
+                );
+
+                // Priority: subscriber > follower > none
+                const status: 'subscriber' | 'follower' | 'none' = isSubscribed
+                  ? 'subscriber'
+                  : isFollower
+                  ? 'follower'
+                  : 'none';
+
+                return (
+                  <div key={creator._id} className="space-y-8">
+                    {creator.posts && creator.posts.length > 0 &&
+                      creator.posts.map((post) => (
+                        <div key={post._id} className="transform transition-transform duration-300">
+                          <CreatorPostCard
+                            creator={creator}
+                            post={post}
+                            session={session}
+                            user={session.user as User}
+                            status={status}  // Pass status here
+                            users={users}
+                            handleFollow={handleFollow}
+                            signedUrl={postSignedUrls[post._id]}
+                          />
+                        </div>
+                      ))}
                   </div>
-                ))
-              ) : (
+                );
+              })
+            ) : (
                 <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 text-center group hover:bg-white/10 transition-all duration-500">
                 <div className="mb-4">
                   <Sparkles className="w-16 h-16 text-gray-400 mx-auto mb-4 group-hover:text-pink-400 transition-colors duration-300" />

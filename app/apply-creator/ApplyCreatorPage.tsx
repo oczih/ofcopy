@@ -10,10 +10,11 @@ import { uploadContent } from "@/app/services/uploadmediaservice";
 import Image from "next/image";
 import { Creator, User } from "../types";
 import toast, { Toaster } from "react-hot-toast";
+import { Session } from "next-auth";
 
 interface AppProps {
     creators: Creator[];
-    session: any;
+    session: Session | null;
     users: User[];
   }
 
@@ -72,14 +73,14 @@ export default function App({ users, session}: AppProps) {
         if (res.ok) {
           const data = await res.json();
           if (data.user?.creator) {
-            await update();
+            //await update();
             window.location.reload();
           }
         }
       }, 10000);
     }
     return () => clearInterval(interval);
-  }, [success, session, update]);
+  }, [success, session]);
   useEffect(() => {
     return () => {
       previews.forEach((preview) => URL.revokeObjectURL(preview));

@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, Document} from "mongoose";
+import mongoose, { Schema, model, Document } from "mongoose";
 import { Message } from "./messagemodel";
 import { PostDocument } from "./postmodel";
 
@@ -82,7 +82,7 @@ export interface OFUserDocument extends Document {
   lastPasswordResetSentAt: Date;
 }
 
-const userSchema = new Schema<UserDocument>({
+const userSchema = new Schema<OFUserDocument>({
   name: {
         type: String,
         required: [true, "Name is required"]
@@ -245,17 +245,22 @@ const userSchema = new Schema<UserDocument>({
 
 
 userSchema.set('toJSON', {
-  transform: function (
-    _doc: mongoose.Document,
-    ret: Partial<OFUserDocument> & { _id?: string; id?: string; __v?: number; password?: string }
-  ) {
-    ret.id = ret._id?.toString();
+  transform: (
+    doc: Document & OFUserDocument,
+    ret: Partial<OFUserDocument>, // Use 'any' to simplify the type definition
+  ) => {
+    // Narrow _id safely using a type guard
+    if (typeof ret._id === 'object' && ret._id !== null && 'toString' in ret._id) {
+      ret.id = ret._id.toString();
+    } else {
+      ret.id = undefined;
+    }
     delete ret._id;
-    delete ret.__v;
     delete ret.password;
     return ret;
   },
 });
+
 export interface VerificationTokenDocument extends Document {
   userId: mongoose.Types.ObjectId;
   token: string;

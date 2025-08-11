@@ -13,22 +13,23 @@ import {
   UserCheck,
   LogOut
 } from "lucide-react";
-import { signOut, useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname} from "next/navigation";
 import Image from "next/image";
 import { Creator, User } from "../app/types";
 import { Skeleton } from "@/components/ui/skeleton"
+import { Session } from "next-auth";
 
 interface SidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
-  session: any
+  session: Session | null
   creators: Creator[]
   users: User[]
 }
 
-export const Sidebar = ({ onCollapseChange, session,creators, users }: SidebarProps) => {
+export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) => {
   const pathname = usePathname();
   const status = session ? "authenticated" : "unauthenticated";
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -66,7 +67,7 @@ export const Sidebar = ({ onCollapseChange, session,creators, users }: SidebarPr
     fetchCreator();
   }, [session?.user?.id, creators]);
   useEffect(() => {
-    if (status !== 'loading') {
+    if (status === 'authenticated') {
       setLoading(false);
     }
   }, [status]);
@@ -157,17 +158,12 @@ export const Sidebar = ({ onCollapseChange, session,creators, users }: SidebarPr
         />
       );
     }
-    type Char = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' 
-    | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' 
-    | 'y' | 'z' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' 
-    | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' 
-    | 'Y' | 'Z'
-    // Fallback: show user initials or default avatar
-    const initials = session.user.name 
-      ? session.user.name.split(' ').map((n: Char) => n[0]).join('').toUpperCase()
-      : session.user.username 
-        ? session.user.username[0].toUpperCase()
-        : 'U';
+
+  const initials = session.user.name
+    ? session.user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
+    : session.user.username
+      ? session.user.username[0].toUpperCase()
+      : 'U';
 
     return (
       <div className="w-12 h-12 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center text-white font-semibold border-2 border-pink-500/40 shadow-lg">

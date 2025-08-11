@@ -5,6 +5,7 @@ import { connectDB } from "@/lib/mongoose";
 import CreatorModel from "@/app/models/creatormodel";
 import UserModel from "@/app/models/usermodel";
 import { redirect } from "next/navigation";
+import { Creator, User } from "@/app/types";
 
 function deepSanitize<T>(obj: T, seen = new WeakSet()): T | null {
   if (obj === null || obj === undefined) return obj;
@@ -57,20 +58,21 @@ export async function fetchPageData() {
     dbUser = await UserModel.findOne({ email: session.user.email }).lean();
   }
   
-  const creatorsRaw = await CreatorModel.find({})
-  .populate("posts")
-  .lean({ virtuals: true });
+  const creatorsRaw = await CreatorModel.find({}).populate("posts").lean<Creator>({ virtuals: true });
 
-const usersRaw = await UserModel.find({}).lean({ virtuals: true });
+
+  const usersRaw = await UserModel.find({}).lean<User>({ virtuals: true });
+const creatorsSanitized = deepSanitize(creatorsRaw) ?? [];
+const usersSanitized = deepSanitize(usersRaw) ?? [];
   console.log("kakkak", deepSanitize(creatorsRaw))
   console.log("vitu", deepSanitize(usersRaw))
   console.log("homo", session)
   return {
-    creators: deepSanitize(creatorsRaw),
-    users: deepSanitize(usersRaw),
-     safeSession: deepSanitize({
-    ...session,
-    user: { ...session.user, ...dbUser }
-  }),
+    creators: creatorsSanitized as Creator[],
+    users: usersSanitized as User[],
+    safeSession: deepSanitize({
+      ...session,
+      user: { ...session.user, ...dbUser }
+    }),
   };
 }

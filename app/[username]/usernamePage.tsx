@@ -6,6 +6,7 @@ import ProfileContent from '@/components/ProfileContent';
 import CreatorModel from '@/app/models/creatormodel'; // Assuming this is your creator model
 import { MediaPost,Subscriber, Purchase, Follower, User, Creator } from '../types';
 import { PostDocument } from '../models/postmodel';
+import { Session } from 'next-auth';
 
 const RESERVED_ROUTES = [
   'discover', 'messages', 'settings', 'subscriptions', 'notifications', 'api', 'components',
@@ -17,7 +18,7 @@ const RESERVED_ROUTES = [
 interface AppProps {
     creators: Creator[];
     users: User[];
-    session: any;
+    session: Session | null;
     username: string;
   }
 export default async function App({ creators, users, session, username }: AppProps) {

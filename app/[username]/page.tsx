@@ -26,8 +26,8 @@ export default async function Page({ params }: PageProps) {
   // Sanitize your data if needed here
 
   return (
-    <AppWrapper creators={creators} users={users} session={safeSession}>
-  <App creators={creators} users={users} session={safeSession} username={username.toLowerCase()} />
-</AppWrapper>
+    <AppWrapper creators={creators ?? []} users={users} session={safeSession}>
+    <App creators={creators} users={users} session={safeSession} username={username.toLowerCase()} />
+    </AppWrapper>
   );
 }

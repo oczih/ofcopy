@@ -29,7 +29,7 @@ export function CreatorPostCard({
   status: 'follower' | 'subscriber' | 'none',
   user: User
   users: User[]
-  signedUrl: string
+  signedUrl: string;
   handleFollow: (creator: Creator) => void;
 }) {
   // Restriction logic
@@ -266,7 +266,7 @@ useEffect(() => {
   }
   const canDeleteComment = (comment: Comment) => {
     const isCommentOwner = comment.userId === session?.user?.id;
-    const isPostOwner = session?.user?.id === creator.id
+    const isPostOwner = session?.user?.id === creator._id
     return isCommentOwner || isPostOwner;
   };
   const handleCommentModalOpen = (commentId: string) => {

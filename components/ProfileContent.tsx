@@ -1,9 +1,9 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Creator, Follower, MediaPost, Post, Subscriber, User } from '@/app/types';
-import Image from 'next/image';
 import SubscribeModal from '@/components/SubscribeModal';
 import creatorservice from '@/app/services/creatorservice';
 import { Skeleton } from "@/components/ui/skeleton"
@@ -15,6 +15,7 @@ import { useSession } from 'next-auth/react';
 import { resolveImageUrl } from './resolveImageUrl';
 import { Heart, Lock, Video } from 'lucide-react';
 import SignUpModal from './SignupModal';
+import { Session } from 'next-auth';
 
 // Bio Modal Component
 const BioModal = ({ bio, creatorName }: { bio: string; creatorName: string }) => {
@@ -57,7 +58,7 @@ type UserProfileData = {
   relationshipStatus: 'subscriber' | 'follower' | 'none'  // Add this line
   users: User[],
   creators: Creator[],
-  session: any
+  session: Session | null
 }
 export default function ProfileContent({ 
   userViewed, 
@@ -141,7 +142,7 @@ export default function ProfileContent({
     fetchAvatarUrl();
   }, [creator, userViewed?.avatarKey]);
   
-  const [postSignedUrls, setPostSignedUrls] = useState<Record<string, { url: string; expiresAt: number }>>({});
+  const [postSignedUrls, setPostSignedUrls] = useState<Record<string, string>>({});
 
   const SIGNED_URL_TTL = 15 * 60 * 1000; // 15 minutes TTL in milliseconds
 
@@ -150,38 +151,38 @@ useEffect(() => {
     if (!creators || creators.length === 0) return;
 
     const allPosts = creators.flatMap((creator) => creator.posts || []);
-    const now = Date.now();
     const newUrlsMap = { ...postSignedUrls }; // keep existing URLs
 
     const postsToFetch = allPosts.filter(post => {
       if (!post.s3Key) return false;
       const cached = postSignedUrls[post._id];
       if (!cached) return true; // no cached url
-      if (cached.expiresAt < now) return true; // expired url
       return false; // url still valid
     });
-
+    const signedUrlMap: Record<string, string> = {};
     await Promise.all(
-      postsToFetch.map(async (post) => {
-        try {
-          const res = await fetch("/api/media/download-url", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ s3Key: post.s3Key }),
-          });
-
-          if (res.ok) {
+        postsToFetch.map(async (post: Post) => {
+          if (!post.s3Key) return;
+  
+          try {
+            const res = await fetch('/api/media/download-url', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ s3Key: post.s3Key }),
+            });
+  
             const data = await res.json();
-            newUrlsMap[post._id] = {
-              url: data.downloadUrl,
-              expiresAt: now + SIGNED_URL_TTL,
-            };
+  
+            if (res.ok && data.downloadUrl) {
+              signedUrlMap[post._id] = data.downloadUrl;
+            }
+          } catch (err) {
+            console.error(`Failed to fetch signed URL for post ${post._id}`, err);
           }
-        } catch (error) {
-          console.error("Failed to fetch signed URL for post:", post._id, error);
-        }
-      })
-    );
+        })
+      );
 
     setPostSignedUrls(newUrlsMap);
   }
@@ -198,12 +199,12 @@ useEffect(() => {
     const isSubscriber =
       Array.isArray(creator.subscribers) &&
       creator.subscribers.some(
-        (sub: Subscriber) => sub.userId.toString() === viewingUser._id.toString()
+        (sub: Subscriber) => sub.userId.toString() === viewingUser.id.toString()
       );
     const isFollower =
       creator.followers &&
       creator.followers.some(
-        (fol: Follower) => fol.userId.toString() === viewingUser._id.toString()
+        (fol: Follower) => fol.userId.toString() === viewingUser.id.toString()
       );
   
     if (isSubscriber) {
@@ -248,7 +249,7 @@ useEffect(() => {
       setCurrentUser({
         ...currentUser,
         following: [...currentUser.following, { 
-          creatorId: creator.id, creatorName: creator.name, creatorUsername: creator.username, followingDate: new Date()
+          creatorId: creator._id, creatorName: creator.name, creatorUsername: creator.username, followingDate: new Date()
         }],
       });
       setStatus('follower');
@@ -261,11 +262,11 @@ console.log(status)
     if (!creator || !viewingUser) return;
 
     try {
-      await creatorservice.unfollowCreator(creator.id);
+      await creatorservice.unfollowCreator(creator._id);
 
       setCurrentUser({
         ...currentUser,
-        following: currentUser.following.filter(f => f.creatorId !== creator.id),
+        following: currentUser.following.filter(f => f.creatorId !== creator._id),
       });
 
       setStatus('none');
@@ -496,7 +497,7 @@ console.log(status)
     handleFollow: (creator: Creator) => Promise<void>
     user: User,
     users: User[],
-    session: any
+    session: Session | null
   }) {
     const [activeTab, setActiveTab] = useState(creator ? 'posts' : 'purchased');
     const tabs = [
@@ -537,7 +538,7 @@ console.log(status)
         {/* Tab Content */}
         <div className="p-6">
           {activeTab === 'posts' && (
-            <PostsGrid creator={creator} status={status} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user} handleFollow={handleFollow} users={users} session={session} />
+            <PostsGrid creator={creator} status={status} postSignedUrls={postSignedUrls} user={user} handleFollow={handleFollow} users={users} session={session} />
           )}
           {activeTab === 'purchased' && (
             <PurchasedPostsGrid status={status} creator={creator} handleFollow={handleFollow} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user}/>
@@ -687,7 +688,6 @@ console.log(status)
   function PostsGrid({
     creator,
     status,
-    viewingUser,
     postSignedUrls,
     handleFollow,
     user,
@@ -696,12 +696,11 @@ console.log(status)
   }: {
     creator?: Creator;
     status: 'subscriber' | 'follower' | 'none';
-    viewingUser: User;
-    postSignedUrls: { [key: string]: string };
+    postSignedUrls: Record<string, string>;
     handleFollow: (creator: Creator) => void;
     user: User,
     users: User[],
-    session: any
+    session: Session | null
   }) {
     if (!creator) return null;
     

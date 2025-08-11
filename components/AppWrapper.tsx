@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { Creator, User } from "@/app/types";
+import { Session } from "next-auth";
 
 export default function AppWrapper({
   children,
@@ -12,7 +13,7 @@ export default function AppWrapper({
   children: React.ReactNode;
   creators: Creator[]; // ideally type these
   users: User[];
-  session: any;
+  session: Session | null
 }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   return (

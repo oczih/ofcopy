@@ -25,6 +25,7 @@ export type User = {
     emailVerificationExpires: Date;
     lastVerificationEmailSentAt: Date;
     lastPasswordResetSentAt: Date;
+    password: string;
     purchases: Purchase[];
     createdAt: string;
   }
@@ -52,7 +53,7 @@ export type User = {
     PreferNotToSay = 'PreferNotToSay'
   }
 export type Creator = {
-    id: string;
+    _id: string;
     name: string;
     username: string;
     avatarKey?: string;  
@@ -139,6 +140,7 @@ declare module "next-auth" {
     username?: string;
     age?: number;
     googleId?: string;
+    password: string;
     membership?: boolean;
     bio?: string;
     createdAt: string;

@@ -362,7 +362,7 @@ export function PostCard({
   const [likes, setLikes] = useState(post.likes ?? []);
 
   const shouldBlur = status === 'none';
-  const isOwner = viewingUser.id === creator.id; // Fixed owner check
+  const isOwner = viewingUser.id === creator._id; // Fixed owner check
    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -585,7 +585,7 @@ export function PostCard({
   // Helper function to check if user can delete comment
   const canDeleteComment = (comment: Comment) => {
     const isCommentOwner = comment.userId === viewingUser.id;
-    const isPostOwner = creator.id;
+    const isPostOwner = creator._id;
     return isCommentOwner || isPostOwner;
   };
   

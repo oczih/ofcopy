@@ -10,10 +10,11 @@ import toast from "react-hot-toast";
 import { Creator, User } from "../types";
 import Image from "next/image";
 import { resolveImageUrl } from "@/components/resolveImageUrl";
+import { Session } from "next-auth";
 
 interface AppProps {
   creators: Creator[];
-  session: any;
+  session: Session | null
   users: User[];
 }
 
@@ -262,7 +263,7 @@ export default function App({creators}: AppProps ) {
               ) : filteredCreators.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {filteredCreators.map((creator) => (
-                    <CreatorCard key={creator.id} creator={creator} />
+                    <CreatorCard key={creator._id} creator={creator} />
                   ))}
                 </div>
               ) : showNoResults ? (

@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import CreatorModel from "@/app/models/creatormodel";
 import { verifySystemAccess } from "@/lib/auth";
-import { getAllCreators } from "@/lib/creatorService";
 
 export async function GET(request: NextRequest) {
+  if(!request) return;
   try {
     const creators = await CreatorModel.find({})
     return NextResponse.json({ creators });
