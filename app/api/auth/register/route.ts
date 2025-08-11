@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     });
     
     // Create verification token
-    const verificationToken = await createVerificationToken(email, 'email_verification');
+    const verificationToken = await createVerificationToken(user.id, email, 'email_verification', 15 * 60 * 1000);
 
     // Send verification email
     await sendVerificationEmail(email, verificationToken);

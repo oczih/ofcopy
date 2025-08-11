@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SessionProviderWrapper from "./SessionProviderWrapper";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth-client"; // your auth config
 
 export const metadata: Metadata = {
   title: "Fanslio",
@@ -19,16 +21,19 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session = await getServerSession(authOptions);
+
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <SessionProviderWrapper>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <SessionProviderWrapper session={session}>
           {children}
         </SessionProviderWrapper>
       </body>
     </html>
   );
 }
+

@@ -7,13 +7,14 @@ import App from "./usernamePage"; // Your client component
 import { redirect } from "next/navigation";
 import { fetchPageData } from "@/lib/fetchDataPage";
 
-interface PageProps {
-  params: {
-    username: string;
-  };
-}
 
-export default async function Page({ params }: PageProps) {
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}) {
+  const resolvedParams = await params;
+  const { username } = resolvedParams;
   const { creators, users, safeSession } = await fetchPageData();
 
   const session = await getServerSession(authOptions);
@@ -22,9 +23,8 @@ export default async function Page({ params }: PageProps) {
   }
   console.log("paskat", creators)
   await connectDB();
-  const {username} = params
   // Sanitize your data if needed here
-
+  
   return (
     <AppWrapper creators={creators ?? []} users={users} session={safeSession}>
     <App creators={creators} users={users} session={safeSession} username={username.toLowerCase()} />

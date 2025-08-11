@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     // 🧹 Remove old tokens of this type
     await VerificationToken.deleteMany({ email, type: tokenType });
 
-    const token = await createVerificationToken(email, tokenType);
+    const token = await createVerificationToken(user.id, email, tokenType, 15 * 60 * 1000);
     
     // Send appropriate email based on action type
     if (isAddingPassword) {

@@ -8,13 +8,10 @@ import { MessageCircle, Send, Search, MoreVertical, Phone, Video, Image as Image
 import { SessionProvider } from "next-auth/react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
-import AppWrapper from "../../components/AppWrapper";
 export default function MessagesPage() {
   return (
     <SessionProvider>
-      <AppWrapper>
           <MessagesApp />
-        </AppWrapper>
     </SessionProvider>
   );
 }

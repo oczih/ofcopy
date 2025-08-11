@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { Follower, Gender, Post } from "@/app/types";
 
 type PublicCreator = {
-  id: string;
+  _id: string;
   username: string;
   name: string;
   bio: string;
@@ -15,7 +15,7 @@ type PublicCreator = {
 };
 
 type LeanCreator = {
-  id: mongoose.Types.ObjectId;
+  _id: mongoose.Types.ObjectId;
   username: string;
   name: string;
   bio: string;
@@ -28,7 +28,7 @@ type LeanCreator = {
 
 export function sanitizeCreator(creator: LeanCreator): PublicCreator {
   return {
-    id: creator.id,
+    _id: creator._id.toString(),
     username: creator.username,
     name: creator.name,
     bio: creator.bio,

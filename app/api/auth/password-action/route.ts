@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
   
       // Create a token for password confirmation
       const confirmationToken = await createVerificationToken(
+        user.id,
         email, 
         'password_confirm',
         15 * 60 * 1000 // 15 minutes
