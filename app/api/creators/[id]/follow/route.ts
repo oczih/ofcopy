@@ -54,10 +54,10 @@ export async function POST(request: NextRequest, context: any) {
   return NextResponse.json({ message: "Followed creator" });
 }
 
-export async function DELETE(request: NextRequest, context: unknown) {
+export async function DELETE(request: NextRequest, context: any) {
   // Cast context as unknown then extract params carefully
   // OR just treat as any but keep the cast local and limited
-  const { params } = context as { params: { id: string } };
+  const params = await context.params;
   const creatorId = params.id;
   const session = await getServerSession(authOptions);
   if (!session) {

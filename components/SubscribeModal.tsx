@@ -154,15 +154,15 @@ export default function SubscribeModal({ open, onClose, creator, avatarUrl }: {o
             <p className="text-gray-300 text-center mb-6">
               Your payment information will be lost if you leave now.
             </p>
-            <div className="flex gap-3 justify-end">
+            <div className="flex gap-3 justify-end cursor-pointer">
               <button
-                className="px-6 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-slate-700 transition-colors"
+                className="cursor-pointer px-6 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-slate-700 transition-colors"
                 onClick={handleLeave}
               >
                 Leave
               </button>
               <button
-                className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-xl font-semibold transition-colors"
+                className="cursor-pointer bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-xl font-semibold transition-colors"
                 onClick={handleStay}
               >
                 Stay

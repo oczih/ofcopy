@@ -22,6 +22,7 @@ export function CreatorPostCard({
   users,
   signedUrl,
   handleFollow,
+  creators
 }: {
   creator: Creator;
   post: Post;
@@ -31,6 +32,7 @@ export function CreatorPostCard({
   users: User[]
   signedUrl: string;
   handleFollow: (creator: Creator) => void;
+  creators: Creator[]
 }) {
   // Restriction logic
   const isFollowersOnly = post.viewableFor === "followers";
@@ -275,6 +277,11 @@ useEffect(() => {
     const isPostOwner = session?.user?.id === creator._id
     return isCommentOwner || isPostOwner;
   };
+  const isthepostcreator = creators.find(c => c.user === session?.user.id)
+  const canDeletePost = (post: Post) => {
+    const isPostOwner = post.creator === isthepostcreator?._id;
+    return isPostOwner;
+  };
   const handleCommentModalOpen = (commentId: string) => {
     setCommentModalOpen(commentModalOpen === commentId ? null : commentId);
   };
@@ -341,10 +348,10 @@ useEffect(() => {
 
 {/* Animated Dropdown for Post Options */}
 <div className="relative">
-
-{modalOpen && creator && (
+{/* fixaa tää kohta, pitää olla post creator, koska toi creator on vaan että creator on olemassa*/}
+{modalOpen && canDeletePost(post) && (
   <div
-    className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-95 opacity-100 animate-fade-in z-30 cursor-pointer"
+    className="absolute right-0 top-full mt-5 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-100 opacity-100 animate-fade-in z-30"
   >
     <Link href={`/post/${post._id}/edit`}>
       <Button variant="ghost" className="w-full justify-start text-left hover:bg-gray-100 dark:hover:bg-slate-600 cursor-pointer">
@@ -368,20 +375,17 @@ useEffect(() => {
   </div>
 )}
 
-</div>
+      </div>
       
-        {modalOpen && !user?.creator && (
-          <div
-          className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-100 opacity-100 animate-fade-in z-30"
-        >
-          <Link href={`/${creator.username}`}>
-            <Button variant="ghost" className="w-full justify-start text-left cursor-pointer">
-              Go to creator profile
-            </Button>
-          </Link>
-
-        </div>
-        ) }
+        {modalOpen && !user?.creator && !canDeletePost(post) && (
+  <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-100 opacity-100 animate-fade-in z-30">
+    <Link href={`/${creator.username}`}>
+      <Button variant="ghost" className="w-full justify-start text-left cursor-pointer">
+        Go to creator profile
+      </Button>
+    </Link>
+  </div>
+)}
       </div>
     </header>
     
@@ -389,40 +393,38 @@ useEffect(() => {
     <div className="relative bg-slate-900">
       
     {signedUrlLoading ? (
-  // Skeleton while waiting for signed URL
-  <div className="relative w-full h-72">
-    <Skeleton className="absolute inset-0 w-full h-full rounded-none bg-gray-200 dark:bg-gray-700" />
+  <div className="relative w-full" style={{ minHeight: 200 }}>
+    <Skeleton className="w-full rounded-none bg-gray-200 dark:bg-gray-700" />
   </div>
 ) : canView && signedUrl ? (
-  <div className="relative w-full h-72">
-    {/* Image skeleton while actual image loads */}
+  <div className="relative w-full">
     {imageLoading && (
       <div className="absolute inset-0 z-10">
         <Skeleton className="w-full h-full rounded-none bg-gray-200 dark:bg-gray-700" />
       </div>
     )}
-
     {post.width && post.height ? (
       <Image
         src={resolvedUrl || ""}
         alt={post.caption || ""}
-        fill
+        width={post.width}
+        height={post.height}
         onLoad={() => setImageLoading(false)}
         onError={() => setImageLoading(false)}
-        style={{ objectFit: "contain" }}
+        style={{ objectFit: "contain", width: "100%", height: "auto" }}
         sizes="(max-width: 1200px) 100vw, 1200px"
         className={`transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"}`}
       />
     ) : (
       <Image
-        src={resolveImageUrl(signedUrl) || ""}
+        src={resolvedUrl || ""}
         alt={post.caption || ""}
         width={600}
         height={400}
         onLoad={() => setImageLoading(false)}
         onError={() => setImageLoading(false)}
-        style={{ objectFit: "cover" }}
-        className={`w-full h-auto transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"}`}
+        style={{ objectFit: "cover", width: "100%", height: "auto" }}
+        className={`w-full transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"}`}
       />
     )}
   </div>

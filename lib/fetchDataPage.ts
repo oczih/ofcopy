@@ -60,11 +60,11 @@ export async function fetchPageData() {
   }
   
   const creatorsRaw = await CreatorModel.find({}).populate("posts").lean<Creator>({ virtuals: true });
-  const notificationsRaw = await NotificationModel.find({}).populate("users").lean<Notification>({virtuals: true})
+  const notificationsRaw = await NotificationModel.find({}).lean<Notification>({virtuals: true})
 
   const usersRaw = await UserModel.find({}).lean<User>({ virtuals: true });
-const creatorsSanitized = deepSanitize(creatorsRaw) ?? [];
-const usersSanitized = deepSanitize(usersRaw) ?? [];
+  const creatorsSanitized = deepSanitize(creatorsRaw) ?? [];
+  const usersSanitized = deepSanitize(usersRaw) ?? [];
   const notificationsSanitized = deepSanitize(notificationsRaw) ?? [];
   return {
     creators: creatorsSanitized as Creator[],

@@ -1,14 +1,38 @@
+/* eslint-disable @next/next/no-img-element */
 import { Button } from "./ui/button";
 import { Heart, Verified, Crown, Sparkles } from "lucide-react";
 import { Creator } from  "../app/types";
 import Link from "next/link";
-import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
+import { useEffect, useState } from "react";
+import { Skeleton } from "./ui/skeleton";
 interface CreatorCardProps {
   creator: Creator;
-  signedAvatarUrl?: string;
+  avatarKey?: string;
 }
 
-export const CreatorCard = ({ creator, signedAvatarUrl }: CreatorCardProps) => {
+export function CreatorCard({ creator, avatarKey }: CreatorCardProps) {
+  const [signedAvatarUrl, setSignedAvatarUrl] = useState<string | null>(null);
+  const [avatarLoading, setAvatarLoading] = useState(true);
+  useEffect(() => {
+    const fetchSignedUrl = async () => {
+      if (!avatarKey) return;
+      try {
+        const res = await fetch("/api/media/download-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ s3Key: avatarKey }),
+        });
+        const data = await res.json();
+        if (res.ok && data.downloadUrl) {
+          setSignedAvatarUrl(data.downloadUrl);
+        }
+      } catch (err) {
+        console.error(`Error getting avatar signed URL for ${creator.name}:`, err);
+      }
+    };
+
+    fetchSignedUrl();
+  }, [avatarKey, creator.name]);
   return (
     <div className="group bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl p-6 border border-white/20 hover:border-pink-500/30 transition-all duration-200 hover:shadow-2xl hover:shadow-pink-500/20 relative overflow-hidden animate-scale-in">
       {/* Animated background gradient */}
@@ -26,10 +50,21 @@ export const CreatorCard = ({ creator, signedAvatarUrl }: CreatorCardProps) => {
         <div className="relative mb-6">
           {/* Avatar gradient border */}
           <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 rounded-full p-1 animate-pulse" />
-          <Avatar className="w-24 h-24 border-4 border-white/20 shadow-lg relative z-10">
-            <AvatarImage src={creator.image} alt={creator.name || creator.username} />
-            <AvatarFallback>{creator.name?.[0] || creator.username?.[0] || "C"}</AvatarFallback>
-          </Avatar>
+          <div className="relative w-16 h-16">
+            {avatarLoading && (
+              <Skeleton className="absolute inset-0 w-full h-full rounded-full" />
+            )}
+            {signedAvatarUrl && (
+              <img
+                src={signedAvatarUrl}
+                alt={creator.name}
+                width={64}
+                height={64}
+                className="rounded-full object-cover"
+                onLoad={() => setAvatarLoading(false)}
+              />
+            )}
+          </div>
           {/* Status indicator */}
           <div className="absolute -bottom-2 -right-2 flex items-center gap-1">
             <div className="w-6 h-6 z-10 bg-green-500 rounded-full border-3 border-slate-950 animate-pulse"></div>

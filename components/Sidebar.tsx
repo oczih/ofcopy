@@ -187,13 +187,18 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
   
 
   return (
-    <aside className={`${isCollapsed ? 'w-20' : 'w-72'} h-screen fixed left-0 top-0 z-30 bg-gradient-to-b from-slate-900/80 via-purple-900/70 to-slate-900/90 backdrop-blur-xl border-r border-white/10 shadow-2xl p-6 flex flex-col transition-all duration-300 ease-in-out`}>
+    <aside
+  className={`${isCollapsed ? 'w-20' : 'w-72'} h-screen fixed left-0 top-0 z-30
+    bg-gradient-to-b from-slate-900/80 via-purple-900/70 to-slate-900/90
+    backdrop-blur-xl border-r border-white/10 shadow-2xl p-4
+    flex flex-col justify-between transition-all duration-300 ease-in-out overflow-hidden`}
+>
       
       {/* Collapse Toggle Button */}
       <Button
         onClick={toggleCollapse}
         variant="ghost"
-        className="absolute -right-3 top-6 w-6 h-6 rounded-full bg-slate-800 border border-white/20 text-white hover:bg-slate-700 transition-all duration-300 p-0 flex items-center justify-center cursor-pointer"
+        className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-full bg-slate-800 border border-white/20 text-white hover:bg-slate-700 transition-all duration-300 p-0 flex items-center justify-center cursor-pointer"
       >
         {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
       </Button>
@@ -201,7 +206,7 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
       {/* User Profile Section */}
       {session ? (
         <>
-        <div className={`flex flex-col items-center ${isCollapsed ? 'mb-3 mt-8' : 'mb-5 mt-2'} relative transition-all duration-300`}>
+        <div className={`flex flex-col items-center ${isCollapsed ? 'mb-2 mt-6' : 'mb-3 mt-1'} relative transition-all duration-300`}>
           <div className="relative group">
             {/* Clickable Avatar and Name Container */}
             <Link 
@@ -254,9 +259,8 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
           )}
         </div>
 
-        <div className={`${isCollapsed ? 'mb-4' : 'mb-8'} transition-all duration-300`}></div>
 
-        <nav className="space-y-2 mb-8">
+        <nav className="space-y-1 mb-6"> 
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -336,7 +340,7 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
         {/* Upload Content Button */}
         {session?.user?.creator && (
           <div 
-            className="relative"
+            className="relative mt-2 mb-1"
             onMouseEnter={() => setHoveredItem('upload')}
             onMouseLeave={() => setHoveredItem(null)}
           >
@@ -360,45 +364,21 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
             )}
           </div>
         )}
-
-        {/* Stats section */}
-        {!isCollapsed && (
-          <div className="mt-6 p-4 bg-white/5 rounded-2xl border border-white/10 opacity-100 transition-opacity duration-300">
-            <h4 className="text-white font-semibold mb-3 text-sm">Your Activity</h4>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between text-gray-400">
-                <span>Subscriptions</span>
-                <span className="text-pink-400 font-medium">{session?.user?.subscriptions?.length || 0}</span>
-              </div>
-              <div className="flex justify-between text-gray-400">
-                <span>Total Creators</span>
-                <span className="text-purple-400 font-medium">{session?.user?.subscriptions?.length || 0}</span>
-              </div>
-              <div className="flex justify-between text-gray-400">
-                <span>Active Subscriptions</span>
-                <span className="text-blue-400 font-medium">
-                  {session?.user?.subscriptions?.length || 0}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Sign Out Button */}
         <div
-          className={`border-t border-gray-700 pt-4 ${isCollapsed ? 'mt-auto' : ''} relative`}
-          onMouseEnter={() => setHoveredItem('signout')}
-          onMouseLeave={() => setHoveredItem(null)}
-        >
-          <Button
+  className={`border-t border-gray-700 pt-3 ${isCollapsed ? 'mt-auto' : ''} relative `}
+  onMouseEnter={() => setHoveredItem('signout')}
+  onMouseLeave={() => setHoveredItem(null)}
+>
+          <button
             onClick={handleSignOut}
-            className={`flex items-center gap-2 w-full ${
+            className={`flex items-center gap-2 w-full cursor-pointer ${
               isCollapsed ? 'justify-center px-2 py-2' : 'justify-start px-4 py-3'
             } rounded-full text-white hover:bg-red-500/40 transition duration-200`}
           >
             <LogOut className="w-5 h-5" />
             {!isCollapsed && <span className="ml-1">Sign Out</span>}
-          </Button>
+          </button>
 
           {/* Tooltip when collapsed */}
           {isCollapsed && hoveredItem === 'signout' && (

@@ -6,6 +6,7 @@ export type NotificationType = 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comme
 export interface NotificationDocument extends Document {
   type: NotificationType;
   date: Date;
+  by: Types.ObjectId;
   seen: boolean;
   for: Types.ObjectId[]; // Array of User IDs
 }
@@ -16,6 +17,7 @@ const notificationSchema = new Schema<NotificationDocument>({
     enum: ['newsub', 'resub', 'tip', 'subcancel', 'comment', 'like', 'newfollower'], 
     required: true 
   },
+  by: {type: Schema.Types.ObjectId, ref: 'User', required: true},
   date: { type: Date, required: true },
   seen: { type: Boolean, required: true },
   for: [{ type: Schema.Types.ObjectId, ref: 'User', required: true }],

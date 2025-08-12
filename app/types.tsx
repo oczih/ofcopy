@@ -74,8 +74,9 @@ export type Creator = {
   export interface Notification {
     type: NotificationType;
     date: Date;
+    by: User | Creator | string;
     seen: boolean;
-    for: User[]; // Either User objects or their ObjectId references
+    for: (User | Creator | string)[]; // add string to allow IDs
   }
 export interface Follower {
   userId: string;

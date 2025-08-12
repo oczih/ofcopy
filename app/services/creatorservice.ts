@@ -47,7 +47,7 @@ const followCreator = async (creatorId: string): Promise<void> => {
 
 const unfollowCreator = async (creatorId: string): Promise<void> => {
   try {
-    await axios.delete(`${API_BASE}/creators/${creatorId}/follow`);
+    await axios.delete(`${API_BASE}/api/creators/${creatorId}/follow`);
   } catch (error) {
     console.error('Error unfollowing creator:', error);
     throw new Error('Failed to unfollow creator');

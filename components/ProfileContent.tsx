@@ -12,9 +12,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { CreatorPostCard } from './CreatorPostCard';
 import { useSession } from 'next-auth/react';
 import { resolveImageUrl } from './resolveImageUrl';
-import { Heart, Lock, Video } from 'lucide-react';
+import { Heart, Lock, Video, X } from 'lucide-react';
 import SignUpModal from './SignupModal';
 import { Session } from 'next-auth';
+import { createPortal } from 'react-dom';
 
 // Bio Modal Component
 const BioModal = ({ bio, creatorName }: { bio: string; creatorName: string }) => {
@@ -297,6 +298,24 @@ export default function ProfileContent({
         }],
       });
       setStatus('follower');
+      if (!session?.user.id) {
+        console.error("No user ID in session");
+        return;
+      }
+      const response = await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'newfollower',
+          by: session.user.id,
+          forUsers: [creator._id], // notify the creator
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to create notification:', errorData);
+      }
     } catch (err) {
       console.error('Error following creator:', err);
     }
@@ -676,67 +695,101 @@ function PurchasedPostsGrid ({
     </div>
   );
 }
-  function MediaGrid({
-    creator,
-    status,
-    postSignedUrls,
-  }: {
-    status: 'subscriber' | 'follower' | 'none';
-    creator?: Creator;
-    postSignedUrls: Record<string, string>;
+function MediaGrid({
+  creator,
+  status,
+  postSignedUrls,
+}: {
+  status: "subscriber" | "follower" | "none";
+  creator?: Creator;
+  postSignedUrls: Record<string, string>;
+}) {
+  const allPosts = creator?.posts || [];
 
-  }) {
-    const allPosts = creator?.posts || [];
-  
-    // Filter posts based on relationship status
-    const visiblePosts = allPosts.filter((post) => {
-      if (status === 'subscriber') return true;
-      if (status === 'follower') return post.viewableFor === 'followers';
-      return post.viewableFor === 'followers';
-    });
-    const [loadedImages, setLoadedImages] = useState<{ [key: string]: boolean }>({});
+  const visiblePosts = allPosts.filter((post) => {
+    if (status === "subscriber") return true;
+    if (status === "follower") return post.viewableFor === "followers";
+    return post.viewableFor === "followers";
+  });
+
+  const [loadedImages, setLoadedImages] = useState<{ [key: string]: boolean }>({});
+  const [activeImage, setActiveImage] = useState<string | null>(null);
 
   const handleImageLoad = (postId: string) => {
     setLoadedImages((prev) => ({ ...prev, [postId]: true }));
   };
-    return (
+
+  return (
+    <>
+      {/* Grid */}
       <div className="grid grid-cols-3 gap-1">
         {visiblePosts.map((p) => {
           const isLoaded = loadedImages[p._id];
-  
+          const src = resolveImageUrl(postSignedUrls[p._id]) || "";
+
           return (
             <div
               key={p._id}
-              className="relative w-full aspect-square overflow-hidden"
+              className="relative w-full aspect-square overflow-hidden cursor-pointer"
+              onClick={() => setActiveImage(src)}
             >
-              {/* Blurred Background Layer */}
-              {!isLoaded && (
-              <Skeleton className="absolute inset-0 w-full h-full rounded-none bg-gray-200 dark:bg-gray-700 z-20" />
-            )}
+              {/* Blurred background */}
               <img
-                src={resolveImageUrl(postSignedUrls[p._id]) || ""}
+                src={src}
                 alt="blurred background"
-                className="object-cover blur-lg scale-110 brightness-50"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className="absolute inset-0 w-full h-full object-cover blur-lg scale-110 brightness-50"
               />
-  
+
               {/* Skeleton while loading */}
-  
-              {/* Foreground Image */}
-              {/*@next/next/no-img-element */}
-              <img
-                src={resolveImageUrl(postSignedUrls[p._id]) || ""}
-                alt={p.caption || 'Media post'}
-                className="object-contain z-10 transition-opacity duration-300"
-                onLoad={() => handleImageLoad(p._id)}
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              />
+              {!isLoaded && (
+                <Skeleton className="absolute inset-0 w-full h-full rounded-none bg-gray-200 dark:bg-gray-700 z-20" />
+              )}
+
+              {/* Foreground image (centered, keeps aspect ratio) */}
+              <div className="absolute inset-0 flex items-center justify-center z-30">
+                <img
+                  src={src}
+                  alt={p.caption || "Media post"}
+                  className={`max-w-full max-h-full object-contain transition-opacity duration-300 ${
+                    isLoaded ? "opacity-100" : "opacity-0"
+                  }`}
+                  onLoad={() => handleImageLoad(p._id)}
+                />
+              </div>
             </div>
           );
         })}
       </div>
-    );
-  }
+
+      {/* Fullscreen Modal */}
+      {activeImage &&
+        createPortal(
+          <div
+            className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center"
+            onClick={() => setActiveImage(null)}
+          >
+            <button
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/30 hover:bg-white/60 transition cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveImage(null);
+              }}
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+            <img
+              src={activeImage}
+              alt="Full size"
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>,
+          document.body
+        )}
+    </>
+  );
+}
+
   
   function PostsGrid({
     creator,

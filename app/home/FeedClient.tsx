@@ -231,6 +231,7 @@ export default function App({ creators, users, session}: AppProps) {
                             users={users}
                             handleFollow={handleFollow}
                             signedUrl={postSignedUrls[post._id]}
+                            creators={creators}
                           />
                         </div>
                       ))}
