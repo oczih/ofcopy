@@ -6,10 +6,11 @@ import UserModel from '@/app/models/usermodel'
 import Creator from '@/app/models/creatormodel';
 import { Follower, Following } from '@/app/types';
 
-export async function POST(request: NextRequest, context: unknown) {
+export async function POST(request: NextRequest, context: any) {
   // Cast context as unknown then extract params carefully
   // OR just treat as any but keep the cast local and limited
-  const { params } = context as { params: { creatorId: string } };
+  const params = await context.params;
+  const creatorId = params.id;
 
   const session = await getServerSession(authOptions);
 
@@ -18,7 +19,6 @@ export async function POST(request: NextRequest, context: unknown) {
   }
 
   await connectDB();
-  const creatorId = params.creatorId;
   const user = await UserModel.findById(session.user.id);
   const creator = await Creator.findById(creatorId);
 

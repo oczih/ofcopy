@@ -5,9 +5,10 @@ import Link from "next/link";
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 interface CreatorCardProps {
   creator: Creator;
+  signedAvatarUrl?: string;
 }
 
-export const CreatorCard = ({ creator }: CreatorCardProps) => {
+export const CreatorCard = ({ creator, signedAvatarUrl }: CreatorCardProps) => {
   return (
     <div className="group bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl p-6 border border-white/20 hover:border-pink-500/30 transition-all duration-200 hover:shadow-2xl hover:shadow-pink-500/20 relative overflow-hidden animate-scale-in">
       {/* Animated background gradient */}

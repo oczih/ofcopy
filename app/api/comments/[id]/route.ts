@@ -6,11 +6,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-client";
 
 
-export async function DELETE(
-  req: NextRequest,
-  context: unknown
-) {
-  const { params } = context as { params: { id: string } };
+export async function DELETE(req: NextRequest, context: any) {
+  const params = await context.params;
+  const commentId = params.id;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -18,10 +16,8 @@ export async function DELETE(
     }
 
     await connectDB();
-    const { id } = params;
-    const commentId = new URL(req.url).searchParams.get('userId');
 
-    if (!commentId || !id  || !mongoose.Types.ObjectId.isValid(commentId)) {
+    if (!commentId || !mongoose.Types.ObjectId.isValid(commentId)) {
       return NextResponse.json({ error: "Invalid commentId" }, { status: 400 });
     }
 
@@ -33,27 +29,21 @@ export async function DELETE(
     }
 
     const post = await Post.findById(postId);
-    if (!post) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
-    }
+if (!post) {
+  return NextResponse.json({ error: "Post not found" }, { status: 404 });
+}
 
-    // Find the comment in the post
-    const comment = post.comments.id(commentId);
-    if (!comment) {
-      return NextResponse.json({ error: "Comment not found" }, { status: 404 });
-    }
+const comment = post.comments.id(commentId);
+if (!comment) {
+  return NextResponse.json({ error: "Comment not found" }, { status: 404 });
+}
 
-    // Check if user is comment author or post owner
-    const isCommentAuthor =
-      comment.user?.toString() === session.user.id.toString();
-    const isPostOwner =
-      post.user?.toString() === session.user.id.toString();
+const isCommentAuthor = comment.userId.toString() === session.user.id;
+const isPostOwner = post.creator.toString() === session.user.id;
 
-    if (!isCommentAuthor && !isPostOwner) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // Remove the comment
+if (!isCommentAuthor && !isPostOwner) {
+  return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+}
     comment.deleteOne();
     await post.save();
 

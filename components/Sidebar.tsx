@@ -6,7 +6,6 @@ import {
   Compass,
   MessageCircle,
   Settings,
-  Crown,
   Bell,
   ChevronLeft,
   ChevronRight, 
@@ -19,7 +18,7 @@ import {
   Wallet
 } from "lucide-react";
 import { signOut } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname} from "next/navigation";
 import Image from "next/image";
@@ -39,8 +38,8 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
   const status = session ? "authenticated" : "unauthenticated";
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
-  const [imageLoading, setImageLoading] = useState(true);
-  const [loading, setLoading] = useState(true);
+  const [loadingSession, setLoadingSession] = useState(true);
+  const [loadingAvatar, setLoadingAvatar] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
   const user = session?.user as User | undefined;
@@ -92,53 +91,52 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
   }, [session?.user?.id, creators]);
   useEffect(() => {
     if (status === 'authenticated') {
-      setLoading(false);
+      setLoadingSession(false);
     }
   }, [status]);
+  const avatarKey = session?.user?.avatarKey;
+  const lastFetchedAvatarKey = useRef<string | null>(null);
   useEffect(() => {
+    if (!avatarKey) {
+      setAvatarUrl(null);
+      setLoadingAvatar(false); // ✅ Prevent skeleton forever
+      return;
+    }
+    if (avatarKey === lastFetchedAvatarKey.current) {
+      // Already fetched this key, no need to fetch again
+      setLoadingAvatar(false);
+      return;
+    }
     const fetchAvatarUrl = async () => {
-      if (session?.user?.avatarKey) {
-        try {
-          setImageLoading(true);
-          setAvatarError(false);
-          
-          const key = session.user.avatarKey.replace(/^\/+/, ''); // remove leading slash
-          const res = await fetch("/api/media/download-url", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ s3Key: key }),
-          });
-          
-          console.log("res:", res.body)
-          
-          if (!res.ok) {
-            throw new Error(`Failed to fetch avatar URL: ${res.status}`);
-          }
-          
-          const data = await res.json();
-          
-          // Validate that we got a proper URL
-          if (data.downloadUrl && (data.downloadUrl.startsWith('http://') || data.downloadUrl.startsWith('https://'))) {
-            setAvatarUrl(data.downloadUrl);
-          } else {
-            console.error('Invalid avatar URL received:', data.downloadUrl);
-            setAvatarError(true);
-          }
-        } catch (error) {
-          console.error('Error fetching avatar URL:', error);
+  
+      try {
+        setAvatarError(false);
+        const key = avatarKey.replace(/^\/+/, '');
+        const res = await fetch("/api/media/download-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ s3Key: key }),
+        });
+  
+        const data = await res.json();
+        console.log("Avatar API response:", data);
+  
+        if (data.downloadUrl?.startsWith('http')) {
+          setAvatarUrl(data.downloadUrl);
+        } else {
+          console.error('Invalid avatar URL:', data.downloadUrl);
           setAvatarError(true);
-        } finally {
-          setImageLoading(false);
         }
-      } else {
-        setImageLoading(false);
+      } catch (err) {
+        console.error('Error fetching avatar:', err);
+        setAvatarError(true);
+      } finally {
+        setLoadingAvatar(false);
       }
     };
-
+  
     fetchAvatarUrl();
-  }, [session?.user?.avatarKey]);
+  }, [avatarKey]);
 
   const getButtonStyles = (isActive: boolean) => {
     if (isActive) {
@@ -159,34 +157,33 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
     onCollapseChange?.(newCollapsedState);
   };
 
-    const renderAvatar = () => {
-      if (imageLoading || loading) {
-        return (
-          <Skeleton className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-700" />
-        );
-      }
-    
-      if (!session?.user || avatarError || !avatarUrl) {
-        return (
-          <Skeleton className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-700" />
-        );
-      }
-    
+  const renderAvatar = () => {
+    if (loadingSession || loadingAvatar) {
+      return <Skeleton className="w-12 h-12 rounded-full" />;
+    }
+  
+    if (avatarUrl && !avatarError) {
       return (
         <Image
           src={avatarUrl}
-          alt={session.user.name || session.user.username || "User profile image"}
+          alt={session?.user.name || session?.user.username || "User profile image"}
           width={48}
           height={48}
-          className={`w-12 h-12 rounded-full border-2 border-pink-500/40 shadow-lg transition-opacity duration-500 ease-in-out ${
-            !loading ? "opacity-100" : "opacity-0"
-          }`}
+          className="w-12 h-12 rounded-full border-2 border-pink-500/40 shadow-lg"
           onError={() => setAvatarError(true)}
-          onLoadingComplete={() => setLoading(false)}
           unoptimized
         />
       );
     }
+  
+    // fallback to first letter of name if no avatar
+    return (
+      <div className="w-12 h-12 rounded-full bg-gray-700 text-white flex items-center justify-center text-xl border-2 border-pink-500/40 shadow-lg">
+        {session?.user?.name?.charAt(0).toUpperCase() || "U"}
+      </div>
+    );
+  };
+  
   
 
   return (

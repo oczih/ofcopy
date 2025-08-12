@@ -27,74 +27,64 @@ export default function App({creators, session}: AppProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
-  const [imageLoading, setImageLoading] = useState(true);
+  const [imageLoading, setImageLoading] = useState(false);
   const [creator, setCreator] = useState<Creator | null>(null)
   useEffect(() => {
     const fetchCreator = async () => {
-      if (session?.user?.creator) {
-        try {
-          const rightCreator = creators.find((c: Creator) => c.user === session.user.id);
-          try {
-            setImageLoading(true);
-    
-            const key = creator?.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
-            const res = await fetch("/api/media/download-url", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({ s3Key: key }),
-            });
-    
-            const data = await res.json();
-    
-            if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
-              setAvatarUrl(data.downloadUrl);
-            } else {
-              console.error("Invalid download URL:", data.downloadUrl);
-            }
-          } catch (error) {
-            console.error("Error fetching avatar URL:", error);
-          }
-          setCreator(rightCreator ?? null)
-        } catch (err) {
-          console.error("Failed to fetch creator data:", err);
-          setAvatarUrl(null);
-        }
-      } else if (session?.user) {
-        try {
+      if (!session?.user) return;
+      const creator = creators.find((c: Creator) => c.user === session.user.id)
+      if(creator) setCreator(creator)
+      if(!creator) setCreator(null)
+      const avatarKey =
+        session.user.creator
+          ? creators.find((c: Creator) => c.user === session.user.id)?.avatarKey
+          : session.user.avatarKey;
+      
+      if (!avatarKey) {
+        setAvatarUrl(null);
+        return;
+      }
+  
+      try {
+        setImageLoading(true);
+        const key = avatarKey.replace(/^\/+/, ''); // Remove leading slash
+        const res = await fetch("/api/media/download-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ s3Key: key }),
+        });
+  
+        const data = await res.json();
+  
+        if (res.ok && data.downloadUrl?.startsWith("https://")) {
           setImageLoading(true);
-  
-          const key = session.user.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
-          const res = await fetch("/api/media/download-url", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ s3Key: key }),
-          });
-  
-          const data = await res.json();
-  
-          if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
-            setAvatarUrl(data.downloadUrl);
-          } else {
-            console.error("Invalid download URL:", data.downloadUrl);
-          }
-        } catch (error) {
-          console.error("Error fetching avatar URL:", error);
+          setAvatarUrl(data.downloadUrl);
+        } else {
+          console.error("Invalid download URL:", data.downloadUrl);
         }
-      } else if (session?.user?.name) {
-        setAvatarUrl(null); // Will show fallback
+      } catch (error) {
+        console.error("Error fetching avatar URL:", error);
+      } finally {
+        setImageLoading(false);
       }
     };
   
     fetchCreator();
-  }, [session, creator, creators]);
+  }, [
+    session?.user?.id,
+    session?.user?.creator,
+    session?.user?.avatarKey,
+    creators.map(c => c.user + ":" + (c.avatarKey || "")).join("|") // only changes if a creator's key changes
+  ]);
+  
   const handleFileChange = (key: string, file: File | null) => {
     if (file) {
-      setSelectedImage(file);
-      setCropModalOpen(true);
+      const url = URL.createObjectURL(file);
+      setAvatarUrl(url);
+      setImageLoading(true);
+    } else {
+      setAvatarUrl(null);
+      setImageLoading(false);
     }
   };
   const links = [
@@ -134,16 +124,9 @@ export default function App({creators, session}: AppProps) {
               className="hidden"
             />
             <div className="relative w-full h-full">
-              {/* Custom loading skeleton with animation */}
-              {imageLoading && (
-                
-                 <Skeleton className="w-full h-full rounded-none bg-gray-200 dark:bg-gray-700"></Skeleton>
-              )}
-
-              {/* Show the image (it loads behind the loading state) */}
-              {(avatarUrl) && (
+              {avatarUrl && !imageLoading && (
                 <Image
-                  src={resolveImageUrl(avatarUrl) || "" }
+                  src={avatarUrl}
                   alt="Profile Picture"
                   fill
                   className="object-cover rounded-full z-10"
@@ -151,8 +134,9 @@ export default function App({creators, session}: AppProps) {
                   onError={() => setImageLoading(false)}
                 />
               )}
-
-              {/* Show fallback initials only if there's no image and not loading */}
+              {imageLoading && (
+                <Skeleton className="w-full h-full rounded-none bg-gray-200 dark:bg-gray-700"></Skeleton>
+              )}
               {!imageLoading && !avatarUrl && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-700 text-white text-3xl rounded-full z-10">
                   {session?.user?.name?.charAt(0).toUpperCase() || "U"}

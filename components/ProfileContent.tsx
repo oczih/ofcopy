@@ -1,14 +1,13 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { Creator, Follower, MediaPost, Post, Subscriber, User } from '@/app/types';
 import SubscribeModal from '@/components/SubscribeModal';
 import creatorservice from '@/app/services/creatorservice';
 import { Skeleton } from "@/components/ui/skeleton"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-
 
 import { CreatorPostCard } from './CreatorPostCard';
 import { useSession } from 'next-auth/react';
@@ -49,17 +48,19 @@ const BioModal = ({ bio, creatorName }: { bio: string; creatorName: string }) =>
     </Dialog>
   );
 };
+
 type UserProfileData = {
   userViewed: User,
   viewingUser: User,
   purchasedContent: MediaPost[],
   totalSpent: number,
   isOwnProfile: boolean,
-  relationshipStatus: 'subscriber' | 'follower' | 'none'  // Add this line
+  relationshipStatus: 'subscriber' | 'follower' | 'none'
   users: User[],
   creators: Creator[],
   session: Session | null
 }
+
 export default function ProfileContent({ 
   userViewed, 
   viewingUser,
@@ -75,14 +76,18 @@ export default function ProfileContent({
   const [modalOpen, setModalOpen] = useState(false);
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [creator, setCreator] = useState<Creator | null>(null);
-  const [imageLoading, setImageLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User>(viewingUser);
   const [status, setStatus] = useState<'subscriber' | 'follower' | 'none'>('none');
   const [userStatsLoading, setUserStatsLoading] = useState(true);
   
+  // Cache for signed URLs with timestamps
+  const [urlCache, setUrlCache] = useState<Record<string, { url: string; timestamp: number }>>({});
+  const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+  
   useEffect(() => {
     setStatus(relationshipStatus);
   }, [relationshipStatus]);
+
   useEffect(() => {
     async function fetchCreator() {
       const found = creators.find(
@@ -102,94 +107,139 @@ export default function ProfileContent({
     if (userViewed?.id) fetchCreator();
   }, [userViewed, creators]);
   
-  console.log(creator)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  console.log(avatarUrl)
-  useEffect(() => {
-    const fetchAvatarUrl = async () => {
-      if (userViewed?.avatarKey) {
-        try {
-          setImageLoading(true);
-          
-          const key = creator ? creator?.avatarKey : userViewed?.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
-          console.log(key)
-          const res = await fetch("/api/media/download-url", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ s3Key: key }),
-          });
-  
-          const data = await res.json();
-  
-          if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
-            setAvatarUrl(data.downloadUrl);
-          } else {
-            console.error("Invalid download URL:", data.downloadUrl);
-          }
+  const avatarKey = creator?.avatarKey ?? userViewed?.avatarKey?.replace(/^\/+/, '');
+  const lastFetchedAvatarKey = useRef<string | null>(null);
+  const [imageLoading, setImageLoading] = useState(!!avatarKey);
+  // Memoized function to get signed URL
+  const getSignedUrl = useCallback(async (s3Key: string): Promise<string | null> => {
+    if (!s3Key) return null;
+    
+    // Check cache first
+    const cached = urlCache[s3Key];
+    if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+      return cached.url;
+    }
+    
+    try {
+      const res = await fetch("/api/media/download-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ s3Key }),
+      });
 
-        } catch (error) {
-          console.error("Error fetching avatar URL:", error);
-        } finally {
-          setImageLoading(false);
-        }
-      } else {
-        setImageLoading(false);
+      const data = await res.json();
+      if (res.ok && data.downloadUrl?.startsWith("https://")) {
+        // Update cache
+        setUrlCache(prev => ({
+          ...prev,
+          [s3Key]: { url: data.downloadUrl, timestamp: Date.now() }
+        }));
+        return data.downloadUrl;
       }
+    } catch (error) {
+      console.error("Error fetching signed URL:", error);
+    }
+    
+    return null;
+  }, [urlCache, CACHE_TTL]);
+
+  // Avatar URL fetching - only when avatarKey changes
+  useEffect(() => {
+    if (!avatarKey) {
+      setImageLoading(false);
+      return;
+    }
+  
+    if (avatarKey === lastFetchedAvatarKey.current) {
+      setImageLoading(false);
+      return;
+    }
+  
+    const fetchAvatarUrl = async () => {
+      setImageLoading(true);
+      const url = await getSignedUrl(avatarKey);
+      if (url) {
+        setAvatarUrl(url);
+        lastFetchedAvatarKey.current = avatarKey;
+      }
+      setImageLoading(false);
     };
   
     fetchAvatarUrl();
-  }, [creator, userViewed?.avatarKey]);
-  
+  }, [avatarKey, getSignedUrl]);
+
+  // Post signed URLs - batch fetch and cache
   const [postSignedUrls, setPostSignedUrls] = useState<Record<string, string>>({});
+  const fetchedPostsRef = useRef<Set<string>>(new Set());
 
-  const SIGNED_URL_TTL = 15 * 60 * 1000; // 15 minutes TTL in milliseconds
+  useEffect(() => {
+    async function fetchSignedUrls() {
+      if (!creators || creators.length === 0) return;
 
-useEffect(() => {
-  async function fetchSignedUrls() {
-    if (!creators || creators.length === 0) return;
-
-    const allPosts = creators.flatMap((creator) => creator.posts || []);
-    const newUrlsMap = { ...postSignedUrls }; // keep existing URLs
-
-    const postsToFetch = allPosts.filter(post => {
-      if (!post.s3Key) return false;
-      const cached = postSignedUrls[post._id];
-      if (!cached) return true; // no cached url
-      return false; // url still valid
-    });
-    const signedUrlMap: Record<string, string> = {};
-    await Promise.all(
-        postsToFetch.map(async (post: Post) => {
-          if (!post.s3Key) return;
-  
-          try {
-            const res = await fetch('/api/media/download-url', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ s3Key: post.s3Key }),
-            });
-  
-            const data = await res.json();
-  
-            if (res.ok && data.downloadUrl) {
-              signedUrlMap[post._id] = data.downloadUrl;
-            }
-          } catch (err) {
-            console.error(`Failed to fetch signed URL for post ${post._id}`, err);
+      const allPosts = creators.flatMap((creator) => creator.posts || []);
+      const postsToFetch = allPosts.filter(post => {
+        if (!post.s3Key) return false;
+        
+        // Check if we already have a valid cached URL
+        const cached = urlCache[post.s3Key];
+        if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+          // Update postSignedUrls if we have cached data but it's not in postSignedUrls
+          if (!postSignedUrls[post._id]) {
+            setPostSignedUrls(prev => ({ ...prev, [post._id]: cached.url }));
           }
-        })
-      );
+          return false;
+        }
+        
+        // Don't refetch if we've already tried recently
+        return !fetchedPostsRef.current.has(post._id);
+      });
 
-    setPostSignedUrls(newUrlsMap);
-  }
+      if (postsToFetch.length === 0) return;
 
-  fetchSignedUrls();
-}, [creators, SIGNED_URL_TTL, postSignedUrls]);
+      // Mark these posts as being fetched
+      postsToFetch.forEach(post => fetchedPostsRef.current.add(post._id));
 
+      const signedUrlMap: Record<string, string> = {};
+      const fetchPromises = postsToFetch.map(async (post: Post) => {
+        if (!post.s3Key) return;
+        
+        const url = await getSignedUrl(post.s3Key);
+        if (url) {
+          signedUrlMap[post._id] = url;
+        }
+      });
+
+      await Promise.all(fetchPromises);
+
+      if (Object.keys(signedUrlMap).length > 0) {
+        setPostSignedUrls(prev => ({ ...prev, ...signedUrlMap }));
+      }
+    }
+
+    fetchSignedUrls();
+  }, [creators, urlCache, getSignedUrl, CACHE_TTL]);
+
+  // Clean up expired cache entries periodically
+  useEffect(() => {
+    const cleanup = setInterval(() => {
+      const now = Date.now();
+      setUrlCache(prev => {
+        const cleaned = { ...prev };
+        Object.keys(cleaned).forEach(key => {
+          if (now - cleaned[key].timestamp > CACHE_TTL) {
+            delete cleaned[key];
+          }
+        });
+        return cleaned;
+      });
+      
+      // Reset fetched posts tracking periodically
+      fetchedPostsRef.current.clear();
+    }, CACHE_TTL);
+
+    return () => clearInterval(cleanup);
+  }, [CACHE_TTL]);
 
   useEffect(() => {
     if (!creator || !viewingUser?.id) {
@@ -215,9 +265,6 @@ useEffect(() => {
       setStatus('none');
     }
   }, [creator, viewingUser]);
-  
-  
-  
 
   // Calculate stats
   const getCreatorStats = () => {
@@ -231,16 +278,13 @@ useEffect(() => {
   };
 
   const stats = getCreatorStats();
-
-  console.log(status)
   
   const handleFollow = async (creator: Creator) => {
     if (!creator) return;
     console.log("clicked")
     console.log("mmoroa", ...creator.followers)
     try {
-    
-    console.log("fitta", viewingUser)
+      console.log("fitta", viewingUser)
       const alreadyFollowing = viewingUser.following.some(f => f.creatorId === creator._id);
       console.log(creator.followers)
       console.log(alreadyFollowing)
@@ -257,7 +301,7 @@ useEffect(() => {
       console.error('Error following creator:', err);
     }
   };
-console.log(status)
+
   const handleUnfollow = async (creator: Creator) => {
     if (!creator || !viewingUser) return;
 
@@ -274,178 +318,184 @@ console.log(status)
       console.error('Error unfollowing creator:', err);
     }
   };
+  
   const resolvedSrc = resolveImageUrl(avatarUrl);
+  
   return (
     <div>
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Profile Header */}
         <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 mb-8 border border-white/20">
-  <div className="flex flex-col lg:flex-row lg:items-start gap-8">
-    {/* Left Column - Profile Image, Stats, and Subscribe Button */}
-    <div className="flex flex-col gap-6 items-start">
-      {/* Profile Image */}
-      <div className='flex-row flex justify-between'>
-      <div className="relative w-30 h-30 rounded-full overflow-hidden">
-        {!userViewed ? (
-          <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700" />
-        ) : avatarUrl || userViewed.avatarKey ? (
-          <>
-           
-
-            <img
-              src={resolvedSrc ?? undefined}
-              alt={userViewed.username || "User profile image"}
-              sizes="(max-width: 768px) 100vw, 40vw"
-              className="rounded-full border border-black shadow-lg transition-all duration-300 object-cover"
-              onLoad={() => setImageLoading(false)}
-              onError={() => setImageLoading(false)}
-            />
-            {imageLoading && (
-              <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700 absolute top-0 left-0" />
-            )}
-          </>
-        ) : (
-          <div className="w-40 h-40 flex items-center justify-center rounded-full bg-gray-400 text-white font-bold text-6xl">
-            {creator?.name?.charAt(0).toUpperCase() || userViewed.name?.charAt(0).toUpperCase() || "U"}
-          </div>
-        )}
-      </div>
-        </div>
-        <div className='flex flex-row gap-6'>
-        <div className='flex flex-col items-start'>
-            <h1 className="text-2xl font-bold text-white mb-1">
-              {creator?.name || creator?.username || userViewed.name || userViewed.username}
-            </h1>
-            <p className="text-xl text-purple-200">@{creator?.username || userViewed.username}</p>
-          </div>
-          <div className='flex flex-col gap-3 flex-1'>          
-          {/* Follow Button - On the right side of name */}
-          {status === 'none' && creator && userViewed.creator && !isOwnProfile && viewingUser && (
-            <button 
-              onClick={() => handleFollow(creator)}  
-              className="border border-blue-500 hover:bg-blue-500/10 text-blue-400 px-4 py-2 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer whitespace-nowrap"
-            >
-              Follow
-            </button>
-          )}
-          {status === 'none' && userViewed.creator && !viewingUser && (
-            <button 
-              onClick={() => setJoinModalOpen(true)}  
-              className="border border-blue-500 hover:bg-blue-500/10 text-blue-400 px-4 py-2 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer whitespace-nowrap"
-            >
-              Follow
-            </button>
-          )}
-          {status === 'follower' && creator && (
-            <button
-              onClick={() => handleUnfollow(creator)}
-              className="border border-white text-white hover:bg-white/10 px-4 py-1 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer whitespace-nowrap"
-            >
-              Following
-            </button>
-          )}
+          <div className="flex flex-col lg:flex-row lg:items-start gap-8">
+            {/* Left Column - Profile Image, Stats, and Subscribe Button */}
+            <div className="flex flex-col gap-6 items-start">
+              {/* Profile Image */}
+              <div className='flex-row flex justify-between'>
+              <div className="relative w-40 h-40 rounded-full overflow-hidden">
+                  {imageLoading ? (
+                    <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700" />
+                  ) : avatarUrl ? (
+                    <img
+                      src={resolvedSrc ?? ""}
+                      alt={userViewed.username || "User profile image"}
+                      className="w-40 h-40 rounded-full border border-black shadow-lg object-cover"
+                      onLoad={() => setImageLoading(false)}
+                      onError={() => {
+                        console.error("Avatar failed to load");
+                        setAvatarUrl(null);
+                        setImageLoading(false);
+                      }}
+                    />
+                  ) : (
+                    <div className="w-40 h-40 flex items-center justify-center rounded-full bg-gray-400 text-white font-bold text-6xl">
+                      {creator?.name?.charAt(0).toUpperCase() ||
+                        userViewed.name?.charAt(0).toUpperCase() ||
+                        "U"}
+                    </div>
+                  )}
                 </div>
-          </div>
-      {/* Creator Stats - Under profile pic and smaller */}
-      {creator && (
-        <div className="flex flex-row gap-2 text-center">
-          <div className="flex items-center gap-2 justify-center">
-            <Lock className="w-3 h-3 text-gray-400" />
-            <div className="text-sm font-medium text-white">{stats.posts} Posts</div>
-          </div>
-          <div className="flex items-center gap-2 justify-center">
-            <Video className="w-3 h-3 text-gray-400" />
-            <div className="text-sm font-medium text-white">{stats.videos} Videos</div>
-          </div>
-          <div className="flex items-center gap-2 justify-center">
-            <Heart className="w-3 h-3 text-gray-400" />
-            <div className="text-sm font-medium text-pink-400">{stats.likes} Likes</div>
-          </div>
-        </div>
-      )}
-    {creator?.bio && (
-        <BioModal 
-          bio={creator.bio} 
-          creatorName={creator?.name || creator?.username || userViewed.name || userViewed.username} 
-        />
-      )}
-      {/* User Stats (for non-creators) - Under profile pic and smaller */}
-      {!userStatsLoading && !creator && (
-        <div className="flex flex-col gap-2 text-center">
-          <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
-            <div className="text-xs text-gray-300">Status</div>
-            <div className="text-sm font-semibold text-white capitalize">
-              {status}
+              </div>
+              <div className='flex flex-row gap-6'>
+                <div className='flex flex-col items-start'>
+                  <h1 className="text-2xl font-bold text-white mb-1">
+                    {creator?.name || creator?.username || userViewed.name || userViewed.username}
+                  </h1>
+                  <p className="text-xl text-purple-200">@{creator?.username || userViewed.username}</p>
+                </div>
+                <div className='flex flex-col gap-3 flex-1'>          
+                  {/* Follow Button - On the right side of name */}
+                  {status === 'none' && creator && userViewed.creator && !isOwnProfile && viewingUser && (
+                    <button 
+                      onClick={() => handleFollow(creator)}  
+                      className="border border-blue-500 hover:bg-blue-500/10 text-blue-400 px-4 py-2 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer whitespace-nowrap"
+                    >
+                      Follow
+                    </button>
+                  )}
+                  {status === 'none' && userViewed.creator && !viewingUser && (
+                    <button 
+                      onClick={() => setJoinModalOpen(true)}  
+                      className="border border-blue-500 hover:bg-blue-500/10 text-blue-400 px-4 py-2 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer whitespace-nowrap"
+                    >
+                      Follow
+                    </button>
+                  )}
+                  {status === 'follower' && creator && (
+                    <button
+                      onClick={() => handleUnfollow(creator)}
+                      className="border border-white text-white hover:bg-white/10 px-4 py-1 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer whitespace-nowrap"
+                    >
+                      Following
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              {/* Creator Stats - Under profile pic and smaller */}
+              {creator && (
+                <div className="flex flex-row gap-2 text-center">
+                  <div className="flex items-center gap-2 justify-center">
+                    <Lock className="w-3 h-3 text-gray-400" />
+                    <div className="text-sm font-medium text-white">{stats.posts} Posts</div>
+                  </div>
+                  <div className="flex items-center gap-2 justify-center">
+                    <Video className="w-3 h-3 text-gray-400" />
+                    <div className="text-sm font-medium text-white">{stats.videos} Videos</div>
+                  </div>
+                  <div className="flex items-center gap-2 justify-center">
+                    <Heart className="w-3 h-3 text-gray-400" />
+                    <div className="text-sm font-medium text-pink-400">{stats.likes} Likes</div>
+                  </div>
+                </div>
+              )}
+              
+              {creator?.bio && (
+                <BioModal 
+                  bio={creator.bio} 
+                  creatorName={creator?.name || creator?.username || userViewed.name || userViewed.username} 
+                />
+              )}
+              
+              {/* User Stats (for non-creators) - Under profile pic and smaller */}
+              {!userStatsLoading && !creator && (
+                <div className="flex flex-col gap-2 text-center">
+                  <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
+                    <div className="text-xs text-gray-300">Status</div>
+                    <div className="text-sm font-semibold text-white capitalize">
+                      {status}
+                    </div>
+                  </div>
+                  <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
+                    <div className="text-xs text-gray-300">Total Spent</div>
+                    <div className="text-sm font-semibold text-green-400">
+                      ${totalSpent.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-          <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
-            <div className="text-xs text-gray-300">Total Spent</div>
-            <div className="text-sm font-semibold text-green-400">
-              ${totalSpent.toFixed(2)}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
 
-    {/* Right Column - Profile Info and Action Buttons */}
-    <div className="flex-1 text-center lg:text-left">
-      {/* Action Buttons - Spread out evenly */}
-      {isOwnProfile && (
-        <div className="flex flex-wrap justify-between gap-4 mt-6">
-          <Link 
-            href="/myprofile/edit" 
-            className="flex-1 text-center outline-3 outline-white/50 text-white px-6 py-3 rounded-xl hover:bg-white/10 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
-          >
-            Edit Profile
-          </Link>
-          <Link 
-            href="/insights" 
-            className="flex-1 text-center outline-3 outline-white/50 text-white px-6 py-3 rounded-xl hover:bg-white/10 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
-          >
-            Insights
-          </Link>
-          <Link 
-            href="/settings/creator/promotions" 
-            className="flex-1 text-center outline-3 outline-white/50 text-white px-6 py-3 rounded-xl hover:bg-white/10 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
-          >
-            Promote
-          </Link>
-        </div>
-      )}
-    </div>
-  </div>
-  {!isOwnProfile && viewingUser && status !== 'subscriber' && (
-        <button 
-          className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-full font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
-          onClick={() => setModalOpen(true)}
-        >
-          <div className='flex flex-row justify-between'>
-          <span>Subscribe Now</span>
-          <span>${creator?.price}/Month</span>
+            {/* Right Column - Profile Info and Action Buttons */}
+            <div className="flex-1 text-center lg:text-left">
+              {/* Action Buttons - Spread out evenly */}
+              {isOwnProfile && (
+                <div className="flex flex-wrap justify-between gap-4 mt-6">
+                  <Link 
+                    href="/myprofile/edit" 
+                    className="flex-1 text-center outline-3 outline-white/50 text-white px-6 py-3 rounded-xl hover:bg-white/10 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
+                  >
+                    Edit Profile
+                  </Link>
+                  <Link 
+                    href="/insights" 
+                    className="flex-1 text-center outline-3 outline-white/50 text-white px-6 py-3 rounded-xl hover:bg-white/10 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
+                  >
+                    Insights
+                  </Link>
+                  <Link 
+                    href="/settings/creator/promotions" 
+                    className="flex-1 text-center outline-3 outline-white/50 text-white px-6 py-3 rounded-xl hover:bg-white/10 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
+                  >
+                    Promote
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
-        </button>
-      )}
-      {!viewingUser && (
-        <button 
-        className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-full font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
-        onClick={() => setJoinModalOpen(true)}
-      >
-        <div className='flex flex-row justify-between'>
-        <span>Join today!</span>
+          
+          {!isOwnProfile && viewingUser && status !== 'subscriber' && (
+            <button 
+              className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-full font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
+              onClick={() => setModalOpen(true)}
+            >
+              <div className='flex flex-row justify-between'>
+                <span>Subscribe Now</span>
+                <span>${creator?.price}/Month</span>
+              </div>
+            </button>
+          )}
+          
+          {!viewingUser && (
+            <button 
+              className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-full font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
+              onClick={() => setJoinModalOpen(true)}
+            >
+              <div className='flex flex-row justify-between'>
+                <span>Join today!</span>
+              </div>
+            </button>
+          )}
         </div>
-      </button>
-      ) 
-      }
-</div>
-{joinModalOpen && creator && (
+        
+        {joinModalOpen && creator && (
           <SignUpModal 
-          open={joinModalOpen}
-          onClose={() => setJoinModalOpen(false)}
-          creator={creator}
-          avatarUrl={avatarUrl || ""}
+            open={joinModalOpen}
+            onClose={() => setJoinModalOpen(false)}
+            creator={creator}
+            avatarUrl={avatarUrl || ""}
           />
         )}
+        
         {modalOpen && creator && (
           <SubscribeModal 
             open={modalOpen} 
@@ -475,154 +525,157 @@ console.log(status)
   );
 }
 
+function ContentTabs({  
+  purchasedContent, 
+  creator, 
+  isOwnProfile, 
+  status,
+  viewingUser,
+  postSignedUrls,
+  handleFollow,
+  user,
+  users,
+  session
+}: {
+  purchasedContent: MediaPost[];
+  creator: Creator;
+  isOwnProfile: boolean;
+  status: 'subscriber' | 'follower' | 'none';
+  viewingUser: User
+  postSignedUrls: Record<string, string>;
+  handleFollow: (creator: Creator) => Promise<void>
+  user: User,
+  users: User[],
+  session: Session | null
+}) {
+  const [activeTab, setActiveTab] = useState(creator ? 'posts' : 'purchased');
+  const tabs = [
+    { id: 'posts', label: 'Posts', count: creator?.posts?.length || 0 },
+    ...(status !== 'none'
+      ? [{ id: 'media', label: 'Media', count: creator?.posts?.filter(p => p.signedUrl).length || 0 }]
+      : []),
+    ...((status === 'subscriber' || status === 'follower') && !isOwnProfile
+      ? [{ id: 'purchased', label: 'Purchased Content', count: purchasedContent.length }]
+      : []),
+    ...(isOwnProfile ? [{ id: 'likes', label: 'Likes', count: 0 }] : []),
+  ];
   
-  function ContentTabs({  
-    purchasedContent, 
-    creator, 
-    isOwnProfile, 
-    status,
-    viewingUser,
-    postSignedUrls,
-    handleFollow,
-    user,
-    users,
-    session
-  }: {
-    purchasedContent: MediaPost[];
-    creator: Creator;
-    isOwnProfile: boolean;
-    status: 'subscriber' | 'follower' | 'none';
-    viewingUser: User
-    postSignedUrls: Record<string, string>;
-    handleFollow: (creator: Creator) => Promise<void>
-    user: User,
-    users: User[],
-    session: Session | null
-  }) {
-    const [activeTab, setActiveTab] = useState(creator ? 'posts' : 'purchased');
-    const tabs = [
-      { id: 'posts', label: 'Posts', count: creator?.posts?.length || 0 },
-      ...(status !== 'none'
-        ? [{ id: 'media', label: 'Media', count: creator?.posts?.filter(p => p.signedUrl).length || 0 }]
-        : []),
-      ...((status === 'subscriber' || status === 'follower') && !isOwnProfile
-        ? [{ id: 'purchased', label: 'Purchased Content', count: purchasedContent.length }]
-        : []),
-      ...(isOwnProfile ? [{ id: 'likes', label: 'Likes', count: 0 }] : []),
-    ];
-    
-    return (
-      <div className="bg-white/10 backdrop-blur-lg rounded-3xl border border-white/20 overflow-hidden">
-        {/* Tab Headers */}
-        <div className="flex border-b border-white/20">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 px-6 py-4 font-semibold transition-all duration-200 cursor-pointer ${
-                activeTab === tab.id
-                  ? 'bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-white border-b-2 border-pink-400'
-                  : 'text-gray-300 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              {tab.label}
-              {tab.count > 0 && (
-                <span className="ml-2 bg-white/20 px-2 py-1 rounded-full text-xs">
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-  
-        {/* Tab Content */}
-        <div className="p-6">
-          {activeTab === 'posts' && (
-            <PostsGrid creator={creator} status={status} postSignedUrls={postSignedUrls} user={user} handleFollow={handleFollow} users={users} session={session} />
-          )}
-          {activeTab === 'purchased' && (
-            <PurchasedPostsGrid status={status} creator={creator} handleFollow={handleFollow} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user}/>
-          )}
-          {activeTab === 'media' && (
-            <MediaGrid creator={creator} status={status} postSignedUrls={postSignedUrls}  />
-          )}
-          {activeTab === 'likes' && (
-            <div className="text-center text-gray-400 py-12">
-              <div className="text-6xl mb-4">❤️</div>
-              <p>Your liked content will appear here</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  function PurchasedPostsGrid ({
-    creator,
-    viewingUser,
-    postSignedUrls,
-    handleFollow,
-    user,
-    status
-  }: {
-    creator?: Creator;
-    viewingUser: User;
-    postSignedUrls: Record<string, string>;
-    handleFollow: (creator: Creator) => void;
-    user: User,
-    status: 'follower' | 'subscriber' | 'none',
-  }) {
-    const [users, setUsers] = useState<User[] | null>(null);
-    
-    const allPosts = creator?.posts || [];
-    useEffect(() => {
-  const fetchData = async () => {
-    try {  // this should return { users: User[] }
-      if(!users){
-        setUsers(null)
-      }
-      else{
-        setUsers(users);
-      }
-    } catch (error) {
-      console.error("Couldn't fetch data: ", error);
-    }
-  };
-  fetchData();
-}, [users]);
-  const { data: session} = useSession();
-  if (!creator) return null;
-    // Filter posts based on relationship status
-    const visiblePosts = allPosts.filter((post) =>
-      viewingUser.purchases?.some((purchase) => purchase.postId === post._id)
-    );
-    
-    return (
-      <div>
-        {visiblePosts.length === 0 && (
-          <div className='flex flex-col items-center'>
-              <h1 className="text-2xl font-bold text-white mb-2">
-                  You haven&apos;t purchased anything from this person yet!
-                </h1>
-          </div>
-        )}
-        
-        {visiblePosts.map((post) => (
-          <CreatorPostCard
-            key={post._id}
-            post={post}
-            creator={creator}
-            status={status}
-            session={session}
-            users={users ?? []}
-            user={user}
-            signedUrl={postSignedUrls[post._id]}
-            handleFollow={handleFollow}
-          />
+  return (
+    <div className="bg-white/10 backdrop-blur-lg rounded-3xl border border-white/20 overflow-hidden">
+      {/* Tab Headers */}
+      <div className="flex border-b border-white/20">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 px-6 py-4 font-semibold transition-all duration-200 cursor-pointer ${
+              activeTab === tab.id
+                ? 'bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-white border-b-2 border-pink-400'
+                : 'text-gray-300 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            {tab.label}
+            {tab.count > 0 && (
+              <span className="ml-2 bg-white/20 px-2 py-1 rounded-full text-xs">
+                {tab.count}
+              </span>
+            )}
+          </button>
         ))}
       </div>
-    );
-  }
+
+      {/* Tab Content */}
+      <div className="p-6">
+        {activeTab === 'posts' && (
+          <PostsGrid creator={creator} status={status} postSignedUrls={postSignedUrls} user={user} handleFollow={handleFollow} users={users} session={session} />
+        )}
+        {activeTab === 'purchased' && (
+          <PurchasedPostsGrid status={status} creator={creator} handleFollow={handleFollow} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user}/>
+        )}
+        {activeTab === 'media' && (
+          <MediaGrid creator={creator} status={status} postSignedUrls={postSignedUrls}  />
+        )}
+        {activeTab === 'likes' && (
+          <div className="text-center text-gray-400 py-12">
+            <div className="text-6xl mb-4">❤️</div>
+            <p>Your liked content will appear here</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PurchasedPostsGrid ({
+  creator,
+  viewingUser,
+  postSignedUrls,
+  handleFollow,
+  user,
+  status
+}: {
+  creator?: Creator;
+  viewingUser: User;
+  postSignedUrls: Record<string, string>;
+  handleFollow: (creator: Creator) => void;
+  user: User,
+  status: 'follower' | 'subscriber' | 'none',
+}) {
+  const [users, setUsers] = useState<User[] | null>(null);
+  
+  const allPosts = creator?.posts || [];
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        if(!users){
+          setUsers(null)
+        }
+        else{
+          setUsers(users);
+        }
+      } catch (error) {
+        console.error("Couldn't fetch data: ", error);
+      }
+    };
+    fetchData();
+  }, [users]);
+  
+  const { data: session} = useSession();
+  
+  if (!creator) return null;
+  
+  // Filter posts based on purchased content
+  const visiblePosts = allPosts.filter((post) =>
+    viewingUser.purchases?.some((purchase) => purchase.postId === post._id)
+  );
+  
+  return (
+    <div>
+      {visiblePosts.length === 0 && (
+        <div className='flex flex-col items-center'>
+          <h1 className="text-2xl font-bold text-white mb-2">
+            You haven&apos;t purchased anything from this person yet!
+          </h1>
+        </div>
+      )}
+      
+      {visiblePosts.map((post) => (
+        <CreatorPostCard
+          key={post._id}
+          post={post}
+          creator={creator}
+          status={status}
+          session={session}
+          users={users ?? []}
+          user={user}
+          signedUrl={postSignedUrls[post._id]}
+          handleFollow={handleFollow}
+        />
+      ))}
+    </div>
+  );
+}
   function MediaGrid({
     creator,
     status,

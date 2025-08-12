@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Creator } from '@/app/types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 const PUBLIC_CREATORS_ENDPOINT = `${API_BASE}/api/my-creators`;
 

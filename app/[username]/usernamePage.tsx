@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
 import UserModel from '@/app/models/usermodel';
 import PurchaseModel from '@/app/models/purchasemodel';
-import AppWrapper from '@/components/AppWrapper';
 import ProfileContent from '@/components/ProfileContent';
 import CreatorModel from '@/app/models/creatormodel'; // Assuming this is your creator model
 import { MediaPost,Subscriber, Purchase, Follower, User, Creator } from '../types';
@@ -79,7 +78,6 @@ const isFollower = creator.followers &&
     }
   
     return (
-      <AppWrapper creators={creators} users={users} session={session}>
         <ProfileContent
           userViewed={user && JSON.parse(JSON.stringify(user)) || null}
           viewingUser={session?.user && JSON.parse(JSON.stringify(session?.user)) || null}
@@ -91,7 +89,6 @@ const isFollower = creator.followers &&
           creators={creators}
           session={session}
         />
-      </AppWrapper>
     );
   }
   

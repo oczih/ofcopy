@@ -103,7 +103,7 @@ export interface Following {
   followingDate: Date;
 }
 export interface Comment {
-  commentId: string;
+  _id: string;
   postId: string;
   text: string;
   createdAt: string;

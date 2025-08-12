@@ -26,13 +26,18 @@ export default function App({ creators, users, session}: AppProps) {
   // Manage loading and redirect on unauthenticated
 
   // Fetch signed URLs only client-side when creators are present
+  const postKeysSignature = JSON.stringify(
+    creators?.flatMap(c => (c.posts || []).map(p => p.s3Key)) || []
+  );
+  
   useEffect(() => {
     async function fetchSignedUrls() {
       if (!creators || creators.length === 0) return;
-
+  
       const allPosts = creators.flatMap((creator) => creator.posts || []);
       const signedUrlsMap: Record<string, string> = {};
       const postsWithKeys = allPosts.filter(post => post.s3Key);
+  
       await Promise.all(
         postsWithKeys.map(async (post) => {
           try {
@@ -51,12 +56,13 @@ export default function App({ creators, users, session}: AppProps) {
           }
         })
       );
-
+  
       setPostSignedUrls((prev) => ({ ...prev, ...signedUrlsMap }));
     }
-
+  
     fetchSignedUrls();
-  }, [creators]);
+  }, [postKeysSignature]);
+  
 
   const handleResendVerification = async () => {
     try {

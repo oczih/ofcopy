@@ -124,6 +124,7 @@ export function CreatorPostCard({
         } catch (error) {
           console.error("Error fetching avatar URL:", error);
         } finally {
+          setSignedUrlLoading(false);
           setImageLoading(false);
         }
       } else {
@@ -174,10 +175,15 @@ export function CreatorPostCard({
   const [userAvatars, setUserAvatars] = useState<Record<string, string>>({});
 const [avatarsLoading, setAvatarsLoading] = useState<Record<string, boolean>>({});
 const resolvedUrl = useMemo(() => resolveImageUrl(signedUrl), [signedUrl]);
+const [signedUrlLoading, setSignedUrlLoading] = useState(true);
 const fetchUserAvatarUrl = async (user: User) => {
-  if (!user.avatarKey) return null;
+  if (!user.avatarKey){
+    setSignedUrlLoading(false);
+      return;
+  };
 
   try {
+    setSignedUrlLoading(true);
     setAvatarsLoading(prev => ({ ...prev, [user.id]: true }));
 
     const key = user.avatarKey.replace(/^\/+/, ''); // remove leading slash
@@ -273,6 +279,8 @@ useEffect(() => {
     setCommentModalOpen(commentModalOpen === commentId ? null : commentId);
   };
   const handleDeleteComment = async (postId: string, commentId: string) => {
+    console.log(postId)
+    console.log(commentId)
     if (!postId || !commentId) {
       console.error('Missing postId or commentId');
       return;
@@ -286,10 +294,11 @@ useEffect(() => {
       });
   
       if (res.ok) {
-        setComments(prev => prev.filter(comment => comment.commentId !== commentId));
+        setComments(prev => prev.filter(comment => comment._id !== commentId));
         setCommentModalOpen(null);
       } else {
-        alert('Failed to delete comment');
+        
+        alert('Failed to delete');
       }
     } catch (error) {
       console.error(error);
@@ -379,61 +388,71 @@ useEffect(() => {
     {/* Media */}
     <div className="relative bg-slate-900">
       
-    {canView && signedUrl ? (
-      <div
-        className="relative w-full bg-black"
-        style={post.width && post.height ? { aspectRatio: `${post.width} / ${post.height}` } : {}}
-      >
-        {imageLoading && (
-          <Skeleton
-          className="w-full h-full rounded-none bg-gray-200 dark:bg-gray-700"
-        />  
-        )}
-
-        {post.width && post.height ? (
-          <Image
-          src={resolvedUrl || ""}
-          alt={post.caption || ""}
-          fill
-          onLoad={() => setImageLoading(false)}
-          onError={() => setImageLoading(false)}
-          style={{ objectFit: "contain" }}
-          sizes="(max-width: 1200px) 100vw, 1200px"
-          className={`transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"}`}
-        />
-        ) : (
-          <Image
-            src={resolveImageUrl(signedUrl) || ""}
-            alt={post.caption || ""}
-            width={600}
-            height={400}
-            onLoad={() => setImageLoading(false)}
-            onError={() => setImageLoading(false)}
-            style={{ objectFit: 'cover' }}
-            className={`w-full h-auto transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"}`}
-          />
-        )}
+    {signedUrlLoading ? (
+  // Skeleton while waiting for signed URL
+  <div className="relative w-full h-72">
+    <Skeleton className="absolute inset-0 w-full h-full rounded-none bg-gray-200 dark:bg-gray-700" />
+  </div>
+) : canView && signedUrl ? (
+  <div className="relative w-full h-72">
+    {/* Image skeleton while actual image loads */}
+    {imageLoading && (
+      <div className="absolute inset-0 z-10">
+        <Skeleton className="w-full h-full rounded-none bg-gray-200 dark:bg-gray-700" />
       </div>
+    )}
+
+    {post.width && post.height ? (
+      <Image
+        src={resolvedUrl || ""}
+        alt={post.caption || ""}
+        fill
+        onLoad={() => setImageLoading(false)}
+        onError={() => setImageLoading(false)}
+        style={{ objectFit: "contain" }}
+        sizes="(max-width: 1200px) 100vw, 1200px"
+        className={`transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"}`}
+      />
     ) : (
-        <div className="flex flex-col items-center justify-center h-72 w-full bg-slate-800 text-center space-y-3">
-          <span className="text-2xl text-gray-300">
-            {isSubscribersOnly ? "Subscribe to view" : isFollowersOnly ? "Follow to view" : "Restricted"}
-          </span>
-          <div className="flex gap-3">
-            {isSubscribersOnly && (
-              <Button className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-full shadow cursor-pointer">
-                <Heart className="w-4 h-4 mr-2" /> Subscribe
-              </Button>
-            )}
-            {isFollowersOnly && (
-              <Button onClick={() => handleFollow(creator)}
-              className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-semibold rounded-full shadow cursor-pointer">
-                <UserPlus className="w-4 h-4 mr-2" /> Follow
-              </Button>
-            )}
-          </div>
-        </div>
+      <Image
+        src={resolveImageUrl(signedUrl) || ""}
+        alt={post.caption || ""}
+        width={600}
+        height={400}
+        onLoad={() => setImageLoading(false)}
+        onError={() => setImageLoading(false)}
+        style={{ objectFit: "cover" }}
+        className={`w-full h-auto transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"}`}
+      />
+    )}
+  </div>
+) : (
+  // Restricted block (only shows when signedUrlLoading === false AND no signedUrl)
+  <div className="flex flex-col items-center justify-center h-72 w-full bg-slate-800 text-center space-y-3">
+    <span className="text-2xl text-gray-300">
+      {isSubscribersOnly
+        ? "Subscribe to view"
+        : isFollowersOnly
+        ? "Follow to view"
+        : "Restricted"}
+    </span>
+    <div className="flex gap-3">
+      {isSubscribersOnly && (
+        <Button className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-full shadow cursor-pointer">
+          <Heart className="w-4 h-4 mr-2" /> Subscribe
+        </Button>
       )}
+      {isFollowersOnly && (
+        <Button
+          onClick={() => handleFollow(creator)}
+          className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-semibold rounded-full shadow cursor-pointer"
+        >
+          <UserPlus className="w-4 h-4 mr-2" /> Follow
+        </Button>
+      )}
+    </div>
+  </div>
+)}
 
       {(isSubscribersOnly || isFollowersOnly) && (
         <Badge className="absolute top-4 left-4 bg-pink-600/90 text-white border-none shadow">
@@ -492,7 +511,7 @@ useEffect(() => {
             comments.map((comment: Comment, idx) => {
               const userObj = rightUser(comment);
               return (
-                <div key={comment.commentId || idx} className="flex items-start gap-3 bg-slate-800/60 rounded-lg p-3">
+                <div key={comment._id || idx} className="flex items-start gap-3 bg-slate-800/60 rounded-lg p-3">
                   <div className="flex items-center gap-2 min-w-0">
                     <Avatar className="w-8 h-8">
                       {!avatarsLoading ? <div><AvatarImage 
@@ -527,7 +546,7 @@ useEffect(() => {
                               <Button 
                                 variant="ghost" 
                                 className="w-full justify-start text-left text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
-                                onClick={() => handleDeleteComment(post._id, comment.commentId)}
+                                onClick={() => handleDeleteComment(post._id, comment._id)}
                               >
                                 Delete Comment
                               </Button>

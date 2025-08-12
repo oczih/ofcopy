@@ -23,18 +23,24 @@ export default function App({creators}: AppProps ) {
   const [creatorsWithMedia, setCreatorsWithMedia] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNoResults, setShowNoResults] = useState(false);
-
+  const creatorKeysSignature = JSON.stringify(
+    creators.map(c => ({
+      avatarKey: c.avatarKey,
+      postKeys: (c.posts || []).map(p => p.s3Key)
+    }))
+  );
   useEffect(() => {
     const fetchCreators = async () => {
       try {
         setLoading(true);
+  
         const creatorsWithMedia = await Promise.all(
           creators.map(async (creator: Creator) => {
             let image = creator.image;
   
-            // Fetch creator image (if s3Key exists)
+            // Only fetch if avatarKey exists
             if (creator.avatarKey) {
-              try { 
+              try {
                 const res = await fetch("/api/media/download-url", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -49,11 +55,10 @@ export default function App({creators}: AppProps ) {
               }
             }
   
-            // Fetch post download URLs
+            // Posts
             const postsWithUrls = await Promise.all(
               (creator.posts || []).map(async (post) => {
                 if (!post.s3Key) return post;
-  
                 try {
                   const res = await fetch("/api/media/download-url", {
                     method: "POST",
@@ -61,14 +66,12 @@ export default function App({creators}: AppProps ) {
                     body: JSON.stringify({ s3Key: post.s3Key }),
                   });
                   const data = await res.json();
-  
                   if (res.ok && data.downloadUrl) {
                     return { ...post, signedUrl: data.downloadUrl };
                   }
                 } catch (err) {
                   console.error(`Error getting post media for post ${post._id}`, err);
                 }
-  
                 return post;
               })
             );
@@ -91,7 +94,7 @@ export default function App({creators}: AppProps ) {
     };
   
     fetchCreators();
-  }, [creators]);
+  }, [creatorKeysSignature]);
 
 
   const filteredCreators = creators?.filter(creator => {
@@ -263,7 +266,7 @@ export default function App({creators}: AppProps ) {
               ) : filteredCreators.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {filteredCreators.map((creator) => (
-                    <CreatorCard key={creator._id} creator={creator} />
+                    <CreatorCard key={creator._id} creator={creator} signedAvatarUrl={creator.image} />
                   ))}
                 </div>
               ) : showNoResults ? (
