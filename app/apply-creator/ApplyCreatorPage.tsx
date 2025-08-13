@@ -91,7 +91,17 @@ export default function App({ users, session}: AppProps) {
     if (typeof window !== "undefined") router.replace("/");
     return null;
   }
-  
+  const allowedEmail = process.env.SECEMAIL;
+
+if (!session?.user) {
+  if (typeof window !== "undefined") router.replace("/");
+  return null;
+}
+
+// Restrict access to only your email
+if (session.user.email !== allowedEmail) {
+  if (typeof window !== "undefined") router.replace("/"); // redirect
+}
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setError("");

@@ -11,7 +11,7 @@ export type User = {
     membership?: boolean
     hasAccess?: boolean
     lastUsernameChange: Date
-    isUsernameChangeBlocked: boolean
+    isUsernameChangeBlocked?: boolean
     accessToken?: string
     oauthProvider: string;
     subscriptions?: Subscription[]
@@ -28,7 +28,19 @@ export type User = {
     password: string;
     purchases: Purchase[];
     createdAt: string;
+    wallet: number;
+    paymentmethods?: PaymentMethod[];
   }
+  export type PaymentMethod = {
+    provider: string;
+    token: string;
+    last4: string;
+    brand: string;
+    expMonth: number;
+    expYear: number;
+    default: boolean;
+    addedAt: Date;
+  };
   export interface Subscriber {
     userId: mongoose.Types.ObjectId;
     username: string;
@@ -149,7 +161,7 @@ declare module "next-auth" {
     membership?: boolean;
     bio?: string;
     createdAt: string;
-    location: string;
+    location?: string;
     hasAccess?: boolean;
     email?: string;
     lastUsernameChange?: Date;
@@ -163,12 +175,14 @@ declare module "next-auth" {
     comments?: Comment[];
     name?: string;
     avatarKey?: string;
-    emailVerified: boolean;
+    emailVerified?: boolean;
     emailVerificationToken: string;
     emailVerificationExpires: Date;
     lastVerificationEmailSentAt: Date;
     lastPasswordResetSentAt: Date;
     purchases: Purchase[];
+    wallet: number;
+    paymentmethods?: PaymentMethod[]
   }
 
   interface Session {

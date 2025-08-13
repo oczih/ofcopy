@@ -81,6 +81,17 @@ export interface OFUserDocument extends Document {
   emailVerificationExpires: Date;
   lastVerificationEmailSentAt: Date;
   lastPasswordResetSentAt: Date;
+  wallet: number;
+  paymentmethods?: {
+    provider: string;
+    token: string;
+    last4: string;
+    brand: string;
+    expMonth: number;
+    expYear: number;
+    default: boolean;
+    addedAt: Date;
+  }[];
 }
 
 const userSchema = new Schema<OFUserDocument>({
@@ -240,6 +251,23 @@ const userSchema = new Schema<OFUserDocument>({
     default: null
   },
   lastPasswordResetSentAt: { type: Date, default: null },
+  wallet: {
+    type: Number,
+    default: 0, // initial user balance
+    min: 0
+  },
+  paymentmethods: [
+    {
+      provider: { type: String, required: true },
+      token: { type: String, required: true },
+      last4: { type: String, required: true },
+      brand: { type: String, required: true },
+      expMonth: { type: Number, required: true },
+      expYear: { type: Number, required: true },
+      default: { type: Boolean, default: false },
+      addedAt: { type: Date, default: Date.now }
+    }
+  ],
 }, { timestamps: true });
 
 // Hide private fields in JSON

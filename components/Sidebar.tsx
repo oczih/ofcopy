@@ -300,7 +300,9 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
               </div>
             );
           })}
+
           
+          {/* Lisää myöhemmin tämä testaa eka influenssereilla
           {session?.user && !session.user.creator && (
             <div 
               className="relative"
@@ -327,7 +329,7 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
                 </Button>
               </Link>
               
-              {/* Hover tooltip for collapsed state */}
+              
               {isCollapsed && hoveredItem === 'apply-creator' && (
                 <div className="absolute left-16 top-1/2 transform -translate-y-1/2 opacity-100 bg-gray-800 text-white text-sm rounded-lg px-3 py-2 whitespace-nowrap shadow-lg z-50 pointer-events-none">
                   Apply Creator
@@ -335,6 +337,7 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
               )}
             </div>
           )}
+          */}
         </nav>
 
         {/* Upload Content Button */}

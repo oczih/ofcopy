@@ -243,6 +243,8 @@ export const authOptions: NextAuthOptions = {
         session.user.emailVerified = user.emailVerified;
         session.user.location = user.location;
         session.user.createdAt = user.createdAt;
+        session.user.wallet = user.wallet
+        session.user.paymentmethods = user.paymentmethods
       } else {
         console.log("[Session] No user found in database");
       }

@@ -75,9 +75,9 @@ export async function fetchPageData() {
     dbUser = await UserModel.findOne({ email: session.user.email }).lean();
   }
 
-  const creatorsRaw = await CreatorModel.find({}).populate("posts").lean<Creator>({ virtuals: true });
-  const notificationsRaw = await NotificationModel.find({}).lean<Notification>({ virtuals: true });
-  const usersRaw = await UserModel.find({}).lean<User>({ virtuals: true });
+  const creatorsRaw = await CreatorModel.find({}).populate("posts").lean<Creator[]>({ virtuals: true });
+  const notificationsRaw = await NotificationModel.find({}).lean<Notification[]>({ virtuals: true });
+  const usersRaw = await UserModel.find({}).lean<User[]>({ virtuals: true });
 
   const creatorsSanitized = deepSanitize(creatorsRaw) ?? [];
   const usersSanitized = deepSanitize(usersRaw) ?? [];
