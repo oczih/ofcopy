@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 export type User = {
-    id: string,
+    _id: string,
     avatarKey?: string;
     username: string
     email: string,
@@ -141,7 +141,7 @@ export type Post = {
 };
 declare module "next-auth" {
   interface User {
-    id: string;
+    _id: string;
     username?: string;
     age?: number;
     googleId?: string;

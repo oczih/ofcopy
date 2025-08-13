@@ -53,6 +53,7 @@ export interface Notification {
 
 // 🔹 This now extends Document
 export interface OFUserDocument extends Document {
+  _id: mongoose.Types.ObjectId
   username: string;
   password: string;
   email: string;

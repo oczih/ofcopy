@@ -68,7 +68,7 @@ export const authOptions: NextAuthOptions = {
     
           // Return properly typed User object
           const fullUser = user.toObject();
-          fullUser.id = user._id.toString();
+          fullUser._id = user._id.toString();
           return fullUser as User
         } catch (error) {
           console.error("Credentials auth error:", error);
@@ -123,7 +123,7 @@ export const authOptions: NextAuthOptions = {
           });
         }
 
-        user.id = existingUser._id.toString();
+        user._id = existingUser._id.toString();
         user.email = existingUser.email;
         // Type assertion to add custom properties
         user.membership = existingUser.membership;
@@ -149,7 +149,7 @@ export const authOptions: NextAuthOptions = {
           });
         }
 
-        user.id = existingUser._id.toString();
+        user._id = existingUser._id.toString();
         user.email = existingUser.email;
         // Type assertion to add custom properties
         (user as User).membership = existingUser.membership;
@@ -158,7 +158,7 @@ export const authOptions: NextAuthOptions = {
       if (provider === "credentials") {
         // For credentials, the user verification is already handled in authorize()
         // Just ensure we have the user data
-        if (!user.id) {
+        if (!user._id) {
           return false;
         }
       }
@@ -173,7 +173,7 @@ export const authOptions: NextAuthOptions = {
       }
     
       if (user) {
-        token.id = user.id;
+        token.id = user._id;
         console.log("[JWT] Setting token ID:", token.id, "from user object");
         token.username = user.username;
         token.email = user.email;
@@ -225,7 +225,7 @@ export const authOptions: NextAuthOptions = {
         console.log("[Session] Found user:", user._id.toString(), "Token ID:", token.id);
       
         // Type assertion to add custom properties to session
-        session.user.id = user._id.toString();
+        session.user._id = user._id.toString();
         session.user.username = user.username;
         session.user.email = user.email;
         session.user.avatarKey = user.avatarKey;

@@ -3,36 +3,16 @@ import { Button } from "./ui/button";
 import { Heart, Verified, Crown, Sparkles } from "lucide-react";
 import { Creator } from  "../app/types";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Skeleton } from "./ui/skeleton";
 interface CreatorCardProps {
   creator: Creator;
   avatarKey?: string;
+  signedAvatarUrl: string | undefined;
 }
 
-export function CreatorCard({ creator, avatarKey }: CreatorCardProps) {
-  const [signedAvatarUrl, setSignedAvatarUrl] = useState<string | null>(null);
+export function CreatorCard({ creator, signedAvatarUrl }: CreatorCardProps) {
   const [avatarLoading, setAvatarLoading] = useState(true);
-  useEffect(() => {
-    const fetchSignedUrl = async () => {
-      if (!avatarKey) return;
-      try {
-        const res = await fetch("/api/media/download-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ s3Key: avatarKey }),
-        });
-        const data = await res.json();
-        if (res.ok && data.downloadUrl) {
-          setSignedAvatarUrl(data.downloadUrl);
-        }
-      } catch (err) {
-        console.error(`Error getting avatar signed URL for ${creator.name}:`, err);
-      }
-    };
-
-    fetchSignedUrl();
-  }, [avatarKey, creator.name]);
   return (
     <div className="group bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl p-6 border border-white/20 hover:border-pink-500/30 transition-all duration-200 hover:shadow-2xl hover:shadow-pink-500/20 relative overflow-hidden animate-scale-in">
       {/* Animated background gradient */}

@@ -362,7 +362,7 @@ export function PostCard({
   const [likes, setLikes] = useState(post.likes ?? []);
 
   const shouldBlur = status === 'none';
-  const isOwner = viewingUser.id === creator._id; // Fixed owner check
+  const isOwner = viewingUser._id === creator._id; // Fixed owner check
    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -461,8 +461,8 @@ export function PostCard({
 
   const handleLike = async (post: Post) => {
     console.log("Here are the likes:", post.likes)
-    console.log(post.likes.some(like => like.userId.toString() === viewingUser.id))
-    if(post.likes.some(like => like.userId.toString() === viewingUser.id)){
+    console.log(post.likes.some(like => like.userId.toString() === viewingUser._id))
+    if(post.likes.some(like => like.userId.toString() === viewingUser._id)){
       console.log("Before: ", post.likes)
       try {
         const res = await fetch(`/api/media?username=${creator.username}`, {
@@ -470,7 +470,7 @@ export function PostCard({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             postId: post._id,
-            liker: { userId: viewingUser.id },
+            liker: { userId: viewingUser._id },
             unlike: true
           }),
         });
@@ -497,7 +497,7 @@ export function PostCard({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             postId: post._id,
-            liker: { userId: viewingUser.id }
+            liker: { userId: viewingUser._id }
           })
         });
       
@@ -517,7 +517,7 @@ export function PostCard({
   };
 
   const isLikedByCurrentUser = likes.some(
-    (like) => like.userId.toString() === viewingUser.id?.toString()
+    (like) => like.userId.toString() === viewingUser._id?.toString()
   );
 
   const handleToggleComment = () => {
@@ -539,7 +539,7 @@ export function PostCard({
         body: JSON.stringify({
           postId: post._id,
           text: commentText,
-          userId: viewingUser.id,
+          userId: viewingUser._id,
           username: viewingUser.username
         }),
       });
@@ -566,12 +566,12 @@ export function PostCard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           postId: post._id,
-          userId: viewingUser.id
+          userId: viewingUser._id
         }),
       });
 
       if (res.ok) {
-        setComments(prev => prev.filter(comment => comment.commentId !== commentId));
+        setComments(prev => prev.filter(comment => comment._id !== commentId));
         setCommentModalOpen(null);
       } else {
         alert('Failed to delete comment');
@@ -584,7 +584,7 @@ export function PostCard({
 
   // Helper function to check if user can delete comment
   const canDeleteComment = (comment: Comment) => {
-    const isCommentOwner = comment.userId === viewingUser.id;
+    const isCommentOwner = comment.userId === viewingUser._id;
     const isPostOwner = creator._id;
     return isCommentOwner || isPostOwner;
   };
@@ -745,7 +745,7 @@ export function PostCard({
               <div className="space-y-2">
                 {comments && comments.length > 0 ? (
                   comments.map((comment: Comment, idx) => (
-                    <div key={comment.commentId || idx} className="flex items-start gap-3 bg-slate-800/60 rounded-lg p-3 relative">
+                    <div key={comment._id || idx} className="flex items-start gap-3 bg-slate-800/60 rounded-lg p-3 relative">
                       <div className="flex flex-row items-center gap-2 min-w-0 flex-1">
                         <Avatar className="w-8 h-8">
                           <AvatarImage src={comment.userId || ''} alt={comment.username || 'User'} />
@@ -769,17 +769,17 @@ export function PostCard({
                             variant="ghost"
                             size="icon"
                             className="text-gray-400 hover:text-pink-400 cursor-pointer w-8 h-8"
-                            onClick={() => handleCommentModalOpen(comment.commentId)}
+                            onClick={() => handleCommentModalOpen(comment._id)}
                           >
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
 
-                          {commentModalOpen === comment.commentId && (
+                          {commentModalOpen === comment._id && (
                             <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-95 opacity-100 animate-fade-in z-30">
                               <Button 
                                 variant="ghost" 
                                 className="w-full justify-start text-left text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
-                                onClick={() => handleDeleteComment(comment.commentId)}
+                                onClick={() => handleDeleteComment(comment._id)}
                               >
                                 Delete Comment
                               </Button>

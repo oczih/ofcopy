@@ -8,19 +8,22 @@ import { useEffect, useState } from "react";
 // Utility to format relative time
 function timeAgo(date: Date) {
   const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
-  if (seconds < 60) return `${seconds} seconds ago`;
+
+  if (seconds < 60) return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
+
   const intervals: [number, string][] = [
+    [31536000, 'year'],
+    [2592000, 'month'],
+    [86400, 'day'],
     [3600, 'hour'],
     [60, 'minute'],
-    [86400, 'day'],
-    [2592000, 'month'],
-    [31536000, 'year'],
   ];
-  for (let i = intervals.length - 1; i >= 0; i--) {
-    const [secondsInUnit, unit] = intervals[i];
+
+  for (const [secondsInUnit, unit] of intervals) {
     const count = Math.floor(seconds / secondsInUnit);
     if (count >= 1) return `${count} ${unit}${count > 1 ? 's' : ''} ago`;
   }
+
   return 'Just now';
 }
 
@@ -57,33 +60,38 @@ export default function App({ session, notifications, users, creators }: AppProp
   
   useEffect(() => {
     async function fetchSignedUrls() {
-      if (!creators || creators.length === 0) return;
+      if ((!users || users.length === 0) && (!creators || creators.length === 0)) return;
   
-      // For each user, find if they are a creator, and get avatarKey from creator or user
-      const avatarsWithKeys = users
-        .map((u) => {
-          const creator = creators.find(c => c.user === u.id);
-          return {
-            id: u.id,
-            avatarKey: creator?.avatarKey || u.avatarKey,
-          };
-        })
-        .filter(({ avatarKey }) => avatarKey); // filter out those without any avatarKey
+      const avatarsWithKeys: { id: string; avatarKey: string }[] = [];
   
+      // Add user avatars
+      Object.values(users).forEach(u => {
+        if (u.avatarKey) avatarsWithKeys.push({ id: u._id, avatarKey: u.avatarKey });
+      });
+      
+      Object.values(creators).forEach(c => {
+        if (c.avatarKey) avatarsWithKeys.push({ id: c._id, avatarKey: c.avatarKey });
+      });
+      console.log(avatarsWithKeys)
       const signedUrlsMap: Record<string, string> = {};
   
       await Promise.all(
         avatarsWithKeys.map(async ({ id, avatarKey }) => {
+          if (!id) return; // guard
+      
           try {
-            const res = await fetch("/api/media/download-url", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ s3Key: avatarKey }),
-            });
-  
-            if (res.ok) {
-              const data = await res.json();
-              signedUrlsMap[id] = data.downloadUrl;
+            if (avatarKey.startsWith("http")) {
+              signedUrlsMap[id.toString()] = avatarKey;
+            } else {
+              const res = await fetch("/api/media/download-url", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ s3Key: avatarKey }),
+              });
+              if (res.ok) {
+                const data = await res.json();
+                signedUrlsMap[id.toString()] = data.downloadUrl;
+              }
             }
           } catch (error) {
             console.error("Failed to fetch signed URL for id:", id, error);
@@ -91,7 +99,7 @@ export default function App({ session, notifications, users, creators }: AppProp
         })
       );
   
-      setAvatarSignedUrls((prev) => ({ ...prev, ...signedUrlsMap }));
+      setAvatarSignedUrls(prev => ({ ...prev, ...signedUrlsMap }));
     }
   
     fetchSignedUrls();
@@ -114,19 +122,24 @@ export default function App({ session, notifications, users, creators }: AppProp
 
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  const filteredNotifications =
-    selectedCategory === 'all'
-      ? notifications || []
-      : (notifications || []).filter((n) => n.type === selectedCategory);
+  const currentCreator = creators.find(c => c.user === user?._id);
 
-  const sortedNotifications = [...filteredNotifications].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  const userNotifications = (notifications || []).filter(n => {
+    const forIds = Array.isArray(n.for) ? n.for.map(id => id.toString()) : [n.for];
+  
+    return (
+      forIds.includes(currentCreator?._id?.toString() || '') ||
+      forIds.includes(user?._id?.toString() || '')
+    );
+  });
+const filteredNotifications =
+  selectedCategory === 'all'
+    ? userNotifications
+    : userNotifications.filter(n => n.type === selectedCategory);
 
-  // Find user (who did the action "by") for a notification
-  function findUserById(id: string) {
-    return users.find(u => u.id === id);
-  }
+const sortedNotifications = [...filteredNotifications].sort(
+  (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+);
 
   return (
     <div className="min-h-screen w-full flex justify-center px-4 py-10">
@@ -166,25 +179,15 @@ export default function App({ session, notifications, users, creators }: AppProp
           ) : (
             <ul className="space-y-4">
               {sortedNotifications.map((noti, idx) => {
-  // Normalize `byUser`:
-  let byUser: User | Creator | undefined;
 
-  if (typeof noti.by === 'string') {
-    // by is a user ID string
-    byUser = users.find(u => u.id === noti.by) || creators.find(c => c._id === noti.by);
-  } else if (Array.isArray(noti.by)) {
-    // by is an array - pick first and check type
-    const first = noti.by[0];
-    if (typeof first === 'string') {
-      byUser = users.find(u => u.id === first) || creators.find(c => c._id === first);
-    } else {
-      byUser = first;
-    }
-  } else {
-    // by is an object (User or Creator)
-    byUser = noti.by;
-  }
-
+function resolveByUser(by: string | User | Creator | Array<string | User | Creator>) {
+  const userArray = Object.values(users); // this is already an array of user objects
+  const creatorArray = Object.values(creators);
+  return creatorArray.find((c: Creator) => c._id === by) || userArray.find((u: User) => u._id === by || u._id === by);
+}
+const byUser = resolveByUser(noti.by);
+  console.log("usseri:", byUser)
+  console.log("noti:", noti.by.toString())
   return (
     <li
       key={idx}
@@ -195,11 +198,19 @@ export default function App({ session, notifications, users, creators }: AppProp
     >
       <div className="flex items-center gap-4">
         {/* User avatar */}
-        <img
-          src={avatarSignedUrls[byUser?.id ?? (byUser as Creator)?._id ?? ''] || '/default-avatar.png'}
-          alt={`${byUser?.username || 'User'} avatar`}
-          className="w-12 h-12 rounded-full object-cover"
-        />
+        <div className="relative w-12 h-12">
+          {byUser && avatarSignedUrls[byUser?._id] ? (
+            <img
+              src={avatarSignedUrls[byUser?._id]}
+              alt={`${byUser?.username || "User"} avatar`}
+              className="w-12 h-12 rounded-full object-cover"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-700 text-white text-3xl rounded-full">
+              {byUser?.username?.charAt(0).toUpperCase() || "U"}
+            </div>
+          )}
+        </div>
         <div className="flex flex-col flex-grow">
           {/* User name + relative time */}
           <div className="flex justify-between items-center">

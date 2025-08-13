@@ -54,7 +54,7 @@ export function CreatorPostCard({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             postId: post._id,
-            liker: { userId: session?.user?.id }
+            liker: { userId: session?.user?._id }
           })
         });
       
@@ -79,7 +79,7 @@ export function CreatorPostCard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           postId: post._id,
-          liker: { userId: session?.user?.id },
+          liker: { userId: session?.user?._id },
           unlike: true
         }),
       });
@@ -186,7 +186,7 @@ const fetchUserAvatarUrl = async (user: User) => {
 
   try {
     setSignedUrlLoading(true);
-    setAvatarsLoading(prev => ({ ...prev, [user.id]: true }));
+    setAvatarsLoading(prev => ({ ...prev, [user?._id]: true }));
 
     const key = user.avatarKey.replace(/^\/+/, ''); // remove leading slash
     const res = await fetch("/api/media/download-url", {
@@ -197,7 +197,7 @@ const fetchUserAvatarUrl = async (user: User) => {
 
     const data = await res.json();
     if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
-      setUserAvatars(prev => ({ ...prev, [user.id]: data.downloadUrl }));
+      setUserAvatars(prev => ({ ...prev, [user?._id]: data.downloadUrl }));
       return data.downloadUrl;
     } else {
       return null;
@@ -206,13 +206,13 @@ const fetchUserAvatarUrl = async (user: User) => {
     console.error("Error fetching user avatar:", error);
     return null;
   } finally {
-    setAvatarsLoading(prev => ({ ...prev, [user.id]: false }));
+    setAvatarsLoading(prev => ({ ...prev, [user?._id]: false }));
   }
 };
 useEffect(() => {
   if (Array.isArray(users)) {
     users.forEach(user => {
-      if (user.avatarKey && !userAvatars[user.id]) {
+      if (user.avatarKey && !userAvatars[user?._id]) {
         fetchUserAvatarUrl(user);
       }
     });
@@ -220,7 +220,7 @@ useEffect(() => {
 }, [userAvatars, users]);
 
   const isLikedByCurrentUser = likes.some(
-    (like) => like.userId.toString() === session?.user?.id?.toString()
+    (like) => like.userId.toString() === session?.user?._id?.toString()
   );
   const handleToggleComment = () => {
     setCommentOpen((open) => !open);
@@ -238,7 +238,7 @@ useEffect(() => {
         body: JSON.stringify({
           postId: post._id,
           comment: {
-            userId: user?.id,
+            userId: user?._id,
             username: user?.username,
             text: commentText,
             createdAt: new Date().toISOString(),
@@ -261,7 +261,7 @@ useEffect(() => {
     }
   };
   const rightUser = (comment: Comment) => {
-    const correctUser = users?.find(u => u.id === comment.userId)
+    const correctUser = users?.find(u => u._id === comment.userId)
     return correctUser
   }
   const handleDeletePost = (id: string) => {
@@ -273,11 +273,13 @@ useEffect(() => {
       }
   }
   const canDeleteComment = (comment: Comment) => {
-    const isCommentOwner = comment.userId === session?.user?.id;
-    const isPostOwner = session?.user?.id === creator._id
+    const isCommentOwner = comment.userId === session?.user?._id;
+    const isPostOwner = session?.user?._id === creator._id
     return isCommentOwner || isPostOwner;
   };
-  const isthepostcreator = creators.find(c => c.user === session?.user.id)
+  const isthepostcreator = Array.isArray(creators)
+  ? creators.find(c => c.user === session?.user?._id)
+  : undefined;
   const canDeletePost = (post: Post) => {
     const isPostOwner = post.creator === isthepostcreator?._id;
     return isPostOwner;
@@ -337,6 +339,7 @@ useEffect(() => {
       
       <div className="flex flex-col items-end gap-1 text-xs text-gray-400">
         <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+        <div className="relative">
         <Button
           variant="ghost"
           onClick={handleModalOpen}
@@ -345,7 +348,16 @@ useEffect(() => {
         >
           <MoreHorizontal className="w-5 h-5" />
         </Button>
-
+        {modalOpen && !user?.creator && !canDeletePost(post) && (
+  <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-100 opacity-100 animate-fade-in z-30">
+    <Link href={`/${creator.username}`}>
+      <Button variant="ghost" className="w-full justify-start text-left cursor-pointer">
+        Go to creator profile
+      </Button>
+    </Link>
+  </div>
+)}
+</div>
 {/* Animated Dropdown for Post Options */}
 <div className="relative">
 {/* fixaa tää kohta, pitää olla post creator, koska toi creator on vaan että creator on olemassa*/}
@@ -376,16 +388,6 @@ useEffect(() => {
 )}
 
       </div>
-      
-        {modalOpen && !user?.creator && !canDeletePost(post) && (
-  <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-100 opacity-100 animate-fade-in z-30">
-    <Link href={`/${creator.username}`}>
-      <Button variant="ghost" className="w-full justify-start text-left cursor-pointer">
-        Go to creator profile
-      </Button>
-    </Link>
-  </div>
-)}
       </div>
     </header>
     
@@ -517,7 +519,7 @@ useEffect(() => {
                   <div className="flex items-center gap-2 min-w-0">
                     <Avatar className="w-8 h-8">
                       {!avatarsLoading ? <div><AvatarImage 
-                        src={userAvatars[userObj?.id || ''] || userObj?.avatarKey || ''} 
+                        src={userAvatars[userObj?._id || ''] || userObj?.avatarKey || ''} 
                         alt={userObj?.name || userObj?.username || 'User'} 
                       />
                       <AvatarFallback>

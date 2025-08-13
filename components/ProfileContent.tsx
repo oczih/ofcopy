@@ -93,8 +93,8 @@ export default function ProfileContent({
     async function fetchCreator() {
       const found = creators.find(
         (c: Creator) => {
-          console.log('Checking creator user:', c.user, 'against userViewed.id:', userViewed.id);
-          return c.user?.toString() === userViewed.id?.toString();
+          console.log('Checking creator user:', c.user, 'against userViewed.id:', userViewed._id);
+          return c.user?.toString() === userViewed._id?.toString();
         }
       );
       console.log('Found creator:', found);
@@ -105,7 +105,7 @@ export default function ProfileContent({
       }
       setUserStatsLoading(false);
     }
-    if (userViewed?.id) fetchCreator();
+    if (userViewed?._id) fetchCreator();
   }, [userViewed, creators]);
   
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -243,19 +243,19 @@ export default function ProfileContent({
   }, [CACHE_TTL]);
 
   useEffect(() => {
-    if (!creator || !viewingUser?.id) {
+    if (!creator || !viewingUser?._id) {
       setStatus('none');
       return;
     }
     const isSubscriber =
       Array.isArray(creator.subscribers) &&
       creator.subscribers.some(
-        (sub: Subscriber) => sub.userId.toString() === viewingUser.id.toString()
+        (sub: Subscriber) => sub.userId.toString() === viewingUser._id.toString()
       );
     const isFollower =
       creator.followers &&
       creator.followers.some(
-        (fol: Follower) => fol.userId.toString() === viewingUser.id.toString()
+        (fol: Follower) => fol.userId.toString() === viewingUser._id.toString()
       );
   
     if (isSubscriber) {
@@ -279,17 +279,24 @@ export default function ProfileContent({
   };
 
   const stats = getCreatorStats();
+  const lastFollowTimes = useRef<Record<string, number>>({}); // key: creatorId
+
+  const COOLDOWN_MS = 60 * 1000; // 1 minute cooldown
   
   const handleFollow = async (creator: Creator) => {
     if (!creator) return;
-    console.log("clicked")
-    console.log("mmoroa", ...creator.followers)
+    const now = Date.now();
+    const lastFollow = lastFollowTimes.current[creator._id] || 0;
+
+    if (now - lastFollow < COOLDOWN_MS) {
+      console.warn('Please wait before following/unfollowing again.');
+      return; // Block spamming
+    }
+    lastFollowTimes.current[creator._id] = now;
+    
     try {
-      console.log("fitta", viewingUser)
       const alreadyFollowing = viewingUser.following.some(f => f.creatorId === creator._id);
-      console.log(creator.followers)
-      console.log(alreadyFollowing)
-      console.log("perkele", creator)
+      if(alreadyFollowing) return;
       await creatorservice.followCreator(creator._id);
       setCurrentUser({
         ...currentUser,
@@ -308,7 +315,7 @@ export default function ProfileContent({
         body: JSON.stringify({
           type: 'newfollower',
           by: session.user.id,
-          forUsers: [creator._id], // notify the creator
+          forUsers: [creator._id],
         }),
       });
       
@@ -537,6 +544,7 @@ export default function ProfileContent({
             user={viewingUser}
             users={users}
             session={session}
+            creators={creators}
           />
         )}
       </div>
@@ -554,7 +562,8 @@ function ContentTabs({
   handleFollow,
   user,
   users,
-  session
+  session,
+  creators
 }: {
   purchasedContent: MediaPost[];
   creator: Creator;
@@ -565,7 +574,8 @@ function ContentTabs({
   handleFollow: (creator: Creator) => Promise<void>
   user: User,
   users: User[],
-  session: Session | null
+  session: Session | null,
+  creators: Creator[]
 }) {
   const [activeTab, setActiveTab] = useState(creator ? 'posts' : 'purchased');
   const tabs = [
@@ -606,10 +616,10 @@ function ContentTabs({
       {/* Tab Content */}
       <div className="p-6">
         {activeTab === 'posts' && (
-          <PostsGrid creator={creator} status={status} postSignedUrls={postSignedUrls} user={user} handleFollow={handleFollow} users={users} session={session} />
+          <PostsGrid creator={creator} creators={creators} status={status} postSignedUrls={postSignedUrls} user={user} handleFollow={handleFollow} users={users} session={session} />
         )}
         {activeTab === 'purchased' && (
-          <PurchasedPostsGrid status={status} creator={creator} handleFollow={handleFollow} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user}/>
+          <PurchasedPostsGrid status={status} creator={creator} handleFollow={handleFollow} creators={creators} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user}/>
         )}
         {activeTab === 'media' && (
           <MediaGrid creator={creator} status={status} postSignedUrls={postSignedUrls}  />
@@ -631,7 +641,8 @@ function PurchasedPostsGrid ({
   postSignedUrls,
   handleFollow,
   user,
-  status
+  status,
+  creators
 }: {
   creator?: Creator;
   viewingUser: User;
@@ -639,6 +650,7 @@ function PurchasedPostsGrid ({
   handleFollow: (creator: Creator) => void;
   user: User,
   status: 'follower' | 'subscriber' | 'none',
+  creators: Creator[]
 }) {
   const [users, setUsers] = useState<User[] | null>(null);
   
@@ -690,6 +702,7 @@ function PurchasedPostsGrid ({
           user={user}
           signedUrl={postSignedUrls[post._id]}
           handleFollow={handleFollow}
+          creators={creators}
         />
       ))}
     </div>
@@ -799,6 +812,7 @@ function MediaGrid({
     user,
     users,
     session,
+    creators
   }: {
     creator?: Creator;
     status: 'subscriber' | 'follower' | 'none';
@@ -806,7 +820,8 @@ function MediaGrid({
     handleFollow: (creator: Creator) => void;
     user: User,
     users: User[],
-    session: Session | null
+    session: Session | null,
+    creators: Creator[]
   }) {
     if (!creator) return null;
     
@@ -833,6 +848,7 @@ function MediaGrid({
           signedUrl={postSignedUrls[post._id]}
           user={user}
           handleFollow={handleFollow}
+          creators={creators}
         />
         ))}
       </div>
