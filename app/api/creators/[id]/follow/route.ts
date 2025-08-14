@@ -5,11 +5,13 @@ import { connectDB } from '@/lib/mongoose';
 import UserModel from '@/app/models/usermodel'
 import Creator from '@/app/models/creatormodel';
 import { Follower, Following } from '@/app/types';
-
-export async function POST(request: NextRequest, context: any) {
+interface Params {
+  id: string;
+}
+export async function POST(request: NextRequest, context: { params: Params }) {
   // Cast context as unknown then extract params carefully
   // OR just treat as any but keep the cast local and limited
-  const params = await context.params;
+  const { params } = context;
   const creatorId = params.id;
 
   const session = await getServerSession(authOptions);
@@ -53,12 +55,14 @@ export async function POST(request: NextRequest, context: any) {
 
   return NextResponse.json({ message: "Followed creator" });
 }
+interface Params {
+  id: string;
+}
 
-export async function DELETE(request: NextRequest, context: any) {
-  // Cast context as unknown then extract params carefully
-  // OR just treat as any but keep the cast local and limited
-  const params = await context.params;
+export async function DELETE(request: NextRequest, context: { params: Params }) {
+  const { params } = context;
   const creatorId = params.id;
+
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

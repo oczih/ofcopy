@@ -69,11 +69,11 @@ export default function App({creators, session}: AppProps) {
     };
   
     fetchCreator();
-  }, [
+  }, [creators, session?.user,
     session?.user?._id,
     session?.user?.creator,
     session?.user?.avatarKey,
-    creators.map(c => c.user + ":" + (c.avatarKey || "")).join("|") // only changes if a creator's key changes
+    // only changes if a creator's key changes
   ]);
   
   const handleFileChange = (key: string, file: File | null) => {

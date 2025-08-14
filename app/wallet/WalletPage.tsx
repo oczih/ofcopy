@@ -12,6 +12,7 @@ interface AppProps {
 
 interface PayPanelProps {
   onCancel: () => void;
+  topUpAmount: string | null;
 }
 
 
@@ -57,7 +58,7 @@ interface PayPanelProps {
   }
   
   
-function PayPanel({ onCancel }: PayPanelProps) {
+function PayPanel({ onCancel, topUpAmount }: PayPanelProps) {
   return (
     <div className="space-y-6 p-4 bg-slate-900 rounded-xl">
       <div className="text-center mb-6">
@@ -67,7 +68,7 @@ function PayPanel({ onCancel }: PayPanelProps) {
           <span className="text-xs bg-slate-800 px-2 py-1 rounded">💳 Encrypted</span>
         </div>
       </div>
-
+      <div className="text-center font-bold text-2xl">{topUpAmount}</div>
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -122,7 +123,7 @@ function PayPanel({ onCancel }: PayPanelProps) {
   );
 }
 
-export default function App({ creators, users, session }: AppProps) {
+export default function App({ session }: AppProps) {
   const [showPayPanel, setShowPayPanel] = useState(false);
   const [showTopUpPanel, setShowTopUpPanel] = useState(false)
   const [topUpAmount, setTopUpAmount] = useState<string | null>(null);
@@ -148,6 +149,7 @@ export default function App({ creators, users, session }: AppProps) {
         <div className="fixed inset-0 bg-black/70 flex justify-center items-center p-4">
           <div className="w-full max-w-md">
             <PayPanel
+              topUpAmount={topUpAmount}
               onCancel={() => {
                 setShowPayPanel(false);
                 setTopUpAmount(null);

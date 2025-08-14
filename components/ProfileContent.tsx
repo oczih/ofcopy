@@ -225,7 +225,7 @@ export default function ProfileContent({
     }
 
     fetchSignedUrls();
-  }, [creators, urlCache, getSignedUrl, CACHE_TTL]);
+  }, [creators, postSignedUrls, urlCache, getSignedUrl, CACHE_TTL]);
 
   // Clean up expired cache entries periodically
   useEffect(() => {

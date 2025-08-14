@@ -6,9 +6,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-client";
 
 
-export async function DELETE(req: NextRequest, context: any) {
-  const params = await context.params;
+export async function DELETE(req: NextRequest, { params }: { params: Record<string, string> }) {
   const commentId = params.id;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?._id) {
@@ -17,10 +17,12 @@ export async function DELETE(req: NextRequest, context: any) {
 
     await connectDB();
 
+    // Validate commentId
     if (!commentId || !mongoose.Types.ObjectId.isValid(commentId)) {
       return NextResponse.json({ error: "Invalid commentId" }, { status: 400 });
     }
 
+    // Parse request body
     const body = await req.json();
     const { postId } = body;
 
@@ -29,22 +31,25 @@ export async function DELETE(req: NextRequest, context: any) {
     }
 
     const post = await Post.findById(postId);
-if (!post) {
-  return NextResponse.json({ error: "Post not found" }, { status: 404 });
-}
+    if (!post) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    }
 
-const comment = post.comments.id(commentId);
-if (!comment) {
-  return NextResponse.json({ error: "Comment not found" }, { status: 404 });
-}
+    const comment = post.comments.id(commentId);
+    if (!comment) {
+      return NextResponse.json({ error: "Comment not found" }, { status: 404 });
+    }
 
-const isCommentAuthor = comment.userId.toString() === session.user._id;
-const isPostOwner = post.creator.toString() === session.user._id;
+    // Only allow deletion by comment author or post creator
+    const isCommentAuthor = comment.userId.toString() === session.user._id;
+    const isPostOwner = post.creator.toString() === session.user._id;
 
-if (!isCommentAuthor && !isPostOwner) {
-  return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-}
-    comment.deleteOne();
+    if (!isCommentAuthor && !isPostOwner) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Remove comment and save post
+    comment.remove(); // `deleteOne()` is valid too, but `remove()` is Mongoose recommended for subdocs
     await post.save();
 
     return NextResponse.json({ message: "Comment deleted successfully" });

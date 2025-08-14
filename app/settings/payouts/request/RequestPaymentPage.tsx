@@ -10,7 +10,7 @@ interface AppProps {
     users: User[];
   }
 
-export default function App({session, creators, users}: AppProps) {
+export default function App({}: AppProps) {
     return (
         <div className="min-h-screen w-full flex justify-center px-4 py-10">
         <main className="max-w-3xl w-full space-y-8">

@@ -94,7 +94,7 @@ export default function App({creators}: AppProps ) {
     };
   
     fetchCreators();
-  }, [creatorKeysSignature]);
+  }, [creatorKeysSignature, creators]);
 
 
   const filteredCreators = creatorsWithMedia.filter(creator => 

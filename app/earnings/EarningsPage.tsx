@@ -12,15 +12,16 @@ interface AppProps {
   users: User[];
 }
 
-export default function App({ creators, users, session }: AppProps) {
-  const creator = creators.find((c) => c.user === session?.user._id);
+export default function App({}: AppProps) {
 
   // Dummy data — replace with real transaction history from backend
-  const payments = [
+  const payments = useMemo(() => [
     { id: 1, amount: 25, date: new Date("2025-08-10T14:35:00"), type: "subscription" },
     { id: 2, amount: 50, date: new Date("2025-08-10T18:10:00"), type: "purchase" },
     { id: 3, amount: 15, date: new Date("2025-08-09T09:20:00"), type: "tip" },
-  ];
+  ], []);
+
+  
 
   // Group by day
   const groupedPayments = useMemo(() => {
