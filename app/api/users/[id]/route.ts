@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, context: unknown) {
   // Use NextAuth v5 auth function
   const session = await getServerSession(authOptions);
   console.log("[API] Session from auth():", !!session);
-  console.log("[API] Session user ID:", session?.user?.id);
+  console.log("[API] Session user ID:", session?.user?._id);
   
   if (!session) {
     console.log("[API] No session found - Unauthorized");
@@ -33,8 +33,8 @@ export async function GET(request: NextRequest, context: unknown) {
   const { id } = await params;
   console.log("[API] Requested user ID:", id);
 
-  console.log("[API] Session user ID:", session?.user?.id, "Requested ID:", id);
-  if (session?.user?.id !== id) {
+  console.log("[API] Session user ID:", session?.user?._id, "Requested ID:", id);
+  if (session?.user?._id !== id) {
     console.log("[API] Session user ID mismatch - Forbidden");
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }

@@ -12,7 +12,6 @@ import userservice from '@/app/services/userservice';
 import { uploadContent } from '@/app/services/uploadmediaservice';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Creator, User } from '@/app/types';
-import { resolveImageUrl } from '@/components/resolveImageUrl';
 import { Session } from 'next-auth';
 interface AppProps {
     creators: Creator[];
@@ -32,12 +31,12 @@ export default function App({creators, session}: AppProps) {
   useEffect(() => {
     const fetchCreator = async () => {
       if (!session?.user) return;
-      const creator = creators.find((c: Creator) => c.user === session.user.id)
+      const creator = creators.find((c: Creator) => c.user === session.user._id)
       if(creator) setCreator(creator)
       if(!creator) setCreator(null)
       const avatarKey =
         session.user.creator
-          ? creators.find((c: Creator) => c.user === session.user.id)?.avatarKey
+          ? creators.find((c: Creator) => c.user === session.user._id)?.avatarKey
           : session.user.avatarKey;
       
       if (!avatarKey) {
@@ -71,7 +70,7 @@ export default function App({creators, session}: AppProps) {
   
     fetchCreator();
   }, [
-    session?.user?.id,
+    session?.user?._id,
     session?.user?.creator,
     session?.user?.avatarKey,
     creators.map(c => c.user + ":" + (c.avatarKey || "")).join("|") // only changes if a creator's key changes
@@ -81,6 +80,7 @@ export default function App({creators, session}: AppProps) {
     if (file) {
       const url = URL.createObjectURL(file);
       setAvatarUrl(url);
+      setSelectedImage(file)
       setImageLoading(true);
     } else {
       setAvatarUrl(null);
@@ -241,7 +241,7 @@ export default function App({creators, session}: AppProps) {
               className="flex-1 px-6 py-3 rounded-xl cursor-pointer text-sm font-medium bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700"
               onClick={async () => {
                 try {
-                  if (!session?.user?.id) throw new Error("User ID not found");
+                  if (!session?.user?._id) throw new Error("User ID not found");
 
                   // 1. Get cropped image as a Blob
                   if (!croppedAreaPixels) {
@@ -255,7 +255,7 @@ export default function App({creators, session}: AppProps) {
                   );
 
                   // 2. Convert Blob to File (to reuse existing uploadContent logic)
-                  const croppedFile = new File([croppedBlob], `${session.user.id}_avatar.jpg`, { type: "image/jpeg" });
+                  const croppedFile = new File([croppedBlob], `${session.user._id}_avatar.jpg`, { type: "image/jpeg" });
 
                   // 3. Upload to S3
                   const s3Key = await uploadContent(croppedFile);
@@ -264,7 +264,7 @@ export default function App({creators, session}: AppProps) {
                   
 
                   // 5. Save avatar URL to user profile
-                  await userservice.update(session.user.id, {
+                  await userservice.update(session.user._id, {
                     avatarKey: s3Key,
                   });
                   // 6. Update frontend state

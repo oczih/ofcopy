@@ -2,7 +2,7 @@
 
 import { Button } from "../../components/ui/button";
 import { CheckCircle, MessageCircle, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Creator, Following, Subscription, User } from "../types";
 import { Badge } from "../../components/ui/badge";
 import toast, { Toaster } from "react-hot-toast";
@@ -10,6 +10,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { CreatorPostCard } from "../../components/CreatorPostCard";
 import { Session } from "next-auth";
+import creatorservice from "../services/creatorservice";
 interface AppProps {
   creators: Creator[];
   session: Session | null;
@@ -20,9 +21,8 @@ export default function App({ creators, users, session}: AppProps) {
   const [showBanner, setShowBanner] = useState(true);
   const [postSignedUrls, setPostSignedUrls] = useState<Record<string, string>>({});
   const [page, setPage] = useState("Feed");
-
   const HIDE_DURATION = 2 * 60 * 1000;
-
+  const notifiedCreators = useRef<Set<string>>(new Set());
   // Manage loading and redirect on unauthenticated
 
   // Fetch signed URLs only client-side when creators are present
@@ -61,7 +61,7 @@ export default function App({ creators, users, session}: AppProps) {
     }
   
     fetchSignedUrls();
-  }, [postKeysSignature]);
+  }, [postKeysSignature, creators]);
   
 
   const handleResendVerification = async () => {
@@ -69,7 +69,7 @@ export default function App({ creators, users, session}: AppProps) {
       const response = await fetch("/api/auth/resend-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: session?.user.email, userId: session?.user.id }),
+        body: JSON.stringify({ email: session?.user.email, userId: session?.user._id }),
       });
 
       const data = await response.json();
@@ -98,25 +98,49 @@ export default function App({ creators, users, session}: AppProps) {
 
   const filteredCreators = creators.filter((creator) => {
     const isFollowed = followedCreatorIds.has(creator._id);
-    const isOwnCreator = session?.user?.id === creator.user.toString();
+    const isOwnCreator = session?.user?._id === creator.user.toString();
     return isFollowed || isOwnCreator;
   });
-
+  
   const handleFollow = async (creator: Creator) => {
     if (!creator) return;
-    // This function would still call the backend endpoint directly (if you keep this)
+  
     try {
-      // For example, a fetch to /api/follow or something
-      await fetch(`/api/creators/${creator._id}/follow`, {
-        method: "POST",
-      });
-      toast.success(`Followed ${creator.name}`);
-      // Optionally update local state or refetch if needed
-    } catch (error) {
-      console.error("Error following creator:", error);
-      toast.error("Failed to follow creator");
+      const alreadyFollowing = session?.user?.following?.some(f => f.creatorId === creator._id);
+      if (alreadyFollowing) return;
+  
+      await creatorservice.followCreator(creator._id);
+  
+      if (!session?.user._id) {
+        console.error("No user ID in session");
+        return;
+      }
+  
+      // Only notify if we haven't before
+      if (!notifiedCreators.current.has(creator._id)) {
+        notifiedCreators.current.add(creator._id);
+        const response = await fetch("/api/notifications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "newfollower",
+            by: session.user._id,
+            forUsers: [creator._id],
+            creatorId: creator._id
+          }),
+
+        });
+  
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("Failed to create notification:", errorData);
+        }
+      }
+    } catch (err) {
+      console.error("Error following creator:", err);
     }
   };
+
 
   return (
     <div className="min-h-screen w-full relative">
@@ -165,7 +189,8 @@ export default function App({ creators, users, session}: AppProps) {
           )}
 
           {/* Dashboard */}
-          {!session?.user?.emailVerified && showBanner && session?.user.oauthProvider === "credentials" &&  (
+          {!session?.user?.emailVerified && showBanner &&
+        (session.user as User).oauthProvider === "credentials" &&  (
       <div className="flex justify-center z-30 px-4">
         <div className="w-full max-w-md bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-lg relative overflow-hidden group text-sm">
           <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-cyan-500/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>

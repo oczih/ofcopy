@@ -11,7 +11,7 @@ export async function DELETE(req: NextRequest, context: any) {
   const commentId = params.id;
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user?._id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -38,8 +38,8 @@ if (!comment) {
   return NextResponse.json({ error: "Comment not found" }, { status: 404 });
 }
 
-const isCommentAuthor = comment.userId.toString() === session.user.id;
-const isPostOwner = post.creator.toString() === session.user.id;
+const isCommentAuthor = comment.userId.toString() === session.user._id;
+const isPostOwner = post.creator.toString() === session.user._id;
 
 if (!isCommentAuthor && !isPostOwner) {
   return NextResponse.json({ error: "Forbidden" }, { status: 403 });

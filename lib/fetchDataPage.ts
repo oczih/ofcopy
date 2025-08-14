@@ -5,10 +5,10 @@ import { connectDB } from "@/lib/mongoose";
 import CreatorModel from "@/app/models/creatormodel";
 import UserModel from "@/app/models/usermodel";
 import { redirect } from "next/navigation";
-import { Creator, User, Notification } from "@/app/types";
+import { Creator, User, Notification, SafeUser, Post } from "@/app/types";
 import NotificationModel from "@/app/models/notificationmodel";
 import { Session } from "next-auth";
-
+import PostModel from '@/app/models/postmodel'
 // Convert ObjectId and Dates recursively
 function deepSanitize<T>(obj: T, seen = new WeakSet()): T {
   if (obj === null || obj === undefined) return obj as T;
@@ -37,30 +37,34 @@ function deepSanitize<T>(obj: T, seen = new WeakSet()): T {
 }
 
 // Ensure the user object conforms to NextAuth.User
-function normalizeUser(user: any): Session["user"] {
+function normalizeUser(user: Partial<User>): SafeUser {
   return {
     _id: user._id?.toString() ?? "",
-    username: user.username,
-    age: user.age,
-    googleId: user.googleId,
-    membership: user.membership,
-    bio: user.bio,
+    username: user.username ?? "",
+    googleId: user.googleId ?? "",
+    membership: user.membership ?? false,
+    bio: user.bio ?? "",
     createdAt: user.createdAt?.toString() ?? new Date().toISOString(),
-    location: user.location,
-    hasAccess: user.hasAccess,
-    avatarKey: user.avatarKey,
-    lastUsernameChange: user.lastUsernameChange,
-    isUsernameChangeBlocked: user.isUsernameChangeBlocked,
+    location: user.location ?? "",
+    hasAccess: user.hasAccess ?? false,
+    avatarKey: user.avatarKey ?? "",
+    lastUsernameChange: user.lastUsernameChange ?? new Date(),
+    isUsernameChangeBlocked: user.isUsernameChangeBlocked ?? false,
     subscriptions: user.subscriptions ?? [],
     notifications: user.notifications ?? [],
     following: user.following ?? [],
-    creator: user.creator,
-    emailVerified: user.emailVerified,
-    name: user.name,
-    email: user.email,
-    image: user.image,
+    creator: user.creator ?? false,
+    emailVerified: user.emailVerified ?? false,
+    name: user.name ?? "",
+    email: user.email ?? "",
+    image: user.avatarKey ?? "",
+    comments: user.comments ?? [],
+    purchases: user.purchases ?? [],
+    wallet: user.wallet ?? 0,
+    paymentmethods: user.paymentmethods ?? [],
   };
 }
+
 
 export async function fetchPageData() {
   const session = await getServerSession(authOptions);
@@ -68,32 +72,38 @@ export async function fetchPageData() {
 
   await connectDB();
 
-  let dbUser: any = null;
+  let dbUser: User | null = null;
   if (session.user?._id) {
-    dbUser = await UserModel.findById(session.user._id).lean();
+    dbUser = await UserModel.findById(session.user._id).lean<User>() ?? null;
   } else if (session.user?.email) {
-    dbUser = await UserModel.findOne({ email: session.user.email }).lean();
+    dbUser = await UserModel.findOne({ email: session.user.email }).lean<User>() ?? null;
   }
 
   const creatorsRaw = await CreatorModel.find({}).populate("posts").lean<Creator[]>({ virtuals: true });
   const notificationsRaw = await NotificationModel.find({}).lean<Notification[]>({ virtuals: true });
   const usersRaw = await UserModel.find({}).lean<User[]>({ virtuals: true });
-
+  const postsRaw = await PostModel.find({}).lean<Post[]>({ virtuals: true });
   const creatorsSanitized = deepSanitize(creatorsRaw) ?? [];
   const usersSanitized = deepSanitize(usersRaw) ?? [];
   const notificationsSanitized = deepSanitize(notificationsRaw) ?? [];
-
+  const postsSanitized = deepSanitize(postsRaw) ?? [];
+  const mergedUser = {
+    ...session.user,
+    ...dbUser,
+    _id: dbUser?._id?.toString() ?? session.user._id,
+  };
   const safeSession: Session | null = session
-    ? {
-        ...session,
-        user: normalizeUser({ ...session.user, ...dbUser }),
-      }
-    : null;
+  ? {
+      ...session,
+      user: normalizeUser(mergedUser),
+    }
+  : null;
 
   return {
     creators: creatorsSanitized as Creator[],
+    posts: postsSanitized as Post[],
     users: usersSanitized as User[],
     notifications: notificationsSanitized as Notification[],
-    safeSession,
+    safeSession: safeSession ? deepSanitize(safeSession) : null,
   };
 }

@@ -11,7 +11,7 @@ const MIN_RESEND_INTERVAL = 5 * 60 * 1000;
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions); // <-- no `request` param in App Router
-  if (!session?.user?.id) {
+  if (!session?.user?._id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {

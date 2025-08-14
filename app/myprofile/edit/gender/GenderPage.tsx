@@ -32,7 +32,7 @@ export default function App({creators, session}: AppProps) {
         const fetchData = async () => {
             try {
                 
-                const rightCreator = creators.find((c: Creator) => c._id === session?.user.id)
+                const rightCreator = creators.find((c: Creator) => c._id === session?.user._id)
 
                 setCreator(rightCreator ?? null);
                 if (rightCreator?.gender) {
@@ -44,10 +44,10 @@ export default function App({creators, session}: AppProps) {
             }
         };
         
-        if (session?.user?.id) {
+        if (session?.user?._id) {
             fetchData();
         }
-    }, [session?.user?.id, creators]);
+    }, [session?.user?._id, creators]);
 
     const handleSave = async () => {
         if (!creator) return;

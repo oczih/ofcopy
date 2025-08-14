@@ -80,7 +80,7 @@ export default function ProfileContent({
   const [currentUser, setCurrentUser] = useState<User>(viewingUser);
   const [status, setStatus] = useState<'subscriber' | 'follower' | 'none'>('none');
   const [userStatsLoading, setUserStatsLoading] = useState(true);
-  
+  console.log("kakkaka", creators)
   // Cache for signed URLs with timestamps
   const [urlCache, setUrlCache] = useState<Record<string, { url: string; timestamp: number }>>({});
   const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
@@ -88,24 +88,30 @@ export default function ProfileContent({
   useEffect(() => {
     setStatus(relationshipStatus);
   }, [relationshipStatus]);
-
+  
   useEffect(() => {
-    async function fetchCreator() {
-      const found = creators.find(
-        (c: Creator) => {
-          console.log('Checking creator user:', c.user, 'against userViewed.id:', userViewed._id);
-          return c.user?.toString() === userViewed._id?.toString();
-        }
-      );
-      console.log('Found creator:', found);
-      if (found) {
-        setCreator(found);
-      } else {
-        setCreator(null);
+    let userId: string | undefined;
+  
+    // Type guard
+    if (userViewed && typeof userViewed === 'object') {
+      if ('_id' in userViewed && typeof userViewed._id === 'string') {
+        userId = userViewed._id;
+      } else if ('id' in userViewed && typeof userViewed.id === 'string') {
+        userId = userViewed.id;
       }
-      setUserStatsLoading(false);
     }
-    if (userViewed?._id) fetchCreator();
+  
+    if (!userId || !creators?.length) {
+      console.log('Missing userId or empty creators array');
+      return;
+    }
+  
+    const found = creators.find((c: Creator) => c.user === userId);
+  
+    console.log('Found creator:', found);
+  
+    setCreator(found ?? null);
+    setUserStatsLoading(false);
   }, [userViewed, creators]);
   
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -279,52 +285,62 @@ export default function ProfileContent({
   };
 
   const stats = getCreatorStats();
-  const lastFollowTimes = useRef<Record<string, number>>({}); // key: creatorId
+  const notifiedCreators = useRef<Set<string>>(new Set());
 
-  const COOLDOWN_MS = 60 * 1000; // 1 minute cooldown
-  
   const handleFollow = async (creator: Creator) => {
     if (!creator) return;
-    const now = Date.now();
-    const lastFollow = lastFollowTimes.current[creator._id] || 0;
-
-    if (now - lastFollow < COOLDOWN_MS) {
-      console.warn('Please wait before following/unfollowing again.');
-      return; // Block spamming
-    }
-    lastFollowTimes.current[creator._id] = now;
-    
+  
     try {
       const alreadyFollowing = viewingUser.following.some(f => f.creatorId === creator._id);
-      if(alreadyFollowing) return;
+      if (alreadyFollowing) return;
+  
       await creatorservice.followCreator(creator._id);
+  
       setCurrentUser({
         ...currentUser,
-        following: [...currentUser.following, { 
-          creatorId: creator._id, creatorName: creator.name, creatorUsername: creator.username, followingDate: new Date()
-        }],
+        following: [
+          ...currentUser.following,
+          {
+            creatorId: creator._id,
+            creatorName: creator.name,
+            creatorUsername: creator.username,
+            followingDate: new Date(),
+          },
+        ],
       });
-      setStatus('follower');
-      if (!session?.user.id) {
+      setStatus("follower");
+  
+      if (!session?.user._id) {
         console.error("No user ID in session");
         return;
       }
-      const response = await fetch('/api/notifications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'newfollower',
-          by: session.user.id,
-          forUsers: [creator._id],
-        }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Failed to create notification:', errorData);
+  
+      // Only notify if we haven't before
+      if (!notifiedCreators.current.has(creator._id)) {
+        notifiedCreators.current.add(creator._id);
+        const response = await fetch("/api/notifications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "newfollower",
+            by: session.user._id,
+            forUsers: [
+              {
+                model: "Creator", // or "Creator" if the target is a creator
+                id: creator._id.toString(),
+              },
+            ],
+            creatorId: creator._id,
+          }),
+        });
+  
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("Failed to create notification:", errorData);
+        }
       }
     } catch (err) {
-      console.error('Error following creator:', err);
+      console.error("Error following creator:", err);
     }
   };
 

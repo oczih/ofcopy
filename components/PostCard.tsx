@@ -509,6 +509,21 @@ export function PostCard({
         } else {
           alert('Failed to like post');
         }
+        const notifRes = await fetch('/api/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'like',
+            by: viewingUser._id,
+            forUsers: [creator._id],
+            postId: post._id, // 🔹 now sent to backend
+          }),
+        });
+    
+        if (!notifRes.ok) {
+          const errorData = await notifRes.json();
+          console.error('Failed to create notification:', errorData);
+        }
       } catch (error) {
         console.error(error);
         alert('Failed to like post');

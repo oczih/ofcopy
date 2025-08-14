@@ -69,7 +69,7 @@ export default function App({ users, session}: AppProps) {
     let interval: NodeJS.Timeout;
     if (success && session?.user && !session.user.creator) {
       interval = setInterval(async () => {
-        const res = await fetch(`/api/users/${session.user.id}`);
+        const res = await fetch(`/api/users/${session.user._id}`);
         if (res.ok) {
           const data = await res.json();
           if (data.user?.creator) {

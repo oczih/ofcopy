@@ -47,31 +47,55 @@ export function CreatorPostCard({
   const [likes, setLikes] = useState(post.likes ?? []);
   const [comments, setComments] = useState(post.comments ?? []);
   const [imageLoading, setImageLoading] = useState(true);
+
   const handleLike = async (post: Post) => {
-      try {
-        const res = await fetch(`/api/media?username=${creator.username}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            postId: post._id,
-            liker: { userId: session?.user?._id }
-          })
-        });
-      
-        if (res.ok) {
-          const data = await res.json();
-          const updated = data.posts.find((p: Post) => p._id === post._id);
-          console.log("Like API response updated.likes:", updated?.likes);
-          if (updated) setLikes(updated.likes ?? []);
-        } else {
-          alert('Failed to like post');
-        }
-      } catch (error) {
-        console.error(error);
-        alert('Failed to like post');
-      }
-  
-  };
+  try {
+    // 1️⃣ Update like status in your media API
+    const res = await fetch(`/api/media?username=${creator.username}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        postId: post._id,
+        liker: { userId: session?.user?._id },
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const updated = data.posts.find((p: Post) => p._id === post._id);
+      console.log('Like API response updated.likes:', updated?.likes);
+      if (updated) setLikes(updated.likes ?? []);
+    } else {
+      alert('Failed to like post');
+      return; // stop if like didn't go through
+    }
+    const forUsersFormatted = [creator, user].map(u => ({
+      model: 'Creator', // or 'Creator' if applicable
+      id: u._id.toString(),
+    }));
+    
+    // 2️⃣ Send notification request with postId for duplicate check
+    const notifRes = await fetch('/api/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'like',
+        by: session?.user._id,
+        forUsers: forUsersFormatted,
+        postId: post._id, 
+      // 🔹 now sent to backend
+      }),
+    });
+
+    if (!notifRes.ok) {
+      const errorData = await notifRes.json();
+      console.error('Failed to create notification:', errorData);
+    }
+  } catch (error) {
+    console.error(error);
+    alert('Failed to like post');
+  }
+};
   const handleUnlike = async (post: Post) => {
     try {
       const res = await fetch(`/api/media?username=${creator.username}`, {

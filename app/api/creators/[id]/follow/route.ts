@@ -19,7 +19,7 @@ export async function POST(request: NextRequest, context: any) {
   }
 
   await connectDB();
-  const user = await UserModel.findById(session.user.id);
+  const user = await UserModel.findById(session.user._id);
   const creator = await Creator.findById(creatorId);
 
   if (!user || !creator) {
@@ -66,7 +66,7 @@ export async function DELETE(request: NextRequest, context: any) {
 
   await connectDB();
 
-  const user = await UserModel.findById(session.user.id);
+  const user = await UserModel.findById(session.user._id);
   const creator = await Creator.findById(creatorId);
 
   if (!user || !creator) {

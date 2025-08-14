@@ -97,12 +97,11 @@ export default function App({creators}: AppProps ) {
   }, [creatorKeysSignature]);
 
 
-  const filteredCreators = creators?.filter(creator => {
-    const matchesSearch = creator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         creator.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         creator.category.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
-  });
+  const filteredCreators = creatorsWithMedia.filter(creator => 
+    creator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    creator.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    creator.category.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   // Handle showing "no results" message after a delay when not loading
   useEffect(() => {

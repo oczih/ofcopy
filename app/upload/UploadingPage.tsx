@@ -38,7 +38,7 @@ export default function App({creators, session}: AppProps) {
     useEffect(() => {
       const fetchCreators = async () => {
         const rightcreator = creators.find(
-          (c: Creator) => c.user === session?.user.id
+          (c: Creator) => c.user === session?.user._id
         );
         if (!rightcreator) {
           return (
@@ -49,7 +49,7 @@ export default function App({creators, session}: AppProps) {
         }
       };
       fetchCreators();
-    }, [session?.user.id, router, creators]);
+    }, [session?.user._id, router, creators]);
     useEffect(() => {
       if (status !== 'loading') {
         setLoading(false);

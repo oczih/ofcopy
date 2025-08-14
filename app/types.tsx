@@ -81,7 +81,7 @@ export type Creator = {
     user: string;
   }
 
-  export type NotificationType = 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comment' | 'like' | 'newfollower'| 'promotion';
+  export type NotificationType = 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comment' | 'like' | 'newfollower'| 'promotion' | 'purchase';
 
   export interface Notification {
     type: NotificationType;
@@ -89,6 +89,8 @@ export type Creator = {
     by: User | Creator | string;
     seen: boolean;
     for: (User | Creator | string)[]; // add string to allow IDs
+    postId?: string;
+    commentId?: string;
   }
 export interface Follower {
   userId: string;
@@ -186,7 +188,7 @@ declare module "next-auth" {
   }
 
   interface Session {
-    user: User & {
+    user: SafeUser & {
       name?: string;
       email?: string;
       image?: string;
@@ -194,3 +196,21 @@ declare module "next-auth" {
     accessToken?: string;
   }
 }
+
+export type SafeUser = Partial<
+  Omit<
+    User,
+    | "password"
+    | "accessToken"
+    | "oauthProvider"
+    | "emailVerificationToken"
+    | "emailVerificationExpires"
+    | "lastVerificationEmailSentAt"
+    | "lastPasswordResetSentAt"
+  >
+> & {
+  _id: string;
+  name?: string;
+  email?: string;
+  image?: string;
+};

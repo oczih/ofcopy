@@ -13,7 +13,7 @@ export async function GET() {
 
     // Get all public creators (public only)
     const publicCreators = await getAllCreators(true); // fullFields = true
-    const nonPublicCreators = await getNonPublicCreatorsByUserId(session.user.id, true);
+    const nonPublicCreators = await getNonPublicCreatorsByUserId(session.user._id, true);
     const combinedCreators = [...publicCreators, ...nonPublicCreators];
 
     return NextResponse.json({ creators: combinedCreators });

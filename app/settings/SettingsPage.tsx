@@ -166,7 +166,7 @@ const validate = () => {
   const errs: Record<string, string> = {};
   
   // For users with existing passwords, require current password
-  if (session?.user.password && (!form.currentPassword || form.currentPassword.trim() === '')) {
+  if ((session?.user as User).password && (!form.currentPassword || form.currentPassword.trim() === '')) {
     errs.currentPassword = 'Current password is required';
   }
   
@@ -302,7 +302,7 @@ const validate = () => {
             </div>
           )}
 
-{activeSubTab === "password" && !session?.user.password && (
+{activeSubTab === "password" && !(session?.user as User).password && (
   <div className="space-y-6">
     <div>
       <h3 className="text-2xl font-bold text-white mb-2">Add Password</h3>
@@ -375,7 +375,7 @@ const validate = () => {
   </div>
 )}
 
-{activeSubTab === "password" && session?.user.password && (
+{activeSubTab === "password" && (session?.user as User).password && (
   <div className="space-y-6">
     <div>
       <h3 className="text-2xl font-bold text-white mb-2">Change Password</h3>

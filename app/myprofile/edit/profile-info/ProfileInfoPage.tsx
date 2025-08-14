@@ -66,13 +66,13 @@ export default function App({users, session}: AppProps) {
       }, [formData.handle, users]);
 
     const handleSave = async () => {
-        if (!session?.user?.id) return;
+        if (!session?.user?._id) return;
       
         if (!validateForm()) return;
       
         setSaving(true);
         try {
-          await userservice.update(session.user.id, {
+          await userservice.update(session.user._id, {
             name: formData.name,
             username: formData.handle,
             bio: formData.bio,

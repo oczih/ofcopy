@@ -18,7 +18,7 @@ async function canViewPost(post: PostDocument, session: AppSession | null): Prom
   if (!session) return false;
 
   const isAdmin = session.user.email === process.env.SECEMAIL;
-  const isOwner = post.creator?.toString() === session.user.id;
+  const isOwner = post.creator?.toString() === session.user._id;
 
   if (isAdmin || isOwner) return true;
 
@@ -27,7 +27,7 @@ async function canViewPost(post: PostDocument, session: AppSession | null): Prom
   if (!creator) return false;
 
   const isSubscriber = creator.subscribers?.some(
-    (subId) => subId.toString() === session.user.id
+    (subId) => subId.toString() === session.user._id
   );
 
   return Boolean(isSubscriber);
@@ -37,7 +37,7 @@ async function canEditOrDeletePost(post: PostDocument, session: AppSession | nul
   if (!session) return false;
 
   const isAdmin = session.user.email === process.env.SECEMAIL;
-  const isOwner = post.creator?.toString() === session.user.id;
+  const isOwner = post.creator?.toString() === session.user._id;
 
   return isAdmin || isOwner;
 }

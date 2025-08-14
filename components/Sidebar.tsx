@@ -74,10 +74,10 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
 
   useEffect(() => {
     const fetchCreator = async () => {
-      if (session?.user?.id) {
+      if (session?.user?._id) {
         try {
           if (creators) {
-            const found = creators.find((c: Creator) => c.user === session.user.id);
+            const found = creators.find((c: Creator) => c.user === session.user._id);
             setCreator(found || null);
           }
           
@@ -88,7 +88,7 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
       }
     };
     fetchCreator();
-  }, [session?.user?.id, creators]);
+  }, [session?.user?._id, creators]);
   useEffect(() => {
     if (status === 'authenticated') {
       setLoadingSession(false);
@@ -185,7 +185,6 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
   };
   
   
-
   return (
     <aside
   className={`${isCollapsed ? 'w-20' : 'w-72'} h-screen fixed left-0 top-0 z-30
@@ -206,7 +205,11 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
       {/* User Profile Section */}
       {session ? (
         <>
-        <div className={`flex flex-col items-center ${isCollapsed ? 'mb-2 mt-6' : 'mb-3 mt-1'} relative transition-all duration-300`}>
+        <div
+  className={`flex flex-col items-center relative transition-all duration-300 ${
+    isCollapsed ? 'mt-6' : 'mt-1'
+  } ${isCreator && creator && !isCollapsed ? 'mb-3' : 'mb-1'}`}
+>
           <div className="relative group">
             {/* Clickable Avatar and Name Container */}
             <Link 
@@ -245,22 +248,22 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
           </div>
 
           {/* Followers/Subscribers if creator */}
-          {creator && session?.user && !isCollapsed && (
-            <div className="flex gap-8 mt-4 justify-center items-center opacity-100 transition-opacity duration-300">
-              <div className="flex flex-col items-center">
-                <span className="text-white font-bold text-lg">{creator?.followers?.length ?? 0}</span>
-                <span className="text-xs text-gray-400">Followers</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <span className="text-pink-400 font-bold text-lg">{creator?.subscribers?.length ?? 0}</span>
-                <span className="text-xs text-gray-400">Subscribers</span>
-              </div>
-            </div>
-          )}
+          {isCreator && creator && session?.user && !isCollapsed && (
+  <div className="flex gap-8 mt-4 justify-center items-center">
+    <div className="flex flex-col items-center">
+      <span className="text-white font-bold text-lg">{creator?.followers?.length ?? 0}</span>
+      <span className="text-xs text-gray-400">Followers</span>
+    </div>
+    <div className="flex flex-col items-center">
+      <span className="text-pink-400 font-bold text-lg">{creator?.subscribers?.length ?? 0}</span>
+      <span className="text-xs text-gray-400">Subscribers</span>
+    </div>
+  </div>
+)}
         </div>
 
 
-        <nav className="space-y-1 mb-6"> 
+        <nav className="space-y-1 mb-40"> 
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;

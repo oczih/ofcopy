@@ -13,7 +13,7 @@ interface AppProps {
 }
 
 export default function App({ creators, users, session }: AppProps) {
-  const creator = creators.find((c) => c.user === session?.user.id);
+  const creator = creators.find((c) => c.user === session?.user._id);
 
   // Dummy data — replace with real transaction history from backend
   const payments = [

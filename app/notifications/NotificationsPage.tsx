@@ -4,6 +4,7 @@
 import { Creator, Notification, User } from "../types";
 import { Session } from "next-auth";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 // Utility to format relative time
 function timeAgo(date: Date) {
@@ -28,14 +29,15 @@ function timeAgo(date: Date) {
 }
 
 const notificationMessages: Record<Notification["type"], (n: Notification) => string> = {
-  newsub: () => "You have a new subscriber!",
-  resub: () => "A user has resubscribed to you!",
-  tip: () => "You received a new tip!",
-  subcancel: () => "A user has cancelled their subscription.",
-  comment: () => "You received a new comment!",
-  like: () => "Someone liked your post!",
-  newfollower: () => "You have a new follower!",
-  promotion: () => "You have a new promotion!",
+  newsub: () => "subscribed to you!",
+  resub: () => "resubscribed to you!",
+  tip: () => "sent you a new tip!",
+  subcancel: () => "cancelled their subscription.",
+  comment: () => "commented on your post!",
+  like: () => "liked your post!",
+  newfollower: () => "followed you!",
+  promotion: () => "launched a promotion!",
+  purchase: () => "purchase your content!"
 };
 
 interface AppProps {
@@ -50,6 +52,7 @@ export default function App({ session, notifications, users, creators }: AppProp
   const isCreator = user?.creator;
   const [avatarSignedUrls, setAvatarSignedUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
   Object.entries(avatarSignedUrls).forEach(([id, url]) => {
     console.log(`ID: ${id} -> URL: ${url}`);
   });
@@ -124,8 +127,29 @@ export default function App({ session, notifications, users, creators }: AppProp
 
   const currentCreator = creators.find(c => c.user === user?._id);
 
+  interface ForRef {
+    model: string;
+    id: string;
+  }
+  
   const userNotifications = (notifications || []).filter(n => {
-    const forIds = Array.isArray(n.for) ? n.for.map(id => id.toString()) : [n.for];
+    const forIds: string[] = Array.isArray(n.for)
+      ? n.for
+          .map(f => {
+            if (typeof f === 'string') return f; // string IDs
+            // Narrow to ForRef
+            if (typeof f === 'object' && f !== null && 'id' in f && 'model' in f) {
+              const ref = f as ForRef; // tell TS it's ForRef
+              return ref.id.toString();
+            }
+            return undefined;
+          })
+          .filter(Boolean) as string[]
+      : typeof n.for === 'string'
+      ? [n.for]
+      : typeof n.for === 'object' && n.for !== null && 'id' in n.for && 'model' in n.for
+        ? [(n.for as ForRef).id.toString()]
+        : [];
   
     return (
       forIds.includes(currentCreator?._id?.toString() || '') ||
@@ -188,43 +212,81 @@ function resolveByUser(by: string | User | Creator | Array<string | User | Creat
 const byUser = resolveByUser(noti.by);
   console.log("usseri:", byUser)
   console.log("noti:", noti.by.toString())
+  function getNotificationLink(noti: Notification) {
+    switch (noti.type) {
+      case "newfollower":
+        if(creators.find(c => c.user === noti.by)){
+          const creator = creators.find(c => c.user === noti.by);
+          return `/${creator?.username}`;
+        }
+         else {
+          const user = users.find(u => u._id === noti.by);
+          return `/${user?.username}`;
+        }// Goes to creator's followers page
+      case "comment":
+      case "like":
+        console.log(noti.postId)
+        return `/post/${noti.postId}`; // Go to the post page
+      case "newsub":
+        if(creators.find(c => c.user === noti.by)){
+          const creator = creators.find(c => c.user === noti.by);
+          return `/${creator?.username}`;
+        }
+         else {
+          const user = users.find(u => u._id === noti.by);
+          return `/${user?.username}`;
+        }
+      case "resub":
+        if(creators.find(c => c.user === noti.by)){
+          const creator = creators.find(c => c.user === noti.by);
+          return `/${creator?.username}`;
+        }
+         else {
+          const user = users.find(u => u._id === noti.by);
+          return `/${user?.username}`;
+        } // Subscribers page
+      case "purchase":
+        return `/post/${noti.postId}`; // If purchases are tied to a post
+      case "promotion":
+        return `/promotions/${noti.by}`; // Example route
+      default:
+        return "/";
+    }
+  }
   return (
     <li
-      key={idx}
-      className={`p-4 rounded-lg border transition-all duration-200
-        ${noti.seen ? "bg-white/5 border-white/20 hover:border-white/30" : "bg-white/10 border-white/40 shadow-md hover:shadow-lg"}
-      `}
-      aria-label={notificationMessages[noti.type](noti)}
-    >
-      <div className="flex items-center gap-4">
-        {/* User avatar */}
-        <div className="relative w-12 h-12">
-          {byUser && avatarSignedUrls[byUser?._id] ? (
-            <img
-              src={avatarSignedUrls[byUser?._id]}
-              alt={`${byUser?.username || "User"} avatar`}
-              className="w-12 h-12 rounded-full object-cover"
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-700 text-white text-3xl rounded-full">
-              {byUser?.username?.charAt(0).toUpperCase() || "U"}
-            </div>
-          )}
+  key={idx}
+  onClick={() => router.push(getNotificationLink(noti))}
+  className={`p-4 rounded-lg border transition-all duration-200 cursor-pointer hover:bg-white/40
+    ${noti.seen ? "bg-white/5 border-white/20 hover:border-white/30" : "bg-white/10 border-white/40 shadow-md hover:shadow-lg"}
+  `}
+  aria-label={notificationMessages[noti.type](noti)}
+>
+  <div className="flex items-center gap-4">
+    <div className="relative w-12 h-12">
+      {byUser && avatarSignedUrls[byUser?._id] ? (
+        <img
+          src={avatarSignedUrls[byUser?._id]}
+          alt={`${byUser?.username || "User"} avatar`}
+          className="w-12 h-12 rounded-full object-cover"
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-700 text-white text-3xl rounded-full">
+          {byUser?.username?.charAt(0).toUpperCase() || "U"}
         </div>
-        <div className="flex flex-col flex-grow">
-          {/* User name + relative time */}
-          <div className="flex justify-between items-center">
-            <span className="text-white font-bold">{byUser?.username || 'Unknown User'}</span>
-            <time className="text-xs text-gray-400 whitespace-nowrap" dateTime={new Date(noti.date).toISOString()}>
-              {timeAgo(new Date(noti.date))}
-            </time>
-          </div>
-
-          {/* Notification message */}
-          <span className="text-gray-300 text-sm">{notificationMessages[noti.type](noti)}</span>
-        </div>
+      )}
+    </div>
+    <div className="flex flex-col flex-grow">
+      <div className="flex justify-between items-center">
+        <span className="text-white font-bold">{byUser?.username || 'Unknown User'}</span>
+        <time className="text-xs text-gray-400 whitespace-nowrap" dateTime={new Date(noti.date).toISOString()}>
+          {timeAgo(new Date(noti.date))}
+        </time>
       </div>
-    </li>
+      <span className="text-gray-300 text-sm">{notificationMessages[noti.type](noti)}</span>
+    </div>
+  </div>
+</li>
   );
 })}
 

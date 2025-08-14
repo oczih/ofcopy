@@ -25,7 +25,7 @@ export default async function App({ creators, users, session, username }: AppPro
   
     const user = await UserModel.findOne({ username });
     if (!user) notFound();
-  
+    console.log("usseri:", user)
     const isOwnProfile = session?.user?.username === user.username;
   
     let relationshipStatus: 'subscriber' | 'follower' | 'none' = 'none';
@@ -34,9 +34,9 @@ export default async function App({ creators, users, session, username }: AppPro
     let creator = null;
   
     if (user.creator) {
-      creator = await CreatorModel.findOne({ user: user._id });
+      creator = await CreatorModel.findOne({ user: user.id });
   
-      const viewerId = session?.user?.id;
+      const viewerId = session?.user?._id;
   
       if (creator && viewerId) {
         const isSubscriber = Array.isArray(creator.subscribers) &&
@@ -67,19 +67,19 @@ const isFollower = creator.followers &&
       };
     }
   
-    if (session?.user?.id) {
+    if (session?.user?._id) {
       // Tell TS that purchases have populated postId as PostDocument or string
-      const purchases = await PurchaseModel.find({ userId: session.user.id }).populate('postId') as Purchase<PostDocument>[];
+      const purchases = await PurchaseModel.find({ userId: session.user._id }).populate('postId') as Purchase<PostDocument>[];
   
       purchasedContent = purchases
         .map(p => p.postId)
         .filter(isPostDocument)
         .map(transformPostDocumentToMediaPost);
     }
-  
+      
     return (
         <ProfileContent
-          userViewed={user && JSON.parse(JSON.stringify(user)) || null}
+          userViewed={JSON.parse(JSON.stringify(user))}
           viewingUser={session?.user && JSON.parse(JSON.stringify(session?.user)) || null}
           purchasedContent={purchasedContent}
           totalSpent={totalSpent}
