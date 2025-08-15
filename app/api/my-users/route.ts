@@ -15,19 +15,19 @@ export async function GET() {
   try {
     const userId = await getCurrentUserId();
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/404`)
     }
 
     await connectDB();
     const user = await OFUser.findById(userId).lean();
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/404`)
     }
 
     return NextResponse.json({ user });
   } catch (error) {
     console.error("Error fetching my user:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/404`)
   }
 }
 

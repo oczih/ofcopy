@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const creators = await getCreatorsByUser(userId, true);
     return NextResponse.json({ creators });
   } catch {
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/404`)
   }
 }
 

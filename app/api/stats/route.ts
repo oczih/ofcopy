@@ -1,12 +1,14 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongoose';
 import Creator from '@/app/models/creatormodel';
 import OFUser from '@/app/models/usermodel';
+import { verifySystemAccess } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   
   await connectDB();
   try {
+    verifySystemAccess(request);
     // Calculate real stats from the database
     const [
       totalCreators,
@@ -58,6 +60,6 @@ export async function GET() {
     return NextResponse.json(stats);
   } catch (error) {
     console.error('Error fetching stats:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/404`)
   }
 } 

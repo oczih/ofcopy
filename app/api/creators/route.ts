@@ -3,13 +3,14 @@ import mongoose from "mongoose";
 import CreatorModel from "@/app/models/creatormodel";
 import { verifySystemAccess } from "@/lib/auth";
 
+
 export async function GET(request: NextRequest) {
-  if(!request) return;
   try {
+    verifySystemAccess(request);
     const creators = await CreatorModel.find({})
     return NextResponse.json({ creators });
-  } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  } catch{
+    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/404`)
   }
 }
 

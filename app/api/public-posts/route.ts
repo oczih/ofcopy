@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongoose";
 import Post from "@/app/models/postmodel";
+import { verifySystemAccess } from "@/lib/auth";
 
 
 export async function GET(request: NextRequest) {
@@ -10,6 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     // Find all posts that are either public or viewable to followers/subs, 
     // but only fully reveal those that are public
+    verifySystemAccess(request);
     const posts = await Post.find({ viewable: true }).populate("creator");
 
     const sanitizedPosts = posts.map(post => {
@@ -46,8 +48,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({ posts: sanitizedPosts });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Failed to fetch posts" }, { status: 500 });
+  } catch {
+    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/404`)
   }
 }

@@ -2,22 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SubscriptionService } from '@/app/services/subscriptionservice';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-client';
+import { verifySystemAccess } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   if(!request) return;
   try {
     const session = await getServerSession(authOptions);
-  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+    if(!session?.user.email) return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/404`)
+    verifySystemAccess(request)
 
     // Get user subscriptions
-    const subscriptions = await SubscriptionService.getUserSubscriptions(session.user.email);
+    const subscriptions = await SubscriptionService.getUserSubscriptions(session?.user?.email);
     
     return NextResponse.json({ subscriptions });
-  } catch (error) {
-    console.error('Error fetching subscriptions:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch {
+    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/404`)
   }
 }
 

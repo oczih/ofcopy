@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   await connectDB();
   const session = await getServerSession(authOptions);
   if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/404`)
   }
 
   try {

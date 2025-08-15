@@ -4,9 +4,9 @@ import { authOptions } from "@/lib/auth-client";
 import { connectDB } from "@/lib/mongoose";
 import AppWrapper from "@/components/AppWrapper";
 import App from "./usernamePage"; // Your client component
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { fetchPageData } from "@/lib/fetchDataPage";
-
+import UserModel from "@/app/models/usermodel";
 
 export default async function Page({
   params,
@@ -15,6 +15,12 @@ export default async function Page({
 }) {
   const resolvedParams = await params;
   const { username } = resolvedParams;
+  await connectDB();
+  const user = await UserModel.findOne({ username: username.toLowerCase() });
+  console.log("user:", user)
+  if (!user) {
+    notFound();
+  }
   const { creators, users, safeSession } = await fetchPageData();
 
   const session = await getServerSession(authOptions);
@@ -22,7 +28,7 @@ export default async function Page({
     return redirect("/login");
   }
   console.log("paskat", creators)
-  await connectDB();
+  
   // Sanitize your data if needed here
   
   return (

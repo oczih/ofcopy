@@ -17,11 +17,11 @@ async function requireAdmin() {
 export async function GET() {
   try {
     await requireAdmin();
-    await connectDB();
+    await connectDB();    
     const users = await getAllUsers();
     return NextResponse.json({ users });
   } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/404`)
   }
 }
 

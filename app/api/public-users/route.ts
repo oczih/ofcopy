@@ -1,14 +1,16 @@
 // app/api/public-users/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongoose";
 import { getPublicUsers } from "@/lib/userService";
+import { verifySystemAccess } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await connectDB();
+    verifySystemAccess(request);
     const users = await getPublicUsers();
     return NextResponse.json({ users });
   } catch {
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/404`)
   }
 }

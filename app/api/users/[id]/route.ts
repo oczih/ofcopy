@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth-client";
 import OFUser from '@/app/models/usermodel';
+import { verifySystemAccess } from '@/lib/auth';
 
 export async function GET(request: NextRequest, context: unknown) {
   // Cast context as unknown then extract params carefully
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest, context: unknown) {
   
   if (!session) {
     console.log("[API] No session found - Unauthorized");
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/404`)
   }
 
   const { id } = await params;
@@ -45,14 +46,14 @@ export async function GET(request: NextRequest, context: unknown) {
 
   try {
     //populate
+    verifySystemAccess(request)
     const user = await OFUser.findById(id)
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     return NextResponse.json({ user });
-  } catch (error) {
-    console.error('Error fetching user:', error);
-    return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
+  } catch{
+    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/404`)
   }
 }
   
