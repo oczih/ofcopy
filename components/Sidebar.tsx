@@ -351,15 +351,34 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
             onMouseLeave={() => setHoveredItem(null)}
           >
             <Link href="/upload">
-              <Button
-                variant="default"
-                className={`w-full ${isCollapsed ? 'justify-center px-2 py-3' : 'justify-center py-4 px-4'} rounded-2xl transition-all duration-300 bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500 text-white font-semibold ${isCollapsed ? 'text-base' : 'text-lg'} shadow-lg flex items-center ${isCollapsed ? 'gap-0' : 'gap-3'} mt-4 mb-2`}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${isCollapsed ? 'mr-0' : ''} transition-all duration-300`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" />
-                </svg>
-                {!isCollapsed && <span className="opacity-100 transition-opacity duration-300">Upload Content</span>}
-              </Button>
+                    <button
+          className={`w-full cursor-pointer
+            ${isCollapsed ? 'justify-center px-2 py-3' : 'justify-center py-4 px-4'}
+            rounded-2xl
+            transition-[outline-color,outline-width,outline-offset,background-color] duration-1000
+            hover:outline hover:outline-white
+            bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500
+            text-white font-semibold
+            ${isCollapsed ? 'text-base' : 'text-lg'}
+            shadow-lg flex items-center
+            ${isCollapsed ? 'gap-0' : 'gap-3'}
+            mt-4 mb-2`}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className={`h-6 w-6 ${isCollapsed ? 'mr-0' : ''} transition-all duration-300`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" />
+          </svg>
+          {!isCollapsed && (
+            <span className="opacity-100 transition-opacity duration-300">
+              Upload Content
+            </span>
+          )}
+        </button>
             </Link>
 
             {/* Upload hover tooltip for collapsed state */}

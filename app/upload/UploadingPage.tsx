@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 import * as React from 'react';
 import { useState } from "react";
@@ -10,7 +11,6 @@ import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import { useEffect } from 'react';
 import { Creator, User } from '../types';
-import Image from 'next/image';
 import { Session } from 'next-auth';
 
 interface AppProps {
@@ -228,10 +228,7 @@ export default function App({creators, session}: AppProps) {
     const handleChange = (event: SelectChangeEvent) => {
       setViewable(event.target.value as string);
     };
-    const triggerFileInput = () => {
-      setShowDim(true);
-      fileInputRef.current?.click();
-    };
+
     
     
     return (
@@ -247,11 +244,11 @@ export default function App({creators, session}: AppProps) {
           />
         )}
         
-        <div className="flex max-w-5xl mx-auto px-4 py-12 gap-8">
+        <div className="flex max-w-8xl mx-auto px-4 py-12 gap-8">
           <main className="flex-1 flex flex-col items-center">
-            <div className="bg-white/10 rounded-3xl p-8 shadow-2xl flex flex-col items-center w-full max-w-2xl">
+            <div className="bg-white/10 rounded-3xl p-8 shadow-2xl flex flex-col items-center w-full max-w-5xl">
               <h1 className="text-3xl font-bold text-white mb-6">Create Post</h1>
-              <form onSubmit={handleSubmit} className="flex flex-col items-left gap-4 w-full max-w-md">
+              <form onSubmit={handleSubmit} className="flex flex-col items-left gap-4 w-full max-w-xl">
                 
                 {/* Visibility select */}
                 <div className="w-full mb-2">
@@ -286,70 +283,97 @@ export default function App({creators, session}: AppProps) {
                 </div>
 
                 {/* File input and preview UI */}
-                <div className="flex w-full gap-4 items-center justify-center mb-2">
-                  {previews.length === 0 ? (
-                    <label
-                      htmlFor="file-upload"
-                      className="flex flex-col items-center justify-center w-48 h-48 border-2 border-dashed border-white rounded-xl cursor-pointer bg-white/10 text-pink-300 hover:bg-white/20 transition"
-                      onClick={triggerFileInput}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 mb-2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                      </svg>
-                      <span className="font-semibold">Upload from device</span>
-                      <input
-                          ref={fileInputRef}
-                          id="file-upload"
-                          type="file"
-                          accept="image/*,video/*"
-                          multiple
-                          onChange={handleFileChange}
-                          className="hidden"
-                          disabled={uploading}
-                          onFocus={() => setShowDim(true)}
-                          onBlur={() => setShowDim(false)}  // Triggers when file dialog is closed, including cancel
-                        />
-                    </label>
-                  ) : (
-                    <div className="relative flex flex-row gap-2 items-start w-full overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200 py-2">
-                        {previews.map((preview, index) => (
-                          <div key={index} className="relative group">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newFiles = files.filter((_, i) => i !== index);
-                                const newPreviews = previews.filter((_, i) => i !== index);
-                                setFiles(newFiles);
-                                setPreviews(newPreviews);
-                              }}
-                              className="absolute top-2 right-2 z-10 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                              aria-label="Remove media"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
+<div className="flex w-full gap-4 items-center justify-center mb-2">
+  {previews.length === 0 ? (
+    <label
+      htmlFor="file-upload"
+      className="flex flex-col items-center justify-center w-48 h-48 border-2 border-dashed border-white rounded-xl cursor-pointer bg-white/10 text-pink-300 hover:bg-white/20 transition"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 mb-2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+      </svg>
+      <span className="font-semibold">Upload from device</span>
+      <input
+        id="file-upload"
+        ref={fileInputRef}
+        type="file"
+        multiple
+        onChange={handleFileChange}
+        className="hidden"
+        disabled={uploading}
+        onFocus={() => setShowDim(true)}
+        onBlur={() => setShowDim(false)}
+      />
+    </label>
+  ) : (
+    <div className="relative flex flex-row gap-2 items-center w-full overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200 py-2">
+  {/* Add more files box */}
+  <label
+    htmlFor="file-upload-more"
+    className="flex flex-col items-center justify-center w-20 h-25 border-2 border-dashed border-white rounded-xl cursor-pointer bg-white/10 text-pink-300 hover:bg-white/20 transition shrink-0"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 mb-1">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+    </svg>
+    <input
+      id="file-upload-more"
+      type="file"
+      multiple
+      onChange={handleFileChange}
+      className="hidden"
+      disabled={uploading}
+    />
+  </label>
 
-                            {files[index]?.type.startsWith("image") ? (
-                              <Image
-                                src={preview}
-                                alt={`Preview ${index}`}
-                                className="max-w-xs max-h-40 rounded-xl border border-white/20 mb-2"
-                              />
-                            ) : (
-                              <video
-                                src={preview}
-                                controls
-                                className="max-w-xs max-h-64 rounded-xl border border-white/20 mb-2"
-                              />
-                            )}
-                          </div>
-                        ))}
-                      </div>
+  {previews.map((preview, index) => (
+    <div
+      key={index}
+      className="relative group w-25 h-25 rounded-xl overflow-hidden border border-white/20 shrink-0"
+    >
+      {/* Remove button */}
+      <button
+        type="button"
+        onClick={() => {
+          const newFiles = files.filter((_, i) => i !== index);
+          const newPreviews = previews.filter((_, i) => i !== index);
+          setFiles(newFiles);
+          setPreviews(newPreviews);
+        }}
+        className="absolute top-1 right-1 z-20 bg-black/60 hover:bg-black/80 text-white cursor-pointer rounded-full p-0.5 w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+        aria-label="Remove media"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
 
+      {/* Blurred background */}
+      <div
+        className="absolute inset-0 z-0 bg-center bg-cover filter blur-lg scale-110"
+        style={{ backgroundImage: `url(${preview})` }}
+      ></div>
 
-                  )}
-                </div>
+      {/* Foreground image/video */}
+      {files[index]?.type.startsWith("image") ? (
+        <img
+          src={preview}
+          alt={`Preview ${index}`}
+          className="absolute inset-0 z-10 object-contain w-full h-full"
+        />
+      ) : (
+        <video
+          src={preview}
+          controls
+          className="absolute inset-0 z-10 object-contain w-full h-full"
+        />
+      )}
+    </div>
+  ))}
+</div>
+
+  )}
+</div>
+
 
                 {/* Caption input */}
                 <textarea
@@ -375,7 +399,7 @@ export default function App({creators, session}: AppProps) {
                     }`}
                   >
                     {price ? `$${price}` : (
-                      <div className="flex items-center justify-center gap-3 flex-1 min-w-0">
+                      <div className="flex items-center justify-center gap-3 flex-1 min-w-0 cursor-pointer">
                       <div className="w-5 h-5">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                           <g data-name="pricetags">
