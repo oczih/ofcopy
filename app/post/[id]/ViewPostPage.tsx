@@ -3,7 +3,7 @@
 import { Session } from "next-auth";
 import { Creator, User, Post } from "@/app/types";
 import { CreatorPostCard } from "@/components/CreatorPostCard";
-import { notFound} from "next/navigation";
+import { notFound, useRouter} from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import creatorservice from "@/app/services/creatorservice";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -117,7 +117,23 @@ export default function App({ creators, users, session, posts, postId }: AppProp
       console.error("Error following creator:", err);
     }
   };
-
+  const router = useRouter();
+  const handleDeletePost = async (creatorId: string, postId: string) => {
+    try {
+      const res = await fetch(`/api/posts/${postId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) throw new Error("Failed to delete post");
+  
+      // Redirect to home page after deletion
+      router.push("/home");
+  
+    } catch (error) {
+      console.error(error);
+      alert('Failed to delete post');
+    }
+  };
 
   if (!creator || !post) return null;
   const viewingUser = session?.user
@@ -133,6 +149,7 @@ export default function App({ creators, users, session, posts, postId }: AppProp
         signedUrl={postUrl}
         creators={creators}
         handleFollow={handleFollow}
+        handleDeletePost={() => handleDeletePost(creator._id, post._id)}
       />) : (
         <Skeleton />
       )}

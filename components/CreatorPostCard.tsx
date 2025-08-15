@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -7,7 +8,6 @@ import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
 import { Session } from "next-auth";
 import { Comment, Creator, Post, User} from "../app/types";
-import postservice from "../app/services/postservice";
 import { Skeleton } from "@/components/ui/skeleton"
 import { resolveImageUrl } from "./resolveImageUrl";
 
@@ -22,7 +22,8 @@ export function CreatorPostCard({
   users,
   signedUrl,
   handleFollow,
-  creators
+  creators,
+  handleDeletePost
 }: {
   creator: Creator;
   post: Post;
@@ -33,11 +34,12 @@ export function CreatorPostCard({
   signedUrl: string;
   handleFollow: (creator: Creator) => void;
   creators: Creator[]
+  handleDeletePost: () => void;
 }) {
   // Restriction logic
   const isFollowersOnly = post.viewableFor === "followers";
   const isSubscribersOnly = post.viewableFor === "subscribers";
-  const canView = !isFollowersOnly && !isSubscribersOnly || session?.user.creator || status === 'follower' || status === 'subscriber';
+  const canView = (!isFollowersOnly && !isSubscribersOnly) || session?.user?.creator || status === 'follower' || status === 'subscriber';
   // Like and comment modal state
   const [commentOpen, setCommentOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false)
@@ -46,6 +48,7 @@ export function CreatorPostCard({
   const [commentModalOpen, setCommentModalOpen] = useState<string | null>(null);
   const [likes, setLikes] = useState(post.likes ?? []);
   const [comments, setComments] = useState(post.comments ?? []);
+
   const [imageLoading, setImageLoading] = useState(true);
 
   const handleLike = async (post: Post) => {
@@ -288,26 +291,13 @@ useEffect(() => {
     const correctUser = users?.find(u => u._id === comment.userId)
     return correctUser
   }
-  const handleDeletePost = (id: string) => {
-    try {
-      postservice.getPrivatePostById(id)}
-      catch(error){
-        console.error(error)
-        alert('Failed to delete post')
-      }
-  }
   const canDeleteComment = (comment: Comment) => {
     const isCommentOwner = comment.userId === session?.user?._id;
     const isPostOwner = session?.user?._id === creator._id
     return isCommentOwner || isPostOwner;
   };
-  const isthepostcreator = Array.isArray(creators)
-  ? creators.find(c => c.user === session?.user?._id)
-  : undefined;
-  const canDeletePost = (post: Post) => {
-    const isPostOwner = post.creator === isthepostcreator?._id;
-    return isPostOwner;
-  };
+  const isthepostcreator = Array.isArray(creators) ? creators.find(c => c.user === session?.user?._id) : undefined; 
+  const canDeletePost = (post: Post) => { const isPostOwner = post.creator === isthepostcreator?._id; return isPostOwner; };
   const handleCommentModalOpen = (commentId: string) => {
     setCommentModalOpen(commentModalOpen === commentId ? null : commentId);
   };
@@ -348,7 +338,9 @@ useEffect(() => {
     <div className="flex items-center gap-3 flex-1 min-w-0">
   <Link href={`/${creator.username}`}>
     <Avatar className="w-12 h-12">
-      <AvatarImage src={resolvedAvatarUrl ?? undefined} alt={creator.name || creator.username} />
+      <img 
+      src={resolvedAvatarUrl ?? undefined} 
+      alt={creator.name || creator.username} />
       <AvatarFallback>{creator.name?.[0] || creator.username?.[0]}</AvatarFallback>
     </Avatar>
   </Link>
@@ -403,7 +395,7 @@ useEffect(() => {
     </Button>*/}
     <Button
       variant="ghost"
-      onClick={() => handleDeletePost(post._id)}
+      onClick={() => handleDeletePost()}
       className="w-full justify-start text-left text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
     >
       Delete Post
@@ -542,7 +534,8 @@ useEffect(() => {
                 <div key={comment._id || idx} className="flex items-start gap-3 bg-slate-800/60 rounded-lg p-3">
                   <div className="flex items-center gap-2 min-w-0">
                     <Avatar className="w-8 h-8">
-                      {!avatarsLoading ? <div><AvatarImage 
+                      {!avatarsLoading ? <div>
+                      <AvatarImage 
                         src={userAvatars[userObj?._id || ''] || userObj?.avatarKey || ''} 
                         alt={userObj?.name || userObj?.username || 'User'} 
                       />

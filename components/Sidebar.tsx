@@ -119,16 +119,16 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
         });
   
         const data = await res.json();
-        console.log("Avatar API response:", data);
+
   
         if (data.downloadUrl?.startsWith('http')) {
           setAvatarUrl(data.downloadUrl);
         } else {
-          console.error('Invalid avatar URL:', data.downloadUrl);
+
           setAvatarError(true);
         }
-      } catch (err) {
-        console.error('Error fetching avatar:', err);
+      } catch {
+        
         setAvatarError(true);
       } finally {
         setLoadingAvatar(false);

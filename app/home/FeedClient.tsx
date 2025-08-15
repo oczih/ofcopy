@@ -3,7 +3,7 @@
 import { Button } from "../../components/ui/button";
 import { CheckCircle, MessageCircle, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Creator, Following, Subscription, User } from "../types";
+import { Creator, Subscription, User } from "../types";
 import { Badge } from "../../components/ui/badge";
 import toast, { Toaster } from "react-hot-toast";
 import Link from "next/link";
@@ -29,7 +29,16 @@ export default function App({ creators, users, session}: AppProps) {
   const postKeysSignature = JSON.stringify(
     creators?.flatMap(c => (c.posts || []).map(p => p.s3Key)) || []
   );
-  
+  const [filteredCreators, setFilteredCreators] = useState<Creator[]>([]);
+  useEffect(() => {
+    const followedCreatorIds = new Set([
+      ...(session?.user.following?.map((f) => f.creatorId.toString()) || []),
+      ...(session?.user.subscriptions?.map((s) => s.creatorId.toString()) || []),
+    ]);
+    setFilteredCreators(creators.filter(
+      c => followedCreatorIds.has(c._id) || session?.user._id === c.user.toString()
+    ));
+  }, [creators, session]);
   useEffect(() => {
     async function fetchSignedUrls() {
       if (!creators || creators.length === 0) return;
@@ -91,17 +100,6 @@ export default function App({ creators, users, session}: AppProps) {
     return <div>Please log in.</div>;
   }
 
-  const followedCreatorIds = new Set([
-    ...(session?.user.following?.map((f: Following) => f.creatorId.toString()) || []),
-    ...(session?.user.subscriptions?.map((s: Subscription) => s.creatorId.toString()) || []),
-  ]);
-
-  const filteredCreators = creators.filter((creator) => {
-    const isFollowed = followedCreatorIds.has(creator._id);
-    const isOwnCreator = session?.user?._id === creator.user.toString();
-    return isFollowed || isOwnCreator;
-  });
-  
   const handleFollow = async (creator: Creator) => {
     if (!creator) return;
   
@@ -140,7 +138,6 @@ export default function App({ creators, users, session}: AppProps) {
       console.error("Error following creator:", err);
     }
   };
-
 
   return (
     <div className="min-h-screen w-full relative">
@@ -241,25 +238,51 @@ export default function App({ creators, users, session}: AppProps) {
                   : isFollower
                   ? 'follower'
                   : 'none';
-
+                  
+                  const handleDeletePost = async (creatorId: string, postId: string) => {
+                    console.log("clicked")
+                    try {
+                      const res = await fetch(`/api/posts/${postId}`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                      });
+                      if (!res.ok) throw new Error("Failed to delete post");
+                  
+                      // Update posts in the local creator list
+                      setFilteredCreators((prev) =>
+                        prev.map((creator) =>
+                          creator._id === creatorId
+                            ? { ...creator, posts: creator.posts?.filter(p => p._id !== postId) }
+                            : creator
+                        )
+                      );
+                  
+                    } catch (error) {
+                      console.error(error);
+                      alert('Failed to delete post');
+                    }
+                  };
+                  console.log(creator)
+                  
                 return (
                   <div key={creator._id} className="space-y-8">
-                    {creator.posts && creator.posts.length > 0 &&
-                      creator.posts.map((post) => (
-                        <div key={post._id} className="transform transition-transform duration-300">
+                    {creator.posts && !(creator.posts.length == 0) ? (
+                        creator.posts.map(post => (
                           <CreatorPostCard
+                            key={post._id}
                             creator={creator}
                             post={post}
                             session={session}
                             user={session.user as User}
-                            status={status}  // Pass status here
+                            status={status}
                             users={users}
-                            handleFollow={handleFollow}
                             signedUrl={postSignedUrls[post._id]}
                             creators={creators}
+                            handleFollow={handleFollow}
+                            handleDeletePost={() => handleDeletePost(creator._id, post._id)}
                           />
-                        </div>
-                      ))}
+                        ))
+                      ) : null}
                   </div>
                 );
               })
