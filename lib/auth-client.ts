@@ -230,7 +230,6 @@ export const authOptions: NextAuthOptions = {
         session.user.email = user.email;
         session.user.avatarKey = user.avatarKey;
         session.user.name = user.name;
-        session.user.age = user.age;
         session.user.membership = user.membership;
         session.user.hasAccess = user.hasAccess;
         session.user.lastUsernameChange = user.lastUsernameChange;

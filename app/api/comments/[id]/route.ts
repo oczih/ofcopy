@@ -5,10 +5,13 @@ import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-client";
 
+type Params = { id: string };
 
-export async function DELETE(req: NextRequest, { params }: { params: Record<string, string> }) {
-  const commentId = params.id;
-
+export async function DELETE(
+  req: NextRequest,
+  context: { params: Promise<Params> }
+) {
+  const { id: commentId } = await context.params;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?._id) {

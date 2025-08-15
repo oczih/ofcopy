@@ -8,11 +8,12 @@ import { Follower, Following } from '@/app/types';
 interface Params {
   id: string;
 }
-export async function POST(request: NextRequest, context: { params: Params }) {
-  // Cast context as unknown then extract params carefully
-  // OR just treat as any but keep the cast local and limited
-  const { params } = context;
-  const creatorId = params.id;
+
+export async function POST(
+  req: NextRequest,
+  context: { params: Promise<Params> }
+) {
+  const { id: creatorId } = await context.params;
 
   const session = await getServerSession(authOptions);
 
@@ -58,10 +59,12 @@ export async function POST(request: NextRequest, context: { params: Params }) {
 interface Params {
   id: string;
 }
+export async function DELETE(
+  req: NextRequest,
+  context: { params: Promise<Params> }
+) {
+  const { id: creatorId } = await context.params;
 
-export async function DELETE(request: NextRequest, context: { params: Params }) {
-  const { params } = context;
-  const creatorId = params.id;
 
   const session = await getServerSession(authOptions);
   if (!session) {

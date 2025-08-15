@@ -147,7 +147,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
     const { id } = await params;
-    if (session.user?.id !== id) {
+    if (session.user?._id !== id) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
     await connectDB();

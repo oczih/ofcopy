@@ -69,10 +69,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 });
   }
-  console.log("Session user ID:", session.user?.id);
+  console.log("Session user ID:", session.user?._id);
   console.log("Request param ID:", id);
   // Prevent users from updating other users
-  if (session.user?.id !== id) {
+  if (session.user?._id !== id) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 
@@ -153,7 +153,7 @@ export async function DELETE(request: NextRequest, context: unknown) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
     const { id } = params;
-    if (session.user?.id !== id) {
+    if (session.user?._id !== id) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
     await connectDB();
