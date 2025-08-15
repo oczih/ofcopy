@@ -696,7 +696,29 @@ function PurchasedPostsGrid ({
   const visiblePosts = allPosts.filter((post) =>
     viewingUser.purchases?.some((purchase) => purchase.postId === post._id)
   );
+  const handleDeletePost = async (creatorId: string, postId: string) => {
+    console.log("clicked")
+    try {
+      const res = await fetch(`/api/posts/${postId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) throw new Error("Failed to delete post");
   
+      // Update posts in the local creator list
+      setFilteredCreators((prev) =>
+        prev.map((creator) =>
+          creator._id === creatorId
+            ? { ...creator, posts: creator.posts?.filter(p => p._id !== postId) }
+            : creator
+        )
+      );
+  
+    } catch (error) {
+      console.error(error);
+      alert('Failed to delete post');
+    }
+  };
   return (
     <div>
       {visiblePosts.length === 0 && (
@@ -719,6 +741,7 @@ function PurchasedPostsGrid ({
           signedUrl={postSignedUrls[post._id]}
           handleFollow={handleFollow}
           creators={creators}
+          handleDeletePost={() => handleDeletePost(creator._id, post._id)}
         />
       ))}
     </div>
@@ -865,6 +888,7 @@ function MediaGrid({
           user={user}
           handleFollow={handleFollow}
           creators={creators}
+          handleDeletePost={() => handleDeletePost(creator._id, post._id)}
         />
         ))}
       </div>
