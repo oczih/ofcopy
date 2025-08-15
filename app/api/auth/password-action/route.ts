@@ -9,7 +9,7 @@ import { authOptions } from '@/lib/auth-client';
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
     try {

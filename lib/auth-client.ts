@@ -45,21 +45,16 @@ export const authOptions: NextAuthOptions = {
     
         try {
           await connectDB();
-    
+          console.log("Logging in with:", credentials.email);
           const user = await OFUser.findOne({
             email: credentials.email,
             oauthProvider: "credentials"
           }).select("+password");
-          console.log("usseri", user)
-          console.log("Fetched user password hash:", user?.password);
+          console.log("Found user:", user);
           if (!user || !user.password) {
             throw new Error("Invalid email or password");
           }
-    
-          if (!user.emailVerified) {
-            throw new Error("Please verify your email before signing in. Check your inbox for the verification link.");
-          }
-    
+     
           const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
     
           if (!isPasswordValid) {
@@ -167,90 +162,63 @@ export const authOptions: NextAuthOptions = {
     },
 
     async jwt({ token, user, account }) {
-    
-      if (account) {
-        token.accessToken = account.access_token;
-      }
-    
       if (user) {
-        token.id = user._id;
-        console.log("[JWT] Setting token ID:", token.id, "from user object");
-        token.username = user.username;
-        token.email = user.email;
-        token.membership = user.membership ?? false;
-      } else {
-        console.log("[JWT] No user object, preserving existing token ID:", token.id);
+        // Completely replace old token values
+        return {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          membership: user.membership ?? false,
+          accessToken: account?.access_token ?? null,
+        };
       }
-    
+      // Keep token as is only if it's valid
       return token;
     },
 
     async session({ session, token }) {
-      console.log("[Session] Callback triggered with token:", { 
-        hasEmail: !!token?.email, 
-        hasSub: !!token?.sub, 
-        tokenId: token?.id,
-        tokenEmail: token?.email 
-      });
-      
-      if (!token?.email && !token?.sub) {
-        console.log("[Session] No email or sub in token, returning session as is");
-        return session;
-      }
-
+      console.log("[Session] Callback triggered with token:", token);
+    
+      if (!token || !session.user) return session;
+    
       try {
         await connectDB();
-      } catch (error) {
-        console.error("Database connection error in session:", error);
+    
+        // Always fetch by ID, ignore email/sub for safety
+        const user = await OFUser.findById(token.id);
+    
+        let isCreator = false;
+        if (user) {
+          const creator = await (await import("@/app/models/creatormodel")).default.findOne({ email: user.email });
+          isCreator = !!creator;
+    
+          session.user._id = user._id.toString();
+          session.user.username = user.username;
+          session.user.email = user.email;
+          session.user.avatarKey = user.avatarKey;
+          session.user.name = user.name;
+          session.user.membership = user.membership;
+          session.user.hasAccess = user.hasAccess;
+          session.user.lastUsernameChange = user.lastUsernameChange;
+          session.user.isUsernameChangeBlocked = user.isUsernameChangeBlocked;
+          session.user.subscriptions = user.subscriptions || [];
+          session.user.notifications = user.notifications || [];
+          session.user.following = user.following || [];
+          session.user.creator = isCreator;
+          session.user.bio = user.bio;
+          session.user.emailVerified = user.emailVerified;
+          session.user.location = user.location;
+          session.user.createdAt = user.createdAt;
+          session.user.wallet = user.wallet;
+          session.user.paymentmethods = user.paymentmethods;
+        }
+    
+        (session as Session).accessToken = token.accessToken as string;
+        return session;
+      } catch (err) {
+        console.error("[Session] Error fetching user:", err);
         return session;
       }
-
-      console.log("[Session] Looking for user with token.email:", token.email, "token.sub:", token.sub, "token.id:", token.id);
-
-      const user = await OFUser.findOne({
-        $or: [
-          { email: token.email }, 
-          { oauthId: token.sub },
-          { _id: token.id } // Also search by ID for credentials users
-        ],
-      });
-      // Check if user is a creator
-      let isCreator = false;
-      if (user) {
-        const creator = await (await import("@/app/models/creatormodel")).default.findOne({ email: user.email });
-        isCreator = !!creator;
-      }
-
-      if (user) {
-        console.log("[Session] Found user:", user._id.toString(), "Token ID:", token.id);
-      
-        // Type assertion to add custom properties to session
-        session.user._id = user._id.toString();
-        session.user.username = user.username;
-        session.user.email = user.email;
-        session.user.avatarKey = user.avatarKey;
-        session.user.name = user.name;
-        session.user.membership = user.membership;
-        session.user.hasAccess = user.hasAccess;
-        session.user.lastUsernameChange = user.lastUsernameChange;
-        session.user.isUsernameChangeBlocked = user.isUsernameChangeBlocked;
-        session.user.subscriptions = user.subscriptions || [];
-        session.user.notifications = user.notifications || [];
-        session.user.following = user.following || [];
-        session.user.creator = isCreator;
-        session.user.bio = user.bio;
-        session.user.emailVerified = user.emailVerified;
-        session.user.location = user.location;
-        session.user.createdAt = user.createdAt;
-        session.user.wallet = user.wallet
-        session.user.paymentmethods = user.paymentmethods
-      } else {
-        console.log("[Session] No user found in database");
-      }
-      
-      (session as Session).accessToken = token.accessToken as string;
-      
-      return session;
     },
 
     async redirect({ url, baseUrl }) {

@@ -3,13 +3,10 @@ import { connectDB } from '@/lib/mongoose';
 import OFUser from '@/app/models/usermodel';
 import { hashPassword, createVerificationToken } from '@/lib/auth-utils';
 import { sendVerificationEmail } from '@/lib/email';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth-client';
+
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if(!session) return;
-  console.log(request.body)
+  console.log("bvoddy:", request.body)
   try {
     const { email, password, username } = await request.json();
     console.log('Received username:', username);
@@ -23,9 +20,15 @@ export async function POST(request: NextRequest) {
     await connectDB();
 
     // Check if user already exists
-    const existingUser = await OFUser.findOne({
-      $or: [{ email }, { username }]
-    });
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const existingUser = await OFUser.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'User with this email already exists' },
+        { status: 409 }
+      );
+    }
 
     if (existingUser) {
       return NextResponse.json(
@@ -39,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     // Create user (not verified yet)
     const user = await OFUser.create({
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       username,
       name: username,
@@ -48,7 +51,7 @@ export async function POST(request: NextRequest) {
     });
     
     // Create verification token
-    const verificationToken = await createVerificationToken(user.id, email, 'email_verification', 15 * 60 * 1000);
+    const verificationToken = await createVerificationToken(user.id, email, 'email_verification', 24 * 60 * 60 * 1000);
 
     // Send verification email
     await sendVerificationEmail(email, verificationToken);

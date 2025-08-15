@@ -10,7 +10,7 @@ const MIN_RESEND_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {

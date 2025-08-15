@@ -128,36 +128,43 @@ export default function SignupPage() {
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+  
     if (!validateForm()) return;
-    console.log(e)
     setIsLoading(true);
-    
+  
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
           username: formData.username
         }),
       });
-
+  
       const data = await response.json();
-
+  
       if (!response.ok) {
         throw new Error(data.error || 'Registration failed');
       }
-
-      router.push("/home")
-      toast.success('Registration successful! Please check your email to verify your account.');
+  
+      // Automatically log in the user
+      const loginResult = await signIn('credentials', {
+        redirect: false,  // important
+        email: formData.email,
+        password: formData.password,
+      });
+  
+      if (loginResult?.error) {
+        toast.error(`Login failed: ${loginResult.error}`);
+      } else {
+        toast.success('Registration successful!');
+        router.push('/home');
+      }
       
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Registration failed';
-      console.log(message)
       toast.error(message);
     } finally {
       setIsLoading(false);

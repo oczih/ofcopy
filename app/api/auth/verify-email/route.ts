@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongoose';
 import OFUser, { VerificationToken } from '@/app/models/usermodel';
-import { authOptions } from '@/lib/auth-client';
-import { getServerSession } from 'next-auth/next';
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
   try {
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');
@@ -20,25 +14,18 @@ export async function GET(request: NextRequest) {
 
     await connectDB();
 
-    // Find verification token
     const verificationRecord = await VerificationToken.findOne({
-      email,
       token,
-      type: 'email_verification',
-      expires: { $gt: new Date() }
+      expiresAt: { $gt: new Date() } // token not expired
     });
 
     if (!verificationRecord) {
       return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/login?error=invalid-or-expired-token`);
     }
 
-    // Update user as verified
-    const user = await OFUser.findOneAndUpdate(
-      { email },
-      { 
-        emailVerified: true,
-        $unset: { emailVerificationToken: 1, emailVerificationExpires: 1 }
-      },
+    const user = await OFUser.findByIdAndUpdate(
+      verificationRecord.userId,
+      { emailVerified: true },
       { new: true }
     );
 
@@ -46,7 +33,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/login?error=user-not-found`);
     }
 
-    // Delete verification token
     await VerificationToken.deleteOne({ _id: verificationRecord._id });
 
     return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/login?verified=true`);

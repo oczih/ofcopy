@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
-import { signIn, getSession, useSession } from "next-auth/react";
+import { signIn, getSession, useSession, signOut } from "next-auth/react";
 import { toast, Toaster } from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from "next/link";
@@ -139,6 +139,7 @@ export default function LoginPageWrapper() {
     setLoading(true);
     
     try {
+      await signOut({ redirect: false });
       const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
