@@ -17,19 +17,46 @@ interface AppProps {
   users: User[];
 }
 
+
+type Stats = {
+  payouts: number;
+  earningsLast30: number;
+  subscribers: number;
+  followers: number;
+};
+
 export default function App({ creators, users, session}: AppProps) {
   const [showBanner, setShowBanner] = useState(true);
   const [postSignedUrls, setPostSignedUrls] = useState<Record<string, string>>({});
   const [page, setPage] = useState("Feed");
+  const [creator, setCreator] = useState<Creator | undefined>(undefined)
+  const [stats, setStats] = useState<Stats | null>(null);
   const HIDE_DURATION = 2 * 60 * 1000;
   const notifiedCreators = useRef<Set<string>>(new Set());
   // Manage loading and redirect on unauthenticated
-
+  useEffect(() => {
+    async function fetchStats() {
+      if (!creator?._id) return;
+      const res = await fetch(`/api/creators/${creator._id}/stats/`);
+      const data = await res.json();
+      setStats(data);
+    }
+    fetchStats();
+  }, [creator?._id, setStats]);
   // Fetch signed URLs only client-side when creators are present
   const postKeysSignature = JSON.stringify(
     creators?.flatMap(c => (c.posts || []).map(p => p.s3Key)) || []
   );
   const [filteredCreators, setFilteredCreators] = useState<Creator[]>([]);
+  useEffect(() => {
+    function creatorSet() {
+      if(session?.user.creator){
+        const rightCreator = creators.find((c) => c.user.toString() === session.user._id)
+        setCreator(rightCreator)
+      }
+    }
+    creatorSet()
+  }, [creators, session])
   useEffect(() => {
     const followedCreatorIds = new Set([
       ...(session?.user.following?.map((f) => f.creatorId.toString()) || []),
@@ -138,7 +165,6 @@ export default function App({ creators, users, session}: AppProps) {
       console.error("Error following creator:", err);
     }
   };
-
   return (
     <div className="min-h-screen w-full relative">
       <Toaster position="top-center" reverseOrder={false} />
@@ -149,7 +175,7 @@ export default function App({ creators, users, session}: AppProps) {
           {session?.user?.creator && (
             <div className="flex gap-4 justify-center mb-15 mt-15">
               <Button
-                className={`px-8 py-3 rounded-full font-semibold shadow-lg transition-all duration-300 text-lg backdrop-blur-lg border border-white/10 ${
+                className={`px-8 py-3 rounded-full font-semibold shadow-lg transition-all cursor-pointer duration-300 text-lg backdrop-blur-lg border border-white/10 ${
                   page === "Dashboard"
                     ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white scale-105 shadow-green-500/25"
                     : "bg-white/10 text-green-300 hover:bg-green-500/20 hover:scale-105"
@@ -166,7 +192,7 @@ export default function App({ creators, users, session}: AppProps) {
                 </div>
               </Button>
               <Button
-                className={`px-8 py-3 rounded-full font-semibold shadow-lg transition-all duration-300 text-lg backdrop-blur-lg border border-white/10 ${
+                className={`px-8 py-3 rounded-full font-semibold shadow-lg cursor-pointer  transition-all duration-300 text-lg backdrop-blur-lg border border-white/10 ${
                   page === "Feed"
                     ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white scale-105 shadow-pink-500/25"
                     : "bg-white/10 text-pink-300 hover:bg-pink-500/20 hover:scale-105"
@@ -282,7 +308,18 @@ export default function App({ creators, users, session}: AppProps) {
                             handleDeletePost={() => handleDeletePost(creator._id, post._id)}
                           />
                         ))
-                      ) : null}
+                      ) : <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 text-center group hover:bg-white/10 transition-all duration-500">
+                      <div className="mb-4">
+                        <Sparkles className="w-16 h-16 text-gray-400 mx-auto mb-4 group-hover:text-pink-400 transition-colors duration-300" />
+                        <h3 className="text-xl font-bold text-white mb-2">No Content Here Yet</h3>
+                        <p className="text-gray-400 mb-6">Start exploring creators and subscribe to their content to see it here.</p>
+                        <Link href="/discover">
+                          <Button className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer">
+                            Discover Creators
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>}
                   </div>
                 );
               })
@@ -350,6 +387,47 @@ export default function App({ creators, users, session}: AppProps) {
               </div>
           </>
         )}
+        {page === "Dashboard" && (
+  <div className="space-y-10 mt-10">
+    <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-lg">
+      <h2 className="text-3xl font-bold text-white mb-6">Welcome, {creator?.name} 👋</h2>
+      <p className="text-gray-400 text-lg">Here&apos;s what&apos;s happening in your business today:</p>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+              
+              {/* Payouts */}
+              <div className="bg-gradient-to-br from-green-500/10 to-emerald-600/10 p-6 rounded-2xl border border-white/10">
+                <p className="text-gray-400 text-sm">Payouts</p>
+                <h3 className="text-2xl font-bold text-white">${stats?.payouts || 0}</h3>
+                <p className="text-green-400 text-sm mt-1">Total Balance</p>
+              </div>
+
+              {/* Earnings */}
+              <div className="bg-gradient-to-br from-pink-500/10 to-purple-600/10 p-6 rounded-2xl border border-white/10">
+                <p className="text-gray-400 text-sm">Earnings</p>
+                <h3 className="text-2xl font-bold text-white">${stats?.earningsLast30|| 0}</h3>
+                <p className="text-pink-400 text-sm mt-1">Last 30 days</p>
+              </div>
+
+              {/* Subscribers */}
+              <div className="bg-gradient-to-br from-blue-500/10 to-cyan-600/10 p-6 rounded-2xl border border-white/10">
+                <p className="text-gray-400 text-sm">Subscribers</p>
+                <h3 className="text-2xl font-bold text-white">{creator?.subscribers.length|| 0}</h3>
+                <p className="text-blue-400 text-sm mt-1">Total today</p>
+              </div>
+
+              {/* Followers */}
+              <div className="bg-gradient-to-br from-yellow-500/10 to-orange-600/10 p-6 rounded-2xl border border-white/10">
+                <p className="text-gray-400 text-sm">Followers</p>
+                <h3 className="text-2xl font-bold text-white">{creator?.followers.length || 0}</h3>
+                <p className="text-yellow-400 text-sm mt-1">All time</p>
+              </div>
+          </div>
+    </div>
+  </div>
+)}
+
         </main>
       </div>
     </div>

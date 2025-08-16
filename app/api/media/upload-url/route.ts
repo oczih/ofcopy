@@ -33,8 +33,8 @@ export async function POST(req: NextRequest) {
     const signedDownloadUrl = getCloudFrontSignedUrl({
       url: fileUrl,
       dateLessThan: new Date(Date.now() + 3600 * 1000).toISOString(),
-      keyPairId: process.env.CLOUDFRONT_KEY_PAIR_ID!,
-      privateKey: process.env.CLOUDFRONT_PRIVATE_KEY!.replace(/\\n/g, '\n'),
+      keyPairId: process.env.CF_KEY_PAIR_ID!,
+      privateKey: process.env.CF_PRIVATE_KEY!.replace(/\\n/g, '\n'),
     });
 
     return NextResponse.json({

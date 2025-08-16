@@ -328,6 +328,9 @@ useEffect(() => {
       alert('Failed to delete comment');
     }
   };
+  const isImage = (url: string) => {
+    return /\.(jpeg|jpg|gif|png|webp|avif|svg)$/.test(url.toLowerCase());
+  };
   
   const resolvedAvatarUrl = useMemo(() => resolveImageUrl(avatarUrl), [avatarUrl]);
   return (
@@ -421,30 +424,26 @@ useEffect(() => {
         <Skeleton className="w-full h-full rounded-none bg-gray-200 dark:bg-gray-700" />
       </div>
     )}
-    {post.width && post.height ? (
-      <Image
-        src={resolvedUrl || ""}
-        alt={post.caption || ""}
-        width={post.width}
-        height={post.height}
-        onLoad={() => setImageLoading(false)}
-        onError={() => setImageLoading(false)}
-        style={{ objectFit: "contain", width: "100%", height: "auto" }}
-        sizes="(max-width: 1200px) 100vw, 1200px"
-        className={`transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"}`}
-      />
-    ) : (
-      <Image
-        src={resolvedUrl || ""}
-        alt={post.caption || ""}
-        width={600}
-        height={400}
-        onLoad={() => setImageLoading(false)}
-        onError={() => setImageLoading(false)}
-        style={{ objectFit: "cover", width: "100%", height: "auto" }}
-        className={`w-full transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"}`}
-      />
-    )}
+    {resolvedUrl && (
+  isImage(resolvedUrl) ? (
+    <Image
+      src={resolvedUrl}
+      alt={post.caption || ""}
+      width={post.width}
+      height={post.height}
+      onLoad={() => setImageLoading(false)}
+      onError={() => setImageLoading(false)}
+      style={{ objectFit: "contain", width: "100%", height: "auto" }}
+      sizes="(max-width: 1200px) 100vw, 1200px"
+      className={`transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"}`}
+    />
+  ) : 
+    <video width="100%" height="auto" controls preload="metadata">
+      <source src={resolvedUrl} type="video/mp4" />
+      Your browser does not support the video tag.
+    </video>
+  )
+  }
   </div>
 ) : (
   // Restricted block (only shows when signedUrlLoading === false AND no signedUrl)

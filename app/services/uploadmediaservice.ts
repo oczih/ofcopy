@@ -1,5 +1,7 @@
 import axios from "axios";
 import { Post } from "../types";
+import imageCompression from 'browser-image-compression';
+
 interface SignedUrlResponse {
   uploadUrl: string;
   key: string;
@@ -50,10 +52,30 @@ function sanitizeFileName(name: string): string {
 }
 
 export async function uploadContent(file: File): Promise<string> {
-  const sanitizedFileName = sanitizeFileName(file.name);
-  const { uploadUrl, key } = await getSignedUrl(sanitizedFileName, file.type);
-  await uploadFileToS3(file, uploadUrl);
-  console.log("Key:",key)
+  let processedFile = file;
+
+  if (file.type.startsWith("image/")) {
+    // Compress images in-browser
+    processedFile = await imageCompression(file, {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+    });
+  } else if (file.type.startsWith("video/")) {
+    // Just upload the raw video file to your API
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch('/api/media/videos', { method: 'POST', body: formData });
+    const data = await response.json();
+    console.log('Server compressed video:', data.filePath);
+  }
+
+  // Upload to S3
+  const sanitizedFileName = sanitizeFileName(processedFile.name);
+  const { uploadUrl, key } = await getSignedUrl(sanitizedFileName, processedFile.type);
+  await uploadFileToS3(processedFile, uploadUrl);
+
+  console.log("Uploaded to S3 with key:", key);
   return key;
 }
 

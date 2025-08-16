@@ -40,7 +40,9 @@ export interface CreatorDocument extends mongoose.Document {
   subscriptions?: Subscriber[];
   followers: Follower[];
   user: Types.ObjectId;  // Link to OFUser
-  posts?: PostDocument[];  // Virtual populated posts
+  posts?: PostDocument[];
+  totalEarnings: number,  // Lifetime earnings
+  currentBalance: number, // Available for payout
 }
 
 const creatorSchema = new Schema<CreatorDocument>({
@@ -78,7 +80,9 @@ const creatorSchema = new Schema<CreatorDocument>({
     avatarKey: { type: String },
     followedAt: { type: Date, default: Date.now }
   }],
-  user: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true }
+  user: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true },
+  totalEarnings: { type: Number, default: 0 },
+  currentBalance: { type: Number, default: 0 },
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

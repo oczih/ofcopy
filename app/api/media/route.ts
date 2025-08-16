@@ -8,6 +8,7 @@ import mongoose from 'mongoose';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-client';
 import { Post } from '@/app/types';
+
 const s3 = new S3Client({
   region: "eu-north-1",
   credentials: {

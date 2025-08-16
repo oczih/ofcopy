@@ -79,6 +79,8 @@ export type Creator = {
     category: string;
     posts?: Post[];
     user: string;
+    totalEarnings: number;
+    currentBalance: number;
   }
 
   export type NotificationType = 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comment' | 'like' | 'newfollower'| 'promotion' | 'purchase';

@@ -476,31 +476,33 @@ export default function ProfileContent({
                 </div>
               )}
             </div>
-
             {/* Right Column - Profile Info and Action Buttons */}
             <div className="flex-1 text-center lg:text-left">
               {/* Action Buttons - Spread out evenly */}
               {isOwnProfile && (
                 <div className="flex flex-wrap justify-between gap-4 mt-6">
-                  <Link 
-                    href="/myprofile/edit" 
-                    className="flex-1 text-center outline-3 outline-white/50 text-white px-6 py-3 rounded-xl hover:bg-white/10 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
-                  >
-                    Edit Profile
-                  </Link>
-                  <Link 
-                    href="/insights" 
-                    className="flex-1 text-center outline-3 outline-white/50 text-white px-6 py-3 rounded-xl hover:bg-white/10 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
-                  >
-                    Insights
-                  </Link>
-                  <Link 
-                    href="/settings/creator/promotions" 
-                    className="flex-1 text-center outline-3 outline-white/50 text-white px-6 py-3 rounded-xl hover:bg-white/10 font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
-                  >
-                    Promote
-                  </Link>
-                </div>
+                <Link 
+                  href="/myprofile/edit" 
+                  className="flex-1 flex items-center text-center justify-center bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 text-white font-semibold px-6 py-3 hover:bg-white/10 transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  Edit Profile
+                </Link>
+              
+                <Link 
+                  href="/insights" 
+                  className="flex-1 flex items-center justify-center bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 text-white font-semibold px-6 py-3 hover:bg-white/10 transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  Insights
+                </Link>
+              
+                <Link 
+                  href="/settings/creator/promotions" 
+                  className="flex-1 flex items-center justify-center bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 text-white font-semibold px-6 py-3 hover:bg-white/10 transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  Promote
+                </Link>
+              </div>
+              
               )}
             </div>
           </div>
@@ -669,9 +671,17 @@ function PurchasedPostsGrid ({
   creators: Creator[]
 }) {
   const [users, setUsers] = useState<User[] | null>(null);
+  const [visiblePosts, setVisiblePosts] = useState<Post[]>([]);
   
-  const allPosts = creator?.posts || [];
-  
+  useEffect(() => {
+    if (creator?.posts) {
+      const purchased = creator.posts.filter((post) =>
+        viewingUser.purchases?.some((purchase) => purchase.postId === post._id)
+      );
+      setVisiblePosts(purchased);
+    }
+  }, [creator, viewingUser]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -693,30 +703,19 @@ function PurchasedPostsGrid ({
   if (!creator) return null;
   
   // Filter posts based on purchased content
-  const visiblePosts = allPosts.filter((post) =>
-    viewingUser.purchases?.some((purchase) => purchase.postId === post._id)
-  );
+  
+  
+  
   const handleDeletePost = async (creatorId: string, postId: string) => {
-    console.log("clicked")
     try {
-      const res = await fetch(`/api/posts/${postId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const res = await fetch(`/api/posts/${postId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete post");
   
-      // Update posts in the local creator list
-      setFilteredCreators((prev) =>
-        prev.map((creator) =>
-          creator._id === creatorId
-            ? { ...creator, posts: creator.posts?.filter(p => p._id !== postId) }
-            : creator
-        )
-      );
-  
+      // remove from UI
+      setVisiblePosts((prev) => prev.filter((p) => p._id !== postId));
     } catch (error) {
       console.error(error);
-      alert('Failed to delete post');
+      alert("Failed to delete post");
     }
   };
   return (
@@ -862,21 +861,36 @@ function MediaGrid({
     session: Session | null,
     creators: Creator[]
   }) {
+    const [visiblePosts, setVisiblePosts] = useState<Post[]>([]);
+
+    useEffect(() => {
+      if (creator?.posts) {
+        const filtered = creator.posts.filter((post) => {
+          if (status === "subscriber") return true;
+          if (status === "follower") return post.viewableFor === "followers";
+          return post.viewableFor === "followers";
+        });
+        setVisiblePosts(filtered);
+      }
+    }, [creator, status]);
     if (!creator) return null;
     
-    const allPosts = creator.posts || [];
-    
-    // Filter posts based on relationship status
-    const visiblePosts = allPosts.filter((post) => {
-      if (status === 'subscriber') return true;
-      if (status === 'follower') return post.viewableFor === 'followers';
-      return post.viewableFor === 'followers'; // show blurred for public
-    });
     
     
+    const handleDeletePost = async (postId: string) => {
+      try {
+        const res = await fetch(`/api/posts/${postId}`, { method: "DELETE" });
+        if (!res.ok) throw new Error("Failed to delete post");
+    
+        setVisiblePosts((prev) => prev.filter((p) => p._id !== postId));
+      } catch (error) {
+        console.error(error);
+        alert("Failed to delete post");
+      }
+    };
     return (
       <div className="grid grid-cols-1 gap-6">
-        {visiblePosts.map((post) => (
+        {visiblePosts.length > 0 ? visiblePosts.map((post) => (
           <CreatorPostCard
           key={post._id}
           post={post}
@@ -888,9 +902,14 @@ function MediaGrid({
           user={user}
           handleFollow={handleFollow}
           creators={creators}
-          handleDeletePost={() => handleDeletePost(creator._id, post._id)}
+          handleDeletePost={() => handleDeletePost(creator._id)}
         />
-        ))}
+        )) : (
+          <div className="text-center text-gray-400 py-12">
+            <div className="text-6xl mb-4">🤔</div>
+            <p>This person hasn&apos;t posted anything yet!</p>
+          </div>
+        )}
       </div>
     );
   }

@@ -144,6 +144,11 @@ function Landing() {
   const [mounted, setMounted] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      router.push("/home");
+    }
+  }, [router])
+  useEffect(() => {
     setMounted(true);
   }, []);
   if (session?.user) {
@@ -159,8 +164,7 @@ function Landing() {
       </div>
     );
   }
-  if (typeof window !== "undefined"){
-    router.push("/home")};
+  
  }
   return (
     <motion.div 

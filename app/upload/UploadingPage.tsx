@@ -139,10 +139,6 @@ export default function App({creators, session}: AppProps) {
 
     async function handleSubmit(e: React.FormEvent) {
       e.preventDefault();
-      if (!caption.trim()) {
-        setMessage("Please enter a caption for your post.");
-        return;
-      }
       if (!session) {
         setMessage("You must be logged in to upload.");
         return;
@@ -415,13 +411,24 @@ export default function App({creators, session}: AppProps) {
                 </div>
 
                 {/* Upload Button */}
-                <Button
-                  type="submit"
-                  disabled={uploading || !caption}
-                  className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 disabled:from-gray-400 disabled:to-gray-500 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                  {uploading ? "Uploading..." : "Create Post"}
-                </Button>
+                <button
+  type="submit"
+  disabled={uploading}
+  className="
+    w-full 
+    text-white py-3 px-4 rounded-xl font-semibold
+    cursor-pointer
+    shadow-lg hover:shadow-xl 
+    disabled:from-gray-400 disabled:to-gray-500
+
+    bg-gradient-to-r from-pink-500 to-purple-500
+    bg-[length:200%_200%] bg-[position:0%_50%]
+    transition-all duration-300 ease-in-out
+    hover:bg-[position:100%_50%]
+  "
+>
+  {uploading ? "Uploading..." : "Create Post"}
+</button>
 
                 {message && (
                   <p className={`text-center text-sm ${
