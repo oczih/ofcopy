@@ -96,15 +96,27 @@ export default function App({creators, session}: AppProps) {
 
     function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
       const selectedFiles = Array.from(e.target.files ?? []);
+      
+      // Filter out duplicates
       const newFiles = selectedFiles.filter(
         file => !files.some(f => f.name === file.name && f.size === file.size)
       );
-      setFiles(prev => [...prev, ...newFiles]);
+    
+      // Filter out files over 200MB
+      const maxSize = 200 * 1024 * 1024; // 200MB in bytes
+      const oversizedFiles = newFiles.filter(file => file.size > maxSize);
+      if (oversizedFiles.length > 0) {
+        setMessage(`File(s) too large: ${oversizedFiles.map(f => f.name).join(", ")}. Max size is 200MB.`);
+      }
+    
+      const validFiles = newFiles.filter(file => file.size <= maxSize);
+    
+      setFiles(prev => [...prev, ...validFiles]);
       setPreviews(prev => [
         ...prev,
-        ...newFiles.map(file => URL.createObjectURL(file))
+        ...validFiles.map(file => URL.createObjectURL(file))
       ]);
-      setShowDim(false)
+      setShowDim(false);
     }
 
     function getImageDimensions(file: File): Promise<{ width: number; height: number } | null> {
@@ -212,7 +224,7 @@ export default function App({creators, session}: AppProps) {
         setPreviews([]);
         setCaption("");
         setPrice(0);
-        router.push("/");
+        router.push("/home");
       } catch (err) {
         console.error("Upload failed", err);
         setMessage("Upload failed. Please try again.");

@@ -51,31 +51,27 @@ function sanitizeFileName(name: string): string {
   return name.replace(/\s+/g, "-").toLowerCase();
 }
 
-export async function uploadContent(file: File): Promise<string> {
-  let processedFile = file;
+async function compressImage(file: File): Promise<File> {
+  const options = {
+    maxSizeMB: 1,         // Target maximum size in MB
+    maxWidthOrHeight: 1920, // Resize image if larger than this
+    useWebWorker: true,
+  };
+  return await imageCompression(file, options);
+}
 
+export async function uploadContent(file: File): Promise<string> {
+  let fileToUpload = file;
+
+  // Only compress if it's an image
   if (file.type.startsWith("image/")) {
-    // Compress images in-browser
-    processedFile = await imageCompression(file, {
-      maxSizeMB: 1,
-      maxWidthOrHeight: 1920,
-      useWebWorker: true,
-    });
-  } else if (file.type.startsWith("video/")) {
-    // Just upload the raw video file to your API
-    const formData = new FormData();
-    formData.append('file', file);
-    const response = await fetch('/api/media/videos', { method: 'POST', body: formData });
-    const data = await response.json();
-    console.log('Server compressed video:', data.filePath);
+    fileToUpload = await compressImage(file);
+    console.log(`Compressed image from ${file.size / 1024}KB to ${fileToUpload.size / 1024}KB`);
   }
 
-  // Upload to S3
-  const sanitizedFileName = sanitizeFileName(processedFile.name);
-  const { uploadUrl, key } = await getSignedUrl(sanitizedFileName, processedFile.type);
-  await uploadFileToS3(processedFile, uploadUrl);
-
-  console.log("Uploaded to S3 with key:", key);
+  const sanitizedFileName = sanitizeFileName(fileToUpload.name);
+  const { uploadUrl, key } = await getSignedUrl(sanitizedFileName, fileToUpload.type);
+  await uploadFileToS3(fileToUpload, uploadUrl);
   return key;
 }
 

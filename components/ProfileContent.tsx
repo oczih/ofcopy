@@ -604,7 +604,7 @@ function ContentTabs({
     ...((status === 'subscriber' || status === 'follower') && !isOwnProfile
       ? [{ id: 'purchased', label: 'Purchased Content', count: purchasedContent.length }]
       : []),
-    ...(isOwnProfile ? [{ id: 'likes', label: 'Likes', count: 0 }] : []),
+    ...([{ id: 'likes', label: 'Likes', count: 0 }]),
   ];
   
   return (
@@ -634,7 +634,7 @@ function ContentTabs({
       {/* Tab Content */}
       <div className="p-6">
         {activeTab === 'posts' && (
-          <PostsGrid creator={creator} creators={creators} status={status} postSignedUrls={postSignedUrls} user={user} handleFollow={handleFollow} users={users} session={session} />
+          <PostsGrid creator={creator} status={status} postSignedUrls={postSignedUrls} user={user} handleFollow={handleFollow} users={users} session={session} />
         )}
         {activeTab === 'purchased' && (
           <PurchasedPostsGrid status={status} creator={creator} handleFollow={handleFollow} creators={creators} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user}/>
@@ -643,15 +643,85 @@ function ContentTabs({
           <MediaGrid creator={creator} status={status} postSignedUrls={postSignedUrls}  />
         )}
         {activeTab === 'likes' && (
-          <div className="text-center text-gray-400 py-12">
-            <div className="text-6xl mb-4">❤️</div>
-            <p>Your liked content will appear here</p>
-          </div>
+          <LikedContent creator={creator} status={status} postSignedUrls={postSignedUrls} viewingUser={viewingUser} creators={creators}/>
+          
         )}
       </div>
     </div>
   );
 }
+function LikedContent({
+  creator,
+  status,
+  postSignedUrls,
+  viewingUser,
+  creators
+}: {
+  creator?: Creator;
+  status: "follower" | "subscriber" | "none";
+  postSignedUrls: Record<string, string>;
+  viewingUser: User;
+  creators: Creator[];
+}) {
+  if (!creator) return null;
+
+  // Find the viewing user's creator object, if any
+  const viewingCreator = creators.find(
+    (c) => String(c.user) === String(viewingUser._id)
+  );
+
+  // Check if viewingUser is the owner of this creator
+  const isOwner = creator._id === viewingCreator?._id;
+
+  // Filter posts liked by the viewingUser
+  let likedPosts =
+    creator.posts?.filter((post) =>
+      post.likes?.some(
+        (like) => String(like.userId) === String(viewingUser._id)
+      )
+    ) ?? [];
+
+  if (!isOwner) {
+    // Apply visibility rules
+    likedPosts = likedPosts.filter((post) => {
+      if (post.viewableFor === "subscribers") {
+        return status === "subscriber";
+      }
+      if (post.viewableFor === "followers") {
+        return status === "subscriber" || status === "follower";
+      }
+      // public posts
+      return true;
+    });
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-6">
+      {likedPosts.length > 0 ? (
+        likedPosts.map((post) => (
+          <CreatorPostCard
+            key={post._id}
+            post={post}
+            creator={creator}
+            status={status}
+            signedUrl={postSignedUrls[post._id]}
+            user={viewingUser}
+            handleFollow={() => {}}
+            users={[]}
+            session={null}
+            handleDeletePost={() => {}}
+          />
+        ))
+      ) : (
+        <div className="text-center text-gray-400 py-12">
+          <div className="text-6xl mb-4">❤️</div>
+          <p>No liked posts found.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 function PurchasedPostsGrid ({
   creator,
@@ -660,7 +730,6 @@ function PurchasedPostsGrid ({
   handleFollow,
   user,
   status,
-  creators
 }: {
   creator?: Creator;
   viewingUser: User;
@@ -739,7 +808,6 @@ function PurchasedPostsGrid ({
           user={user}
           signedUrl={postSignedUrls[post._id]}
           handleFollow={handleFollow}
-          creators={creators}
           handleDeletePost={() => handleDeletePost(creator._id, post._id)}
         />
       ))}
@@ -850,7 +918,6 @@ function MediaGrid({
     user,
     users,
     session,
-    creators
   }: {
     creator?: Creator;
     status: 'subscriber' | 'follower' | 'none';
@@ -859,20 +926,27 @@ function MediaGrid({
     user: User,
     users: User[],
     session: Session | null,
-    creators: Creator[]
   }) {
     const [visiblePosts, setVisiblePosts] = useState<Post[]>([]);
-
+    console.log(user)
+    console.log(user._id === creator?.user)
     useEffect(() => {
       if (creator?.posts) {
-        const filtered = creator.posts.filter((post) => {
-          if (status === "subscriber") return true;
-          if (status === "follower") return post.viewableFor === "followers";
-          return post.viewableFor === "followers";
-        });
+        let filtered: Post[];
+        if (user._id === creator.user) {
+          // Viewing own profile — show all posts
+          filtered = creator.posts;
+        } else {
+          // Viewing someone else's profile — filter by status
+          filtered = creator.posts.filter((post) => {
+            if (status === "subscriber") return true;
+            if (status === "follower") return post.viewableFor === "followers";
+            return post.viewableFor === "followers"; // public/followers only
+          });
+        }
         setVisiblePosts(filtered);
       }
-    }, [creator, status]);
+    }, [creator, status, user]);
     if (!creator) return null;
     
     
@@ -901,10 +975,14 @@ function MediaGrid({
           signedUrl={postSignedUrls[post._id]}
           user={user}
           handleFollow={handleFollow}
-          creators={creators}
           handleDeletePost={() => handleDeletePost(creator._id)}
         />
-        )) : (
+        )) : creator?.posts && creator.posts.length > 0 ? (
+          <div className="text-center text-gray-400 py-12">
+            <div className="text-6xl mb-4">🔒</div>
+            <p>Subscribe to view more content!</p>
+          </div>
+        ) : (
           <div className="text-center text-gray-400 py-12">
             <div className="text-6xl mb-4">🤔</div>
             <p>This person hasn&apos;t posted anything yet!</p>

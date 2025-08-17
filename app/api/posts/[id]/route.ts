@@ -97,14 +97,17 @@ export async function PUT(request: NextRequest, context: unknown) {
 
   return NextResponse.json({ post: updatedPost });
 }
+type Params = { id: string };
 
-export async function DELETE(request: NextRequest, context: unknown) {
-  const { params } = context as { params: { id: string } };
+export async function DELETE(
+  req: NextRequest,
+  context: { params: Promise<Params> }
+) {
+  const { id } = await context.params;
   const session = (await getServerSession(authOptions)) as AppSession | null;
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   await connectDB();
-  const { id } = params;
   const post = await Post.findById(id);
   if (!post) return NextResponse.json({ error: "Post not found" }, { status: 404 });
 

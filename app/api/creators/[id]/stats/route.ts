@@ -10,7 +10,7 @@ export async function GET(request: NextRequest, context: unknown) {
     const { params } = context as { params: { id: string } };
 
   // Earnings in last 30 days
-    const { id } = params;
+    const { id } = await params;
     const earningsLast30Days = await Transaction.aggregate([
     { 
       $match: { 

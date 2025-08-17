@@ -1,12 +1,13 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+
 export default function PrivacyPolicyPage() {
   const router = useRouter();
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center px-4 py-12 relative">
       <button
-        onClick={() => router.push("/signin")}
+        onClick={() => router.push("/login")}
         className="absolute top-8 left-8 flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full shadow-lg hover:from-pink-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 z-20"
       >
         <ArrowLeft className="w-5 h-5" />
@@ -17,7 +18,7 @@ export default function PrivacyPolicyPage() {
         <div className="space-y-4 text-left">
           <div>
             <span className="block font-bold text-lg mb-1">Effective Date:</span>
-            <span className="text-gray-400">[Insert Date]</span>
+            <span className="text-gray-400">17.8.2025</span>
           </div>
           <p>
             This Privacy Policy explains how Fanslio collects, uses, and protects your personal data in compliance with the EU General Data Protection Regulation (GDPR).
@@ -28,7 +29,7 @@ export default function PrivacyPolicyPage() {
               <li><span className="font-semibold">Account Data:</span> Name, email address, payment details.</li>
               <li><span className="font-semibold">Usage Data:</span> IP address, device info, browser type.</li>
               <li><span className="font-semibold">Content Data:</span> Files you upload.</li>
-              <li><span className="font-semibold">Payment Data:</span> Processed securely by Stripe.</li>
+              <li><span className="font-semibold">Payment Data:</span> Processed securely by x.</li>
             </ul>
           </div>
           <div>
@@ -36,7 +37,7 @@ export default function PrivacyPolicyPage() {
             <ul className="list-disc list-inside ml-4 text-gray-300">
               <li>To provide and maintain the platform.</li>
               <li>For user authentication and account security.</li>
-              <li>For payment processing via Stripe.</li>
+              <li>For payment processing via x.</li>
               <li>To improve our services.</li>
               <li>To comply with legal obligations.</li>
             </ul>
@@ -89,7 +90,7 @@ export default function PrivacyPolicyPage() {
           <div>
             <h3 className="font-bold text-pink-400 mb-1">9. Contact</h3>
             <ul className="list-disc list-inside ml-4 text-gray-300">
-              <li>For privacy concerns or data requests, contact: <span className="underline">ashleygreybiz@gmail.com</span></li>
+              <li>For privacy concerns or data requests, contact: <span className="underline">support@fanslio.com</span></li>
             </ul>
           </div>
         </div>

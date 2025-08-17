@@ -22,7 +22,6 @@ export function CreatorPostCard({
   users,
   signedUrl,
   handleFollow,
-  creators,
   handleDeletePost
 }: {
   creator: Creator;
@@ -33,13 +32,27 @@ export function CreatorPostCard({
   users: User[]
   signedUrl: string;
   handleFollow: (creator: Creator) => void;
-  creators: Creator[]
   handleDeletePost: () => void;
 }) {
   // Restriction logic
   const isFollowersOnly = post.viewableFor === "followers";
-  const isSubscribersOnly = post.viewableFor === "subscribers";
-  const canView = (!isFollowersOnly && !isSubscribersOnly) || session?.user?.creator || status === 'follower' || status === 'subscriber';
+const isSubscribersOnly = post.viewableFor === "subscribers";
+
+
+  // Example: find the creator that matches the current session user
+
+  const isViewingUserOwner = String(creator.user) === String(session?.user?._id);
+  
+  // Check if the post creator is the same as the viewing creator
+  const isthepostcreator = String(post.creator) === String(creator._id);
+
+  const canView =
+  isthepostcreator || // post owner
+  isViewingUserOwner || // creator owner
+  (!isFollowersOnly && !isSubscribersOnly) ||
+  status === "follower" ||
+  status === "subscriber";
+
   // Like and comment modal state
   const [commentOpen, setCommentOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false)
@@ -204,6 +217,7 @@ export function CreatorPostCard({
   const [userAvatars, setUserAvatars] = useState<Record<string, string>>({});
 const [avatarsLoading, setAvatarsLoading] = useState<Record<string, boolean>>({});
 const resolvedUrl = useMemo(() => resolveImageUrl(signedUrl), [signedUrl]);
+
 const [signedUrlLoading, setSignedUrlLoading] = useState(true);
 const fetchUserAvatarUrl = async (user: User) => {
   if (!user.avatarKey){
@@ -296,8 +310,8 @@ useEffect(() => {
     const isPostOwner = session?.user?._id === creator._id
     return isCommentOwner || isPostOwner;
   };
-  const isthepostcreator = Array.isArray(creators) ? creators.find(c => c.user === session?.user?._id) : undefined; 
-  const canDeletePost = (post: Post) => { const isPostOwner = post.creator === isthepostcreator?._id; return isPostOwner; };
+  console.log(isthepostcreator)
+  const canDeletePost = () => { const isPostOwner = isthepostcreator; return isPostOwner; };
   const handleCommentModalOpen = (commentId: string) => {
     setCommentModalOpen(commentModalOpen === commentId ? null : commentId);
   };
@@ -329,10 +343,33 @@ useEffect(() => {
     }
   };
   const isImage = (url: string) => {
-    return /\.(jpeg|jpg|gif|png|webp|avif|svg)$/.test(url.toLowerCase());
+    // Remove query parameters and check the file extension
+    const cleanUrl = url.split('?')[0].toLowerCase();
+    return /\.(jpeg|jpg|gif|png|webp|avif|svg)$/.test(cleanUrl);
   };
   
   const resolvedAvatarUrl = useMemo(() => resolveImageUrl(avatarUrl), [avatarUrl]);
+  function timeAgo(date: string | Date) {
+    const now = new Date();
+    const past = new Date(date);
+    const diff = now.getTime() - past.getTime(); // difference in ms
+  
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const months = Math.floor(diff / (1000 * 60 * 60 * 24 * 30));
+    const years = Math.floor(diff / (1000 * 60 * 60 * 24 * 365));
+  
+    if (years > 0) return `${years} year${years > 1 ? 's' : ''} ago`;
+    if (months > 0) return `${months} month${months > 1 ? 's' : ''} ago`;
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
+  }
+  
+ 
   return (
   <div className="bg-white/5 rounded-2xl shadow-xl border border-white/10 p-0 overflow-hidden max-w-3xl w-full mx-auto animate-fade-in">
     {/* Header */}
@@ -357,7 +394,8 @@ useEffect(() => {
 </div>
       
       <div className="flex flex-col items-end gap-1 text-xs text-gray-400">
-        <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+        
+        
         <div className="relative">
         <Button
           variant="ghost"
@@ -367,7 +405,7 @@ useEffect(() => {
         >
           <MoreHorizontal className="w-5 h-5" />
         </Button>
-        {modalOpen && !user?.creator && !canDeletePost(post) && (
+        {modalOpen && !user?.creator && !canDeletePost() && (
   <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-100 opacity-100 animate-fade-in z-30">
     <Link href={`/${creator.username}`}>
       <Button variant="ghost" className="w-full justify-start text-left cursor-pointer">
@@ -380,7 +418,7 @@ useEffect(() => {
 {/* Animated Dropdown for Post Options */}
 <div className="relative">
 {/* fixaa tää kohta, pitää olla post creator, koska toi creator on vaan että creator on olemassa*/}
-{modalOpen && canDeletePost(post) && (
+{modalOpen && canDeletePost() && (
   <div
     className="absolute right-0 top-full mt-5 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-100 opacity-100 animate-fade-in z-30"
   >
@@ -425,6 +463,7 @@ useEffect(() => {
       </div>
     )}
     {resolvedUrl && (
+      
   isImage(resolvedUrl) ? (
     <Image
       src={resolvedUrl}
@@ -484,7 +523,9 @@ useEffect(() => {
     {canView && (
       <div className="px-5 py-3 space-y-1">
         <div className="text-white text-sm">{post.caption}</div>
-        <div className="text-xs text-gray-500">{new Date(post.createdAt).toLocaleString()}</div>
+  <span className="text-white text-sm">
+    {timeAgo(post.createdAt)}
+  </span>
       </div>
     )}
 

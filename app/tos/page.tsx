@@ -1,4 +1,5 @@
 "use client";
+
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 export default function TermsOfServicePage() {
@@ -17,7 +18,7 @@ export default function TermsOfServicePage() {
         <div className="space-y-4 text-left">
           <div>
             <span className="block font-bold text-lg mb-1">Effective Date:</span>
-            <span className="text-gray-400">[Insert Date]</span>
+            <span className="text-gray-400">17.8.2025</span>
           </div>
           <p>
             Welcome to Fanslio, operated by <span className="font-semibold">Monara Club</span>, a company incorporated in Finland (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;). These Terms of Service govern your use of our platform and services. By accessing or using Fanslio, you agree to these terms.

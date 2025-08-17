@@ -244,149 +244,82 @@ export default function App({ creators, users, session}: AppProps) {
       </div>
   )}    
           {/* Feed */}
+          {/* Feed */}
           {page === "Feed" && (
-          <>
-            {/* Creators and their posts with enhanced spacing */}
-            <div className="space-y-10 mt-10">
-            {filteredCreators && filteredCreators.length > 0 && users && session ? (
-              filteredCreators.map((creator) => {
-                // Determine status for this creator
-                const isSubscribed = session.user.subscriptions?.some(
-                  (sub) => sub.creatorId.toString() === creator._id.toString()
-                );
-                const isFollower = session.user.following?.some(
-                  (f) => f.creatorId.toString() === creator._id.toString()
-                );
+  <div className="space-y-10 mt-10">
+    {filteredCreators && filteredCreators.length > 0 ? (
+      filteredCreators.map((creator) => {
+        const isCreator = creator.user === session.user._id;
+        const isSubscribed = session.user.subscriptions?.some(
+          (sub) => sub.creatorId === creator._id
+        );
+        const isFollower = session.user.following?.some(
+          (f) => f.creatorId === creator._id
+        );
 
-                // Priority: subscriber > follower > none
-                const status: 'subscriber' | 'follower' | 'none' = isSubscribed
-                  ? 'subscriber'
-                  : isFollower
-                  ? 'follower'
-                  : 'none';
-                  
-                  const handleDeletePost = async (creatorId: string, postId: string) => {
-                    console.log("clicked")
-                    try {
-                      const res = await fetch(`/api/posts/${postId}`, {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                      });
-                      if (!res.ok) throw new Error("Failed to delete post");
-                  
-                      // Update posts in the local creator list
-                      setFilteredCreators((prev) =>
-                        prev.map((creator) =>
-                          creator._id === creatorId
-                            ? { ...creator, posts: creator.posts?.filter(p => p._id !== postId) }
-                            : creator
-                        )
-                      );
-                  
-                    } catch (error) {
-                      console.error(error);
-                      alert('Failed to delete post');
-                    }
-                  };
-                  console.log(creator)
-                  
-                return (
-                  <div key={creator._id} className="space-y-8">
-                    {creator.posts && !(creator.posts.length == 0) ? (
-                        creator.posts.map(post => (
-                          <CreatorPostCard
-                            key={post._id}
-                            creator={creator}
-                            post={post}
-                            session={session}
-                            user={session.user as User}
-                            status={status}
-                            users={users}
-                            signedUrl={postSignedUrls[post._id]}
-                            creators={creators}
-                            handleFollow={handleFollow}
-                            handleDeletePost={() => handleDeletePost(creator._id, post._id)}
-                          />
-                        ))
-                      ) : <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 text-center group hover:bg-white/10 transition-all duration-500">
-                      <div className="mb-4">
-                        <Sparkles className="w-16 h-16 text-gray-400 mx-auto mb-4 group-hover:text-pink-400 transition-colors duration-300" />
-                        <h3 className="text-xl font-bold text-white mb-2">No Content Here Yet</h3>
-                        <p className="text-gray-400 mb-6">Start exploring creators and subscribe to their content to see it here.</p>
-                        <Link href="/discover">
-                          <Button className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer">
-                            Discover Creators
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>}
-                  </div>
-                );
-              })
-            ) : (
-                <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 text-center group hover:bg-white/10 transition-all duration-500">
-                <div className="mb-4">
-                  <Sparkles className="w-16 h-16 text-gray-400 mx-auto mb-4 group-hover:text-pink-400 transition-colors duration-300" />
-                  <h3 className="text-xl font-bold text-white mb-2">No Subscriptions or Follows Yet</h3>
-                  <p className="text-gray-400 mb-6">Start exploring creators and subscribe to their content to see it here.</p>
-                  <Link href="/discover">
-                    <Button className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer">
-                      Discover Creators
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-              )}
-            </div>
+        const status: 'subscriber' | 'follower' | 'none' = 
+          isSubscribed
+          ? 'subscriber'
+          : isFollower
+          ? 'follower'
+          : 'none';
 
-            {/* Enhanced User Subscriptions Section */}
-              <div className="space-y-6">
-                {session?.user.subscriptions && session?.user.subscriptions.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {session?.user.subscriptions.slice(0, 6).map((subscription: Subscription) => (
-                      <div 
-                        key={subscription.creatorId} 
-                        className="group bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden hover:bg-white/10 transition-all hover:scale-[1.02] shadow-2xl hover:shadow-pink-500/10 duration-300"
-                      >
-                        <div className="p-6">
-                          <div className="flex items-center gap-4 mb-4">
-                            <div className="relative">
-                              <Image 
-                                src={subscription.avatarKey || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"} 
-                                alt={subscription.creatorName}
-                                width={50}
-                                height={50}
-                                className="w-12 h-12 rounded-full border-2 border-pink-500/50 group-hover:border-pink-400 transition-colors duration-300"
-                              />
-                              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-slate-950 animate-pulse"></div>
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="text-white font-bold text-lg group-hover:text-pink-300 transition-colors duration-300">{subscription.creatorName}</h3>
-                              <p className="text-gray-400 text-sm">{subscription.creatorUsername}</p>
-                            </div>
-                            <Badge variant="secondary" className="bg-green-500/20 text-green-200 border-green-500/30 group-hover:bg-green-500/30 transition-colors duration-300">
-                              ${subscription.price}/month
-                            </Badge>
-                          </div>
-                          <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                            <div className="text-sm text-gray-400">
-                              <p>Status: <span className="text-green-400 capitalize">{subscription.status}</span></p>
-                              <p>Next billing: {new Date(subscription.nextBillingDate || subscription.subscriptionDate).toLocaleDateString()}</p>
-                            </div>
-                            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 transition-all duration-300 rounded-full px-4 py-2">
-                              <MessageCircle className="w-4 h-4 mr-2" />
-                              Message
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )
-                }
-              </div>
-          </>
-        )}
+        // Filter posts based on viewableFor
+        const visiblePosts = creator.posts?.filter((post) => {
+          if (isCreator) return true;
+          if (status === 'subscriber') return post.viewableFor === 'subscribers' || post.viewableFor === 'followers';
+          if (status === 'follower') return post.viewableFor === 'followers';
+          return false; // nobody else sees any posts
+        });
+
+        if (!visiblePosts || visiblePosts.length === 0) return null;
+
+        const handleDeletePost = async (creatorId: string, postId: string) => {
+          try {
+            const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error("Failed to delete post");
+
+            setFilteredCreators((prev) =>
+              prev.map((c) =>
+                c._id === creatorId
+                  ? { ...c, posts: c.posts?.filter(p => p._id !== postId) }
+                  : c
+              )
+            );
+          } catch (error) {
+            console.error(error);
+            alert('Failed to delete post');
+          }
+        };
+
+        return (
+          <div key={creator._id} className="space-y-8">
+            {visiblePosts.map((post) => (
+              <CreatorPostCard
+                key={post._id}
+                creator={creator}
+                post={post}
+                session={session}
+                user={session.user as User}
+                status={status}
+                users={users}
+                signedUrl={postSignedUrls[post._id]}
+                handleFollow={handleFollow}
+                handleDeletePost={() => handleDeletePost(creator._id, post._id)}
+              />
+            ))}
+          </div>
+        );
+      })
+    ) : (
+      <div className="text-center mt-20 text-gray-400">
+        No creators to show. Explore and follow your favorite creators!
+      </div>
+    )}
+  </div>
+)}
+
+
         {page === "Dashboard" && (
   <div className="space-y-10 mt-10">
     <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-lg">

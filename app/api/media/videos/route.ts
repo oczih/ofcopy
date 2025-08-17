@@ -1,49 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 import formidable from "formidable";
 import fs from "fs";
-import ffmpeg from "fluent-ffmpeg";
-import ffmpegPath from "ffmpeg-static";
 
-ffmpeg.setFfmpegPath(ffmpegPath!);
+export const config = { api: { bodyParser: false } };
+
+const lambdaClient = new LambdaClient({ region: "us-east-1" });
 
 export const POST = async (req: NextRequest) => {
-  const form = new formidable.IncomingForm();
-  
-  const parseForm = () =>
-    new Promise<{ filePath: string; fileName: string }>((resolve, reject) => {
-      form.parse(req as any, (err, fields, files) => {
+  try {
+    const form = formidable({ multiples: false });
+    const incoming = req.body; // raw stream
+
+    const { file } = await new Promise<{ file: formidable.File }>((resolve, reject) => {
+      form.parse(incoming as any, (err, fields, files) => {
         if (err) return reject(err);
-        const file = (files.file as any)[0] || files.file;
-        resolve({ filePath: file.filepath, fileName: file.originalFilename });
+        const file = Array.isArray(files.file) ? files.file[0] : files.file;
+        if (!file) return reject(new Error("No file uploaded"));
+        resolve({ file });
       });
     });
 
-  try {
-    const { filePath, fileName } = await parseForm();
-    const outputFile = `/tmp/compressed-${fileName}`;
+    // Read file as buffer
+    const fileBuffer = fs.readFileSync(file.filepath);
 
-    await new Promise<void>((resolve, reject) => {
-      ffmpeg(filePath)
-        .outputOptions([
-          "-vf scale='if(gt(iw/ih,1920/1080),1920,-2)':'if(gt(iw/ih,1920/1080),-2,1080)'",
-          "-b:v 1000k",
-          "-preset fast",
-          "-c:a aac",
-          "-b:a 128k",
-        ])
-        .save(outputFile)
-        .on("end", resolve)
-        .on("error", reject);
+    // Invoke AWS Lambda for compression
+    const lambdaResponse = await lambdaClient.send(
+      new InvokeCommand({
+        FunctionName: "compress-video-lambda",
+        Payload: fileBuffer,
+      })
+    );
+
+    if (!lambdaResponse.Payload) throw new Error("Lambda did not return data");
+    const compressedBuffer = Buffer.from(lambdaResponse.Payload);
+
+    return new NextResponse(compressedBuffer, {
+      status: 200,
+      headers: {
+        "Content-Type": "video/mp4",
+        "Content-Disposition": `attachment; filename="compressed-${file.originalFilename}"`,
+      },
     });
-
-    // Now you can read outputFile and upload to S3
-    const videoBuffer = fs.readFileSync(outputFile);
-
-    // TODO: upload videoBuffer to S3 here
-
-    return NextResponse.json({ message: "Video processed successfully" });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Video processing failed" }, { status: 500 });
+    return NextResponse.json({ error: "Video compression failed" }, { status: 500 });
   }
 };

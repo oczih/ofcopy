@@ -140,19 +140,17 @@ export default function LandingPage() {
 
 function Landing() {
   const router = useRouter()
-  const {data: session} = useSession();
+  const {data: status} = useSession();
   const [mounted, setMounted] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      router.push("/home");
-    }
-  }, [router])
-  useEffect(() => {
     setMounted(true);
   }, []);
-  if (session?.user) {
-  
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.push("/home");
+    }
+  }, [status, router]);
   
   if (!mounted) {
     return (
@@ -164,8 +162,17 @@ function Landing() {
       </div>
     );
   }
-  
- }
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-lg font-medium text-slate-700">Checking session...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div 
       initial={{ filter: "blur(5px)" }}
@@ -519,52 +526,87 @@ function Landing() {
 
       {/* Footer */}
       <motion.footer 
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.8 }}
-        className="px-6 py-12 bg-white border-t border-white/10"
-      >
-        <div className="max-w-7xl mx-auto text-center">
-          <motion.div 
-            initial={{ scale: 0 }}
-            whileInView={{ scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
-            className="flex items-center justify-center gap-3 mb-4"
-          >
-            <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl hover:scale-110 transition-transform duration-200">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-gray-900">Fanslio</span>
-          </motion.div>
-          <motion.p 
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3 }}
-            className="text-gray-600 mb-6 text-lg"
-          >
-            Empowering the next generation of creators - both human and AI.
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.4 }}
-          >
-            <Link href="/signup">
-              <Button 
-                size="lg" 
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 text-lg hover:scale-105 hover:shadow-xl transition-all duration-200 group"
-              >
-                Start Your Creator Journey
-                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
-              </Button>
-            </Link>
-          </motion.div>
-        </div>
-      </motion.footer>
+  initial={{ opacity: 0, y: 30 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  viewport={{ once: true }}
+  transition={{ duration: 0.8 }}
+  className="px-6 py-12 bg-white border-t border-white/10"
+>
+  <div className="max-w-7xl mx-auto text-center">
+    <motion.div 
+      initial={{ scale: 0 }}
+      whileInView={{ scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+      className="flex items-center justify-center gap-3 mb-4"
+    >
+      <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl hover:scale-110 transition-transform duration-200">
+        <Sparkles className="w-6 h-6 text-white" />
+      </div>
+      <span className="text-2xl font-bold text-gray-900">Fanslio</span>
+    </motion.div>
+
+    <motion.p 
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{ delay: 0.3 }}
+      className="text-gray-600 mb-6 text-lg"
+    >
+      Empowering the next generation of creators - both human and AI.
+    </motion.p>
+
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: 0.4 }}
+      className="mb-8"
+    >
+      <Link href="/signup">
+        <Button 
+          size="lg" 
+          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 text-lg hover:scale-105 hover:shadow-xl transition-all duration-200 group"
+        >
+          Start Your Creator Journey
+          <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+        </Button>
+      </Link>
+    </motion.div>
+
+    {/* Footer Links */}
+    <motion.div 
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{ delay: 0.5 }}
+      className="flex flex-wrap justify-center gap-4 text-sm text-gray-600 mb-4"
+    >
+      <Link href="/tos" className="hover:text-gray-900 transition">Terms of Service</Link>
+      <Link href="/privacy" className="hover:text-gray-900 transition">Privacy Policy</Link>
+      <Link href="/child-protection" className="hover:text-gray-900 transition">Child Protection</Link>
+      <Link href="/anti-slavery" className="hover:text-gray-900 transition">Anti-Slavery</Link>
+      <Link href="/guidelines" className="hover:text-gray-900 transition">Community Guidelines</Link>
+      <Link href="/dmca" className="hover:text-gray-900 transition">DMCA Policy</Link>
+      <Link href="/cookiepolicy" className="hover:text-gray-900 transition">Cookie Policy</Link>
+    </motion.div>
+
+    {/* Support Email */}
+    <motion.p 
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{ delay: 0.6 }}
+      className="text-gray-500 text-sm"
+    >
+      Need help? Contact us at{" "}
+      <a href="mailto:support@fanslio.com" className="text-blue-600 hover:underline">
+        support@fanslio.com
+      </a>
+    </motion.p>
+  </div>
+</motion.footer>
+
     </motion.div>
   );
 }
