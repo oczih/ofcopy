@@ -1,13 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
-import formidable from "formidable";
-import fs from "fs";
 
 export const config = { api: { bodyParser: false } };
 
-const lambdaClient = new LambdaClient({ region: "us-east-1" });
 
+/*
 export const POST = async (req: NextRequest) => {
   try {
     const form = formidable({ multiples: false });
@@ -48,3 +43,4 @@ export const POST = async (req: NextRequest) => {
     return NextResponse.json({ error: "Video compression failed" }, { status: 500 });
   }
 };
+ */

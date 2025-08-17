@@ -20,9 +20,8 @@ import {
 import Link from "next/link";
 import heroImage from "@/assets/hero-image.jpg";
 import productHuntFeatured from "@/assets/product-hunt-featured.png";
-import { SessionProvider, useSession } from "next-auth/react";
+import { SessionProvider} from "next-auth/react";
 import FeaturesSection from "@/components/FeaturesSection";
-import { useRouter } from "next/navigation";
 
 const faqData = [
   {
@@ -139,18 +138,12 @@ export default function LandingPage() {
 }
 
 function Landing() {
-  const router = useRouter()
-  const {data: status} = useSession();
   const [mounted, setMounted] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   useEffect(() => {
     setMounted(true);
   }, []);
-  useEffect(() => {
-    if (status === "authenticated") {
-      router.push("/home");
-    }
-  }, [status, router]);
+  
   
   if (!mounted) {
     return (
@@ -158,16 +151,6 @@ function Landing() {
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
           <span className="text-lg font-medium text-slate-700">Loading Fanslio...</span>
-        </div>
-      </div>
-    );
-  }
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-lg font-medium text-slate-700">Checking session...</span>
         </div>
       </div>
     );

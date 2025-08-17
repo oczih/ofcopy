@@ -147,7 +147,6 @@ export default function App({ creators, users, session, posts, postId }: AppProp
         user={viewingUser as User}
         users={users}
         signedUrl={postUrl}
-        creators={creators}
         handleFollow={handleFollow}
         handleDeletePost={() => handleDeletePost(creator._id, post._id)}
       />) : (

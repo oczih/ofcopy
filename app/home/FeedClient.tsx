@@ -1,13 +1,12 @@
 'use client';
 
 import { Button } from "../../components/ui/button";
-import { CheckCircle, MessageCircle, Sparkles } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Creator, Subscription, User } from "../types";
-import { Badge } from "../../components/ui/badge";
+import { Creator, User } from "../types";
+
 import toast, { Toaster } from "react-hot-toast";
-import Link from "next/link";
-import Image from "next/image";
+
 import { CreatorPostCard } from "../../components/CreatorPostCard";
 import { Session } from "next-auth";
 import creatorservice from "../services/creatorservice";
