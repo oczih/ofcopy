@@ -59,20 +59,47 @@ async function compressImage(file: File): Promise<File> {
   };
   return await imageCompression(file, options);
 }
+async function createBlurredImage(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
 
-export async function uploadContent(file: File): Promise<string> {
+  const img = document.createElement("img");
+  img.src = URL.createObjectURL(file);
+
+  await new Promise((resolve) => (img.onload = resolve));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = img.width;
+  canvas.height = img.height;
+
+  const ctx = canvas.getContext("2d")!;
+  ctx.filter = "blur(20px)";
+  ctx.drawImage(img, 0, 0, img.width, img.height);
+
+  return new Promise<File>((resolve) => {
+    canvas.toBlob((blob) => {
+      if (!blob) throw new Error("Failed to create blurred image");
+      resolve(new File([blob], `blurred-${file.name}`, { type: file.type }));
+    });
+  });
+}
+export async function uploadContent(file: File): Promise<{ key: string, blurredKey: string }> {
   let fileToUpload = file;
 
-  // Only compress if it's an image
   if (file.type.startsWith("image/")) {
     fileToUpload = await compressImage(file);
-    console.log(`Compressed image from ${file.size / 1024}KB to ${fileToUpload.size / 1024}KB`);
   }
 
   const sanitizedFileName = sanitizeFileName(fileToUpload.name);
   const { uploadUrl, key } = await getSignedUrl(sanitizedFileName, fileToUpload.type);
   await uploadFileToS3(fileToUpload, uploadUrl);
-  return key;
+
+  // Create blurred version
+  const blurredFile = await createBlurredImage(fileToUpload);
+  const blurredSanitizedName = sanitizeFileName(blurredFile.name);
+  const { uploadUrl: blurredUploadUrl, key: blurredKey } = await getSignedUrl(blurredSanitizedName, blurredFile.type);
+  await uploadFileToS3(blurredFile, blurredUploadUrl);
+
+  return { key, blurredKey };
 }
 
 export async function createPostWithUpload({
@@ -82,15 +109,18 @@ export async function createPostWithUpload({
   caption,
   viewableFor = 'followers',
 }: CreatePostParams) {
-  const s3Key = await uploadContent(file);
-  console.log('Uploaded S3 key:', s3Key);
+  // Lataa sekä normaali että blurattu versio yhdellä uploadContent-kutsulla
+  const s3KeyObj = await uploadContent(file);
+
+  console.log('Uploaded S3 keys:', s3KeyObj);
+
   const response = await axios.post(`${POST_API}`, {
-    s3Key,
+    s3Key: s3KeyObj,
     caption,
     creatorId,
     type,
     viewable: viewableFor,
-    width: 1024,  // Replace with actual if needed
+    width: 1024,
     height: 1536,
   });
 

@@ -35,7 +35,9 @@ export async function GET(req: NextRequest) {
       try {
         const command = new GetObjectCommand({
           Bucket: process.env.AWS_BUCKET_NAME!,
-          Key: post.s3Key,
+          Key: typeof post.s3Key === 'string'
+          ? post.s3Key
+          : post.s3Key?.key,
         });
         const signedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
         return {
@@ -72,10 +74,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Creator not found for given id' }, { status: 404 });
     }
   }
+  if (!s3Key?.key || !s3Key?.blurredKey) {
+    return NextResponse.json({ error: 's3Key must contain both key and blurredKey' }, { status: 400 });
+  }
+
   // Create the post
   const post = await PostModel.create({
     creator: creator._id,
-    s3Key: s3Key || null,
+    s3Key,
     type: type || null,
     caption: caption || '',
     createdAt: new Date(),
@@ -159,7 +165,9 @@ export async function PUT(req: NextRequest) {
         try {
           const command = new GetObjectCommand({
             Bucket: process.env.AWS_BUCKET_NAME!,
-            Key: post.s3Key,
+            Key: typeof post.s3Key === 'string'
+            ? post.s3Key
+            : post.s3Key?.key,
           });
           const signedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
 

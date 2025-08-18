@@ -71,7 +71,9 @@ export default function App({ creators, users, session}: AppProps) {
   
       const allPosts = creators.flatMap((creator) => creator.posts || []);
       const signedUrlsMap: Record<string, string> = {};
-      const postsWithKeys = allPosts.filter(post => post.s3Key);
+      const postsWithKeys = allPosts.filter(post => typeof post.s3Key === 'string'
+        ? post.s3Key
+        : post.s3Key?.key);
   
       await Promise.all(
         postsWithKeys.map(async (post) => {
@@ -79,7 +81,9 @@ export default function App({ creators, users, session}: AppProps) {
             const res = await fetch("/api/media/download-url", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ s3Key: post.s3Key }),
+              body: JSON.stringify({ s3Key: typeof post.s3Key === 'string'
+                ? post.s3Key
+                : post.s3Key?.key }),
             });
       
             if (res.ok) {

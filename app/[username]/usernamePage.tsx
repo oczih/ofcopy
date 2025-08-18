@@ -12,7 +12,7 @@ const RESERVED_ROUTES = [
   'models', 'services', 'context', 'favicon.ico',
   'globals.css', 'layout.tsx', 'page.tsx', 'public',
   'lib', 'ui', 'auth', 'creators', 'stats', 'media',
-  'users', 'upload','uploads'
+  'users', 'upload','uploads', 'settings', 'tos', 'child-policy',
 ];
 interface AppProps {
     creators: Creator[];

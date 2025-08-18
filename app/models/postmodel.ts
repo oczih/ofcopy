@@ -11,7 +11,10 @@ export interface Like {
 } 
 export interface PostDocument extends Document {
   creator: mongoose.Types.ObjectId;
-  s3Key?: string;
+  s3Key: {
+    key: { type: string, required: true },
+    blurredKey: { type: string, required: true },
+  },
   type: string;
   caption?: string;
   likes: Like[];  // Updated from number to Like[]
@@ -29,7 +32,10 @@ const postSchema = new Schema<PostDocument>({
   creator: { type: Schema.Types.ObjectId, ref: 'Creator', required: true },
 
   // Media / text
-  s3Key: { type: String },  
+  s3Key: {
+    key: { type: String, required: true },
+    blurredKey: { type: String, required: true },
+  }, 
   caption: { type: String },  
 
   // Social

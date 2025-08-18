@@ -140,10 +140,14 @@ export type MediaPost = Post & {
 export interface Like {
   userId: string
 }
+export type S3Key = {
+  key: string;           // The actual S3 key for the file
+  blurredKey?: string;   // Optional blurred version
+};
 export type Post = {
   _id: string;
   creator: string;            // Just the ID string, unless you populate the whole creator
-  s3Key?: string;
+  s3Key?: S3Key | string;
   type: string;
   caption?: string;
   likes: Like[];

@@ -189,7 +189,9 @@ export default function ProfileContent({
         if (!post.s3Key) return false;
         
         // Check if we already have a valid cached URL
-        const cached = urlCache[post.s3Key];
+        const cached = urlCache[typeof post.s3Key === 'string'
+          ? post.s3Key
+          : post.s3Key?.key];
         if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
           // Update postSignedUrls if we have cached data but it's not in postSignedUrls
           if (!postSignedUrls[post._id]) {
@@ -211,7 +213,9 @@ export default function ProfileContent({
       const fetchPromises = postsToFetch.map(async (post: Post) => {
         if (!post.s3Key) return;
         
-        const url = await getSignedUrl(post.s3Key);
+        const url = await getSignedUrl(typeof post.s3Key === 'string'
+          ? post.s3Key
+          : post.s3Key?.key);
         if (url) {
           signedUrlMap[post._id] = url;
         }
@@ -226,7 +230,7 @@ export default function ProfileContent({
 
     fetchSignedUrls();
   }, [creators, postSignedUrls, urlCache, getSignedUrl, CACHE_TTL]);
-
+  
   // Clean up expired cache entries periodically
   useEffect(() => {
     const cleanup = setInterval(() => {
@@ -256,12 +260,12 @@ export default function ProfileContent({
     const isSubscriber =
       Array.isArray(creator.subscribers) &&
       creator.subscribers.some(
-        (sub: Subscriber) => sub.userId.toString() === viewingUser._id.toString()
+        (sub: Subscriber) => sub.userId.toString() === viewingUser?._id.toString()
       );
     const isFollower =
       creator.followers &&
       creator.followers.some(
-        (fol: Follower) => fol.userId.toString() === viewingUser._id.toString()
+        (fol: Follower) => fol.userId.toString() === viewingUser?._id.toString()
       );
   
     if (isSubscriber) {
@@ -667,7 +671,7 @@ function LikedContent({
 
   // Find the viewing user's creator object, if any
   const viewingCreator = creators.find(
-    (c) => String(c.user) === String(viewingUser._id)
+    (c) => String(c.user) === String(viewingUser?._id)
   );
 
   // Check if viewingUser is the owner of this creator
@@ -677,7 +681,7 @@ function LikedContent({
   let likedPosts =
     creator.posts?.filter((post) =>
       post.likes?.some(
-        (like) => String(like.userId) === String(viewingUser._id)
+        (like) => String(like.userId) === String(viewingUser?._id)
       )
     ) ?? [];
 
@@ -787,6 +791,7 @@ function PurchasedPostsGrid ({
       alert("Failed to delete post");
     }
   };
+  console.log(Object.values(visiblePosts))
   return (
     <div>
       {visiblePosts.length === 0 && (
@@ -928,12 +933,10 @@ function MediaGrid({
     session: Session | null,
   }) {
     const [visiblePosts, setVisiblePosts] = useState<Post[]>([]);
-    console.log(user)
-    console.log(user._id === creator?.user)
     useEffect(() => {
       if (creator?.posts) {
         let filtered: Post[];
-        if (user._id === creator.user) {
+        if (user?._id === creator.user) {
           // Viewing own profile — show all posts
           filtered = creator.posts;
         } else {

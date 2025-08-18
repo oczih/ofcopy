@@ -4,7 +4,6 @@ import { authOptions } from "@/lib/auth-client";
 import { connectDB } from "@/lib/mongoose";
 import CreatorModel from "@/app/models/creatormodel";
 import UserModel from "@/app/models/usermodel";
-import { redirect } from "next/navigation";
 import { Creator, User, Notification, SafeUser, Post } from "@/app/types";
 import NotificationModel from "@/app/models/notificationmodel";
 import { Session } from "next-auth";
@@ -68,15 +67,14 @@ function normalizeUser(user: Partial<User>): SafeUser {
 
 export async function fetchPageData() {
   const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
 
   await connectDB();
 
   let dbUser: User | null = null;
-  if (session.user?._id) {
+  if (session?.user?._id) {
     dbUser = await UserModel.findById(session.user._id).lean<User>() ?? null;
-  } else if (session.user?.email) {
-    dbUser = await UserModel.findOne({ email: session.user.email }).lean<User>() ?? null;
+  } else if (session?.user?.email) {
+    dbUser = await UserModel.findOne({ email: session?.user.email }).lean<User>() ?? null;
   }
 
   const creatorsRaw = await CreatorModel.find({}).populate("posts").lean<Creator[]>({ virtuals: true });
@@ -88,9 +86,9 @@ export async function fetchPageData() {
   const notificationsSanitized = deepSanitize(notificationsRaw) ?? [];
   const postsSanitized = deepSanitize(postsRaw) ?? [];
   const mergedUser = {
-    ...session.user,
+    ...session?.user,
     ...dbUser,
-    _id: dbUser?._id?.toString() ?? session.user._id,
+    _id: dbUser?._id?.toString() ?? session?.user._id,
   };
   const safeSession: Session | null = session
   ? {
