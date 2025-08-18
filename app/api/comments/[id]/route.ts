@@ -52,7 +52,7 @@ export async function DELETE(
     }
 
     // Remove comment and save post
-    comment.remove(); // `deleteOne()` is valid too, but `remove()` is Mongoose recommended for subdocs
+    comment.deleteOne(); // `deleteOne()` is valid too, but `remove()` is Mongoose recommended for subdocs
     await post.save();
 
     return NextResponse.json({ message: "Comment deleted successfully" });

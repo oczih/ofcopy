@@ -21,30 +21,41 @@ export interface PostDocument extends Document {
   width?: number;
   height?: number;
   price?: number;
+  isRepost: boolean;
+  originalContentId: mongoose.Types.ObjectId
 }
 
 const postSchema = new Schema<PostDocument>({
   creator: { type: Schema.Types.ObjectId, ref: 'Creator', required: true },
-  s3Key: { type: String },  // no required
-  caption: { type: String },  // no required
-  likes: [
-    { userId: {type: Schema.Types.ObjectId, ref: 'OFUser', required: true} }
-  ],
-  createdAt: { type: Date, default: Date.now },
-  viewableFor: { type: String, enum: ['followers', 'subscribers'], default: 'followers' },
+
+  // Media / text
+  s3Key: { type: String },  
+  caption: { type: String },  
+
+  // Social
+  likes: [{ userId: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true } }],
   comments: [
     {
-      _id: { type: Schema.Types.ObjectId, default: () => new mongoose.Types.ObjectId() }, // <-- Add this line
+      _id: { type: Schema.Types.ObjectId, default: () => new mongoose.Types.ObjectId() },
       userId: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true },
       username: { type: String, required: true },
       text: { type: String, required: true },
       createdAt: { type: Date, default: Date.now },
-    }
-  ],  
+    },
+  ],
+
+  // Access
+  viewableFor: { type: String, enum: ['followers', 'subscribers'], default: 'followers' },
+  price: { type: Number, default: 0 },
+
+  // Media details
   width: { type: Number },
   height: { type: Number },
-  price: { type: Number },
-  
+
+  // Repost logic
+  originalContentId: { type: Schema.Types.ObjectId, ref: 'Post', default: null },
+  isRepost: { type: Boolean, default: false }, // 👈 safer than required:true
+
 }, { timestamps: true });
 
 const Post = mongoose.models?.Post || model<PostDocument>('Post', postSchema);

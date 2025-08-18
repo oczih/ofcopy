@@ -301,6 +301,32 @@ useEffect(() => {
       setSending(false);
     }
   };
+  const handleRepostContent = async () => {
+    try {
+      const response = await fetch(`/api/media?username=${session?.user?.username}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          s3Key: post.s3Key,
+          caption: post.caption,
+          creatorId: creator?._id,
+          type: post.type,
+          viewable: post.viewableFor,
+          width: post.width,
+          height: post.height,
+          price: post.price ?? 0,
+          originalContentId: post._id, // 👈 tie repost to original
+          isRepost: true, // 👈 flag it as a repost for UI
+        }),
+      });
+  
+      if (!response.ok) {
+        console.error("Post creation failed");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
   const rightUser = (comment: Comment) => {
     const correctUser = users?.find(u => u._id === comment.userId)
     return correctUser
@@ -311,7 +337,7 @@ useEffect(() => {
     return isCommentOwner || isPostOwner;
   };
   console.log(isthepostcreator)
-  const canDeletePost = () => { const isPostOwner = isthepostcreator; return isPostOwner; };
+  const canDeletePost = () => { const isPostOwner = isViewingUserOwner; return isPostOwner; };
   const handleCommentModalOpen = (commentId: string) => {
     setCommentModalOpen(commentModalOpen === commentId ? null : commentId);
   };
@@ -368,29 +394,48 @@ useEffect(() => {
     if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
     return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
   }
-  
- 
+  console.log(post)
   return (
   <div className="bg-white/5 rounded-2xl shadow-xl border border-white/10 p-0 overflow-hidden max-w-3xl w-full mx-auto animate-fade-in">
     {/* Header */}
     
     <header className="flex items-center gap-4 px-5 py-4 border-b border-white/10 bg-gradient-to-r from-slate-900/80 to-purple-900/80">
-    <div className="flex items-center gap-3 flex-1 min-w-0">
-  <Link href={`/${creator.username}`}>
-    <Avatar className="w-12 h-12">
-      <img 
-      src={resolvedAvatarUrl ?? undefined} 
-      alt={creator.name || creator.username} />
-      <AvatarFallback>{creator.name?.[0] || creator.username?.[0]}</AvatarFallback>
+    <div className="flex items-center gap-4 flex-1 min-w-0">
+  {/* Avatar + link */}
+  <Link href={`/${creator.username}`} className="shrink-0">
+    <Avatar className="w-12 h-12 ring-2 ring-gray-800 hover:ring-indigo-500 transition">
+      <img
+        src={resolvedAvatarUrl ?? undefined}
+        alt={creator.name || creator.username}
+        className="object-cover"
+      />
+      <AvatarFallback>
+        {creator.name?.[0]?.toUpperCase() || creator.username?.[0]?.toUpperCase()}
+      </AvatarFallback>
     </Avatar>
   </Link>
 
-  <div className="min-w-0">
+  {/* Creator info */}
+  <div className="flex flex-col min-w-0">
     <Link href={`/${creator.username}`}>
-    <div className="font-semibold text-white truncate">{creator.name}</div>
-    <div className="text-xs text-gray-400 truncate">@{creator.username}</div>
+      <span className="font-semibold text-white text-sm sm:text-base truncate hover:underline">
+        {creator.name}
+      </span>
     </Link>
+    <span className="text-xs sm:text-sm text-gray-400 truncate">
+      @{creator.username}
+    </span>
   </div>
+
+  {/* Repost info */}
+  {post.isRepost && post.originalContentId && (
+    <div className="ml-auto text-xs text-gray-400 flex items-center space-x-1 truncate">
+      <span>Reposted from</span>
+      <Link href={`/post/${post.originalContentId}`}>
+        <span className="text-indigo-400 hover:underline">this post</span>
+      </Link>
+    </div>
+  )}
 </div>
       
       <div className="flex flex-col items-end gap-1 text-xs text-gray-400">
@@ -427,13 +472,13 @@ useEffect(() => {
         Edit Post
       </Button>
     </Link>
-    {/* <Button
+    <Button
       variant="ghost"
-      onClick={handleRepostContent}
+      onClick={() => handleRepostContent()}
       className="w-full justify-start text-left hover:bg-gray-100 dark:hover:bg-slate-600 cursor-pointer"
     >
       Repost Content
-    </Button>*/}
+    </Button>
     <Button
       variant="ghost"
       onClick={() => handleDeletePost()}

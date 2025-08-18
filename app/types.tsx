@@ -154,6 +154,8 @@ export type Post = {
   width?: number;             // Optional image width
   height?: number;
   price: number; 
+  isRepost: boolean;
+  originalContentId?: string;
 };
 declare module "next-auth" {
   interface User {

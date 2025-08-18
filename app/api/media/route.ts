@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   await connectDB();
-  const { s3Key, caption, creatorId, type, width, height, viewable, price } = await req.json();
+  const { s3Key, caption, creatorId, type, width, height, viewable, price, originalContentId, isRepost } = await req.json();
   if ((!s3Key && !caption) || !creatorId) {
     return NextResponse.json({ error: 'Post must have either a file or a caption' }, { status: 400 });
   }
@@ -83,7 +83,9 @@ export async function POST(req: NextRequest) {
     height: height || null,
     price: price || 0,
     viewableFor: viewable || 'followers',
-    likes: []
+    likes: [],
+    originalContentId: originalContentId || null,
+    isRepost: isRepost || false
   });
   // Add post to creator's posts array
   await Creator.findByIdAndUpdate(creator._id, { $push: { posts: post._id } });
