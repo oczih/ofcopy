@@ -9,7 +9,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Session } from "next-auth";
 import { Comment, Creator, Post, User} from "../app/types";
 import { Skeleton } from "@/components/ui/skeleton"
-import { resolveImageUrl } from "./resolveImageUrl";
+
 
 // Dynamically import emoji-picker-react to avoid SSR issues
 
@@ -38,7 +38,11 @@ export function CreatorPostCard({
   const isFollowersOnly = post.viewableFor === "followers";
 const isSubscribersOnly = post.viewableFor === "subscribers";
 
-
+function resolveImageUrl(url: string) {
+  if (!url) return null;
+  if (url.startsWith('http')) return url; // leave absolute URLs as-is
+  return `https://cdn.fanslio.com/${url.replace(/^\/+/, '')}`;
+}
   // Example: find the creator that matches the current session user
 
   const isViewingUserOwner = String(creator.user) === String(session?.user?._id);
@@ -79,7 +83,6 @@ const isSubscribersOnly = post.viewableFor === "subscribers";
     if (res.ok) {
       const data = await res.json();
       const updated = data.posts.find((p: Post) => p._id === post._id);
-      console.log('Like API response updated.likes:', updated?.likes);
       if (updated) setLikes(updated.likes ?? []);
     } else {
       alert('Failed to like post');
@@ -129,7 +132,6 @@ const isSubscribersOnly = post.viewableFor === "subscribers";
         const updated = data.posts.find((p: Post) => p._id === post._id);
         if (updated) {
           setLikes(updated.likes ?? []);
-          console.log("After: ", updated.likes);
         }
       } else {
         alert('Failed to unlike post');
@@ -220,16 +222,12 @@ const resolvedUrl = useMemo(() => resolveImageUrl(signedUrl), [signedUrl]);
 
 const [signedUrlLoading, setSignedUrlLoading] = useState(true);
 const fetchUserAvatarUrl = async (user: User) => {
-  if (!user.avatarKey){
-    setSignedUrlLoading(false);
-      return;
-  };
+  if (!user.avatarKey) return;
+
+  setAvatarsLoading(prev => ({ ...prev, [user._id]: true }));
 
   try {
-    setSignedUrlLoading(true);
-    setAvatarsLoading(prev => ({ ...prev, [user?._id]: true }));
-
-    const key = user.avatarKey.replace(/^\/+/, ''); // remove leading slash
+    const key = user.avatarKey.replace(/^\/+/, '');
     const res = await fetch("/api/media/download-url", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -237,29 +235,25 @@ const fetchUserAvatarUrl = async (user: User) => {
     });
 
     const data = await res.json();
-    if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
-      setUserAvatars(prev => ({ ...prev, [user?._id]: data.downloadUrl }));
-      return data.downloadUrl;
-    } else {
-      return null;
+
+    if (res.ok && data.downloadUrl?.startsWith("https://")) {
+      setUserAvatars(prev => ({ ...prev, [user._id]: data.downloadUrl }));
     }
-  } catch (error) {
-    console.error("Error fetching user avatar:", error);
-    return null;
+  } catch (err) {
+    console.error(err);
   } finally {
-    setAvatarsLoading(prev => ({ ...prev, [user?._id]: false }));
+    setAvatarsLoading(prev => ({ ...prev, [user._id]: false }));
   }
 };
 useEffect(() => {
-  if (Array.isArray(users)) {
-    users.forEach(user => {
-      if (user.avatarKey && !userAvatars[user?._id]) {
-        fetchUserAvatarUrl(user);
-      }
-    });
-  }
-}, [userAvatars, users]);
+  if (!Array.isArray(users)) return;
 
+  users.forEach(user => {
+    if (user.avatarKey && !userAvatars[user._id]) {
+      fetchUserAvatarUrl(user);
+    }
+  });
+}, [users, userAvatars]);
   const isLikedByCurrentUser = likes.some(
     (like) => like.userId.toString() === session?.user?._id?.toString()
   );
@@ -336,14 +330,11 @@ useEffect(() => {
     const isPostOwner = session?.user?._id === creator._id
     return isCommentOwner || isPostOwner;
   };
-  console.log(isthepostcreator)
   const canDeletePost = () => { const isPostOwner = isViewingUserOwner; return isPostOwner; };
   const handleCommentModalOpen = (commentId: string) => {
     setCommentModalOpen(commentModalOpen === commentId ? null : commentId);
   };
   const handleDeleteComment = async (postId: string, commentId: string) => {
-    console.log(postId)
-    console.log(commentId)
     if (!postId || !commentId) {
       console.error('Missing postId or commentId');
       return;
@@ -374,7 +365,10 @@ useEffect(() => {
     return /\.(jpeg|jpg|gif|png|webp|avif|svg)$/.test(cleanUrl);
   };
   
-  const resolvedAvatarUrl = useMemo(() => resolveImageUrl(avatarUrl), [avatarUrl]);
+  const resolvedAvatarUrl = useMemo(
+    () => resolveImageUrl(avatarUrl ?? ""), // Use empty string if null
+    [avatarUrl]
+  );
   function timeAgo(date: string | Date) {
     const now = new Date();
     const past = new Date(date);
@@ -394,7 +388,6 @@ useEffect(() => {
     if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
     return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
   }
-  console.log(post)
   return (
   <div className="bg-white/5 rounded-2xl shadow-xl border border-white/10 p-0 overflow-hidden max-w-3xl w-full mx-auto animate-fade-in">
     {/* Header */}
@@ -615,20 +608,24 @@ useEffect(() => {
           {comments && comments.length > 0 ? (
             comments.map((comment: Comment, idx) => {
               const userObj = rightUser(comment);
+              if (!userObj) return null;
               return (
                 <div key={comment._id || idx} className="flex items-start gap-3 bg-slate-800/60 rounded-lg p-3">
                   <div className="flex items-center gap-2 min-w-0">
-                    <Avatar className="w-8 h-8">
-                      {!avatarsLoading ? <div>
-                      <AvatarImage 
-                        src={userAvatars[userObj?._id || ''] || userObj?.avatarKey || ''} 
-                        alt={userObj?.name || userObj?.username || 'User'} 
-                      />
-                      <AvatarFallback>
-                        {userObj?.name?.[0] || userObj?.username?.[0] || 'U'}
-                      </AvatarFallback></div> : <Skeleton
-          className="w-full h-full rounded-none bg-gray-200 dark:bg-gray-700"
-        />  }
+                  <Avatar className="w-8  -8">
+                      {avatarsLoading[userObj._id] ? (
+                        <Skeleton className="w-full h-full rounded-none bg-gray-200 dark:bg-gray-700" />
+                      ) : userAvatars[userObj._id] ? (
+                        <AvatarImage
+                          key={userObj._id} // force re-render if src changes
+                          src={userAvatars[userObj._id]}
+                          alt={userObj?.name || userObj?.username || "User"}
+                        />
+                      ) : (
+                        <AvatarFallback>
+                          {userObj?.name?.[0] || userObj?.username?.[0] || "U"}
+                        </AvatarFallback>
+                      )}
                     </Avatar>
                       <span className="text-xs text-pink-300 font-semibold truncate">{comment.username}</span>
                     </div>

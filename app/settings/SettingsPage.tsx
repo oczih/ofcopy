@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { FC, SVGProps, useEffect, useState } from "react";
 import { Button } from "../../components/ui/button";
-import {CreditCard, ChevronRight, Calendar, Mail, Trash2, Wallet, ExternalLink, AlertCircle } from "lucide-react";
+import {CreditCard, ChevronRight, Calendar, Mail, Trash2, Wallet, ExternalLink, AlertCircle, UserCog, Shield, Settings, Star } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SubscriptionManagement from "@/components/SubscriptionManagement";
 import PaymentHistory from "@/components/PaymentHistory";
@@ -70,16 +70,71 @@ export default function App({session}: AppProps) {
 
     confirmAction();
   }, [token, router]);
-  if (status === "loading") return null;
   
-
-  const mainTabs = [
-    { id: "creator", label: "Become a Creator", href: "/apply-creator" },
-    { id: "account", label: "Account" },
-    { id: "payments", label: "Payment & Subscriptions" },
-    { id: "legal", label: "Privacy & Terms" },
-    { id: "payout", label: "Request A Payout", href: "/settings/payouts/request"}
+  interface MainTab {
+    id: string;
+    label: string;
+    href?: string;
+    icon: FC<SVGProps<SVGSVGElement>>;
+    description: string;
+    color: string;
+    restrictedTo?: "creator" | "noncreator"; // optional
+  }
+  
+  const mainTabs: MainTab[] = [
+    { 
+      id: "creator", 
+      label: "Become a Creator", 
+      href: "/apply-creator",
+      icon: Star,
+      description: "Apply to become a content creator and start earning",
+      color: "from-purple-500 to-pink-500",
+      restrictedTo: "noncreator" // only non-creators
+    },
+    { 
+      id: "account", 
+      label: "Account",
+      icon: UserCog,
+      description: "Manage your personal information and settings",
+      color: "from-blue-500 to-cyan-500"
+    },
+    { 
+      id: "payments", 
+      label: "Payment & Subscriptions",
+      icon: CreditCard,
+      description: "Handle subscriptions, payments, and billing",
+      color: "from-green-500 to-emerald-500",
+      restrictedTo: "creator" // only creators
+    },
+    { 
+      id: "legal", 
+      label: "Privacy & Terms",
+      icon: Shield,
+      description: "View privacy policy and terms of service",
+      color: "from-orange-500 to-red-500"
+    },
+    { 
+      id: "payout", 
+      label: "Request A Payout", 
+      href: "/settings/payouts/request",
+      icon: Wallet,
+      description: "Request a payout with your preferred method",
+      color: "from-emerald-500 to-teal-500",
+      restrictedTo: "creator" // only creators
+    }
   ];
+  
+  // Filter tabs based on session.user.creator
+  const getVisibleTabs = (isCreator: boolean) => {
+    return mainTabs.filter(tab => {
+      if (!tab.restrictedTo) return true; // visible to all
+      return (isCreator && tab.restrictedTo === "creator") || (!isCreator && tab.restrictedTo === "noncreator");
+    });
+  };
+  
+  // Example usage
+  
+  
   type SubTab = {
     id: string;
     label: string;
@@ -134,19 +189,20 @@ export default function App({session}: AppProps) {
     const currentSubTab = currentSubTabs?.find(t => t.id === activeSubTab);
 
     return (
-      <div className="flex items-center space-x-2 text-sm mb-8">
+      <div className="flex items-center space-x-2 text-sm mb-12">
         <button
           onClick={() => setActiveTab("")}
-          className="text-gray-400 hover:text-white transition-colors"
+          className="flex items-center space-x-2 text-gray-400 hover:text-white transition-all duration-200 hover:scale-105"
         >
-          Settings
+          <Settings className="w-4 h-4" />
+          <span>Settings</span>
         </button>
         {currentMainTab && (
           <>
-            <ChevronRight className="w-4 h-4 text-gray-500" />
+            <div className="w-1 h-1 bg-gray-500 rounded-full"></div>
             <button
               onClick={() => handleTabClick(activeTab)}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-white transition-all duration-200 hover:scale-105"
             >
               {currentMainTab.label}
             </button>
@@ -154,14 +210,16 @@ export default function App({session}: AppProps) {
         )}
         {currentSubTab && (
           <>
-            <ChevronRight className="w-4 h-4 text-gray-500" />
-            <span className="text-white font-medium">{currentSubTab.label}</span>
+            <div className="w-1 h-1 bg-gray-500 rounded-full"></div>
+            <span className="text-white font-medium bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+              {currentSubTab.label}
+            </span>
           </>
         )}
       </div>
     );
   };
-// Update your validate function to handle both scenarios:
+
 const validate = () => {
   const errs: Record<string, string> = {};
   
@@ -185,6 +243,7 @@ const validate = () => {
   setErrors(errs);
   return Object.keys(errs).length === 0;
 };
+
   const handlePasswordAction = async () => {
     console.log("validate:", validate)
 
@@ -213,39 +272,63 @@ const validate = () => {
       setLoading(false);
     }
   };
+  const visibleTabs = getVisibleTabs(session?.user.creator ?? false);
   const renderMainTabContent = () => {
     if (!activeTab) {
       return (
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-3xl font-bold text-white mb-4">Settings</h2>
-            <p className="text-gray-400">Manage your account and preferences</p>
+        <div className="space-y-8">
+          {/* Header Section */}
+          <div className="text-center space-y-4">
+            <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-2xl">
+              <Settings className="w-10 h-10 text-white" />
+            </div>
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              Settings
+            </h2>
+            <p className="text-xl text-gray-400 max-w-md mx-auto">
+              Customize your account and manage your preferences
+            </p>
           </div>
           
-          <div className="flex flex-col gap-3">
-            {mainTabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => handleTabClick(tab.id)}
-                className="bg-white/5 backdrop-blur-xl cursor-pointer rounded-2xl hover:outline hover:outline-white p-6 text-left hover:bg-white/10 transition-all duration-300 group cursor-pointer"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-green-400 transition-colors">
+          {/* Main Tabs Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
+            {visibleTabs.map((tab, index) => {
+              const IconComponent = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabClick(tab.id)}
+                  className="group relative overflow-hidden bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-8 text-left hover:bg-white/10 transition-all duration-500 hover:scale-105 hover:shadow-2xl cursor-pointer"
+                  style={{
+                    animationDelay: `${index * 100}ms`,
+                    animation: 'fadeInUp 0.6s ease-out forwards'
+                  }}
+                >
+                  {/* Gradient Background Effect */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${tab.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500 rounded-3xl`}></div>
+                  
+                  {/* Content */}
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className={`p-3 rounded-2xl bg-gradient-to-br ${tab.color} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                        <IconComponent className="w-6 h-6 text-white" />
+                      </div>
+                      <ChevronRight className="w-6 h-6 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all duration-300" />
+                    </div>
+                    
+                    <h3 className="text-xl font-bold text-white mb-3 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-green-400 group-hover:to-emerald-400 group-hover:bg-clip-text transition-all duration-300">
                       {tab.label}
                     </h3>
-                    <p className="text-gray-400 text-sm">
-                      {tab.id === "creator" && "Apply to become a content creator"}
-                      {tab.id === "account" && "Manage your personal information"}
-                      {tab.id === "payments" && "Handle subscriptions and payments"}
-                      {tab.id === "legal" && "View privacy policy and terms"}
-                      {tab.id === "payout" && "Request a payout with your preferred method"}
+                    <p className="text-gray-400 text-sm leading-relaxed group-hover:text-gray-300 transition-colors duration-300">
+                      {tab.description}
                     </p>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-green-400 transition-colors" />
-                </div>
-              </button>
-            ))}
+                  
+                  {/* Hover Border Effect */}
+                  <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover:border-white/20 transition-colors duration-300"></div>
+                </button>
+              );
+            })}
           </div>
         </div>
       );
@@ -253,15 +336,16 @@ const validate = () => {
 
     if (activeTab === "account") {
       return (
-        <div className="space-y-6">
-          <div className="flex items-center space-x-4 mb-6">
+        <div className="space-y-8">
+          {/* Sub Navigation */}
+          <div className="flex items-center space-x-2 mb-8 bg-white/5 rounded-2xl p-2 border border-white/10">
             {accountSubTabs.map((subTab) => (
               <button
                 key={subTab.id}
                 onClick={() => handleSubTabClick(subTab.id)}
-                className={`px-4 py-2 rounded-lg transition-all cursor-pointer duration-300 ${
+                className={`flex-1 px-6 py-3 rounded-xl transition-all duration-300 font-medium text-sm cursor-pointer ${
                   activeSubTab === subTab.id
-                    ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white"
+                    ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg scale-105"
                     : "text-gray-400 hover:text-white hover:bg-white/10"
                 }`}
               >
@@ -271,30 +355,43 @@ const validate = () => {
           </div>
 
           {activeSubTab === "info" && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-2">Account Information</h3>
-                <p className="text-gray-400">View and update your account details</p>
+            <div className="space-y-8">
+              <div className="text-center">
+                <h3 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-3">
+                  Account Information
+                </h3>
+                <p className="text-gray-400 text-lg">View and update your account details</p>
               </div>
 
-              <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="flex items-center space-x-3">
-                    <Mail className="w-5 h-5 text-green-500" />
-                    <div>
-                      <p className="text-gray-400 text-sm">Email Address</p>
-                      <p className="text-white font-medium">{session?.user.email}</p>
+              <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-3xl p-8 border border-white/20 shadow-2xl backdrop-blur-xl">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="group p-6 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-105">
+                    <div className="flex items-center space-x-4">
+                      <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
+                        <Mail className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm font-medium mb-1">Email Address</p>
+                        <p className="text-white font-semibold text-lg">{session?.user.email}</p>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <Calendar className="w-5 h-5 text-green-500" />
-                    <div>
-                      <p className="text-gray-400 text-sm">Member Since</p>
-                      <p className="text-white font-medium">{new Date(session?.user?.createdAt ?? '').toLocaleDateString('en-US', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-})}</p>
+                  
+                  <div className="group p-6 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-105">
+                    <div className="flex items-center space-x-4">
+                      <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl shadow-lg">
+                        <Calendar className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm font-medium mb-1">Member Since</p>
+                        <p className="text-white font-semibold text-lg">
+                          {new Date(session?.user?.createdAt ?? '').toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -303,71 +400,97 @@ const validate = () => {
           )}
 
 {activeSubTab === "password" && !(session?.user as User).password && (
-  <div className="space-y-6">
-    <div>
-      <h3 className="text-2xl font-bold text-white mb-2">Add Password</h3>
-      <p className="text-gray-400">Set up a password to secure your account and enable email login</p>
+  <div className="space-y-8">
+    <div className="text-center">
+      <h3 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-3">
+        Add Password
+      </h3>
+      <p className="text-gray-400 text-lg">Set up a password to secure your account and enable email login</p>
     </div>
 
-    <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-      <div className="space-y-4 max-w-md">
-        {/* New Password Input */}
-        <div>
-          <label className="block text-sm font-medium text-white mb-2">Create Password</label>
-          <input
-            type="password"
-            placeholder="Enter your new password"
-            value={form.password || ''}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            className="w-full pl-4 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl shadow-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
-          {errors.password && (
-            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-              <AlertCircle className="w-4 h-4" /> {errors.password}
-            </p>
-          )}
-        </div>
-
-        {/* Confirm Password Input */}
-        <div>
-          <label className="block text-sm font-medium text-white mb-2">Confirm Password</label>
-          <input
-            type="password"
-            placeholder="Confirm your password" 
-            value={form.confirm || ''}
-            onChange={(e) => setForm({ ...form, confirm: e.target.value })}
-            className="w-full pl-4 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl shadow-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
-          {errors.confirm && (
-            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-              <AlertCircle className="w-4 h-4" /> {errors.confirm}
-            </p>
-          )}
-        </div>
-
-        {/* Add Password Button */}
-        <button
-          onClick={handlePasswordAction}
-          disabled={loading}
-          className="w-full bg-green-600 hover:bg-green-700 cursor-pointer text-white py-3 px-4 rounded-xl font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? "Setting up password..." : "Add Password"}
-        </button>
-
-        {/* Info Box */}
-        <div className="bg-blue-900/20 border border-blue-500/20 rounded-xl p-4 mt-4">
-          <div className="flex items-start gap-3">
-            <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+    <div className="max-w-2xl mx-auto">
+      <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-3xl p-8 border border-white/20 shadow-2xl backdrop-blur-xl">
+        <div className="space-y-6">
+          {/* New Password Input */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-white mb-3">Create Password</label>
+            <div className="relative group">
+              <input
+                type="password"
+                placeholder="Enter your new password"
+                value={form.password || ''}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                className="w-full pl-4 pr-4 py-4 bg-white/10 border border-white/20 rounded-2xl shadow-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 hover:bg-white/15"
+              />
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-green-500/20 to-emerald-500/20 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
             </div>
-            <div className="text-sm text-blue-200">
-              <p className="font-medium mb-1">Setting up a password allows you to:</p>
-              <ul className="space-y-1 text-blue-300">
-                <li>• Sign in with your email and password</li>
-                <li>• Access your account if OAuth is unavailable</li>
-                <li>• Have an additional layer of security</li>
-              </ul>
+            {errors.password && (
+              <div className="flex items-center gap-2 text-red-400 text-sm mt-2 animate-pulse">
+                <AlertCircle className="w-4 h-4" /> 
+                <span>{errors.password}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Confirm Password Input */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-white mb-3">Confirm Password</label>
+            <div className="relative group">
+              <input
+                type="password"
+                placeholder="Confirm your password" 
+                value={form.confirm || ''}
+                onChange={(e) => setForm({ ...form, confirm: e.target.value })}
+                className="w-full pl-4 pr-4 py-4 bg-white/10 border border-white/20 rounded-2xl shadow-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 hover:bg-white/15"
+              />
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-green-500/20 to-emerald-500/20 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
             </div>
+            {errors.confirm && (
+              <div className="flex items-center gap-2 text-red-400 text-sm mt-2 animate-pulse">
+                <AlertCircle className="w-4 h-4" /> 
+                <span>{errors.confirm}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Add Password Button */}
+          <button
+            onClick={handlePasswordAction}
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-4 px-6 rounded-2xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 hover:shadow-2xl cursor-pointer"
+          >
+            {loading ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                Setting up password...
+              </div>
+            ) : "Add Password"}
+          </button>
+        </div>
+      </div>
+
+      {/* Info Box */}
+      <div className="mt-8 bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-500/30 rounded-3xl p-6 backdrop-blur-xl">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+            <div className="w-3 h-3 rounded-full bg-blue-200 animate-pulse"></div>
+          </div>
+          <div className="text-sm">
+            <p className="font-semibold mb-3 text-blue-200 text-lg">Setting up a password allows you to:</p>
+            <ul className="space-y-2 text-blue-300">
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
+                Sign in with your email and password
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
+                Access your account if OAuth is unavailable
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
+                Have an additional layer of security
+              </li>
+            </ul>
           </div>
         </div>
       </div>
@@ -376,87 +499,122 @@ const validate = () => {
 )}
 
 {activeSubTab === "password" && (session?.user as User).password && (
-  <div className="space-y-6">
-    <div>
-      <h3 className="text-2xl font-bold text-white mb-2">Change Password</h3>
-      <p className="text-gray-400">Update your password to keep your account secure</p>
+  <div className="space-y-8">
+    <div className="text-center">
+      <h3 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-3">
+        Change Password
+      </h3>
+      <p className="text-gray-400 text-lg">Update your password to keep your account secure</p>
     </div>
 
-    <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-      <div className="space-y-4 max-w-md">
-        {/* Current Password Input */}
-        <div>
-          <label className="block text-sm font-medium text-white mb-2">Current Password</label>
-          <input
-            type="password"
-            placeholder="Enter your current password"
-            value={form.currentPassword || ''}
-            onChange={(e) => setForm({ ...form, currentPassword: e.target.value })}
-            className="w-full pl-4 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl shadow-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
-          {errors.currentPassword && (
-            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-              <AlertCircle className="w-4 h-4" /> {errors.currentPassword}
-            </p>
-          )}
-        </div>
-
-        {/* New Password Input */}
-        <div>
-          <label className="block text-sm font-medium text-white mb-2">New Password</label>
-          <input
-            type="password"
-            placeholder="Enter your new password"
-            value={form.password || ''}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            className="w-full pl-4 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl shadow-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
-          {errors.password && (
-            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-              <AlertCircle className="w-4 h-4" /> {errors.password}
-            </p>
-          )}
-        </div>
-
-        {/* Confirm New Password Input */}
-        <div>
-          <label className="block text-sm font-medium text-white mb-2">Confirm New Password</label>
-          <input
-            type="password"
-            placeholder="Confirm your new password"
-            value={form.confirm || ''}
-            onChange={(e) => setForm({ ...form, confirm: e.target.value })}
-            className="w-full pl-4 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl shadow-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
-          {errors.confirm && (
-            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-              <AlertCircle className="w-4 h-4" /> {errors.confirm}
-            </p>
-          )}
-        </div>
-
-        {/* Change Password Button */}
-        <button
-          onClick={handlePasswordAction}
-          disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-xl font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? "Changing password..." : "Change Password"}
-        </button>
-
-        {/* Security Info */}
-        <div className="bg-yellow-900/20 border border-yellow-500/20 rounded-xl p-4 mt-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-yellow-200">
-              <p className="font-medium mb-1">Password Security Tips:</p>
-              <ul className="space-y-1 text-yellow-300">
-                <li>• Use at least 8 characters</li>
-                <li>• Include uppercase and lowercase letters</li>
-                <li>• Add numbers and special characters</li>
-                <li>• Don&#39;t reuse passwords from other accounts</li>
-              </ul>
+    <div className="max-w-2xl mx-auto">
+      <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-3xl p-8 border border-white/20 shadow-2xl backdrop-blur-xl">
+        <div className="space-y-6">
+          {/* Current Password Input */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-white mb-3">Current Password</label>
+            <div className="relative group">
+              <input
+                type="password"
+                placeholder="Enter your current password"
+                value={form.currentPassword || ''}
+                onChange={(e) => setForm({ ...form, currentPassword: e.target.value })}
+                className="w-full pl-4 pr-4 py-4 bg-white/10 border border-white/20 rounded-2xl shadow-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:bg-white/15"
+              />
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/20 to-cyan-500/20 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
             </div>
+            {errors.currentPassword && (
+              <div className="flex items-center gap-2 text-red-400 text-sm mt-2 animate-pulse">
+                <AlertCircle className="w-4 h-4" /> 
+                <span>{errors.currentPassword}</span>
+              </div>
+            )}
+          </div>
+
+          {/* New Password Input */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-white mb-3">New Password</label>
+            <div className="relative group">
+              <input
+                type="password"
+                placeholder="Enter your new password"
+                value={form.password || ''}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                className="w-full pl-4 pr-4 py-4 bg-white/10 border border-white/20 rounded-2xl shadow-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:bg-white/15"
+              />
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/20 to-cyan-500/20 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+            </div>
+            {errors.password && (
+              <div className="flex items-center gap-2 text-red-400 text-sm mt-2 animate-pulse">
+                <AlertCircle className="w-4 h-4" /> 
+                <span>{errors.password}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Confirm New Password Input */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-white mb-3">Confirm New Password</label>
+            <div className="relative group">
+              <input
+                type="password"
+                placeholder="Confirm your new password"
+                value={form.confirm || ''}
+                onChange={(e) => setForm({ ...form, confirm: e.target.value })}
+                className="w-full pl-4 pr-4 py-4 bg-white/10 border border-white/20 rounded-2xl shadow-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:bg-white/15"
+              />
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/20 to-cyan-500/20 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+            </div>
+            {errors.confirm && (
+              <div className="flex items-center gap-2 text-red-400 text-sm mt-2 animate-pulse">
+                <AlertCircle className="w-4 h-4" /> 
+                <span>{errors.confirm}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Change Password Button */}
+          <button
+            onClick={handlePasswordAction}
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white py-4 px-6 rounded-2xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 hover:shadow-2xl cursor-pointer"
+          >
+            {loading ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                Changing password...
+              </div>
+            ) : "Change Password"}
+          </button>
+        </div>
+      </div>
+
+      {/* Security Info */}
+      <div className="mt-8 bg-gradient-to-br from-yellow-900/30 to-orange-800/20 border border-yellow-500/30 rounded-3xl p-6 backdrop-blur-xl">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+            <AlertCircle className="w-6 h-6 text-white" />
+          </div>
+          <div className="text-sm">
+            <p className="font-semibold mb-3 text-yellow-200 text-lg">Password Security Tips:</p>
+            <ul className="space-y-2 text-yellow-300">
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full"></div>
+                Use at least 8 characters
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full"></div>
+                Include uppercase and lowercase letters
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full"></div>
+                Add numbers and special characters
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full"></div>
+                Don&apos;t reuse passwords from other accounts
+              </li>
+            </ul>
           </div>
         </div>
       </div>
@@ -465,31 +623,50 @@ const validate = () => {
 )}
 
           {activeSubTab === "delete" && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-2">Delete Account</h3>
-                <p className="text-gray-400">Permanently delete your account and all associated data</p>
+            <div className="space-y-8">
+              <div className="text-center">
+                <h3 className="text-3xl font-bold text-red-400 mb-3">Delete Account</h3>
+                <p className="text-gray-400 text-lg">Permanently delete your account and all associated data</p>
               </div>
 
-              <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6">
-                <div className="flex items-start space-x-4">
-                  <div className="p-2 bg-red-500/20 rounded-lg">
-                    <Trash2 className="w-5 h-5 text-red-400" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-red-400 font-semibold mb-2">Danger Zone</h4>
-                    <p className="text-gray-300 text-sm mb-4">
-                      Once you delete your account, there is no going back. Please be certain.
-                    </p>
-                    <ul className="text-gray-400 text-sm space-y-1 mb-6">
-                      <li>• All your personal data will be permanently deleted</li>
-                      <li>• Your subscriptions will be cancelled</li>
-                      <li>• Your creator content (if any) will be removed</li>
-                      <li>• This action cannot be undone</li>
-                    </ul>
-                    <Button variant="destructive" className="bg-red-600 hover:bg-red-700">
-                      Delete My Account
-                    </Button>
+              <div className="max-w-2xl mx-auto">
+                <div className="bg-gradient-to-br from-red-900/30 to-red-800/20 border border-red-500/30 rounded-3xl p-8 backdrop-blur-xl">
+                  <div className="flex items-start space-x-6">
+                    <div className="p-4 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg">
+                      <Trash2 className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-red-400 font-bold text-xl mb-3">Danger Zone</h4>
+                      <p className="text-gray-300 mb-6 leading-relaxed">
+                        Once you delete your account, there is no going back. Please be certain.
+                      </p>
+                      <div className="bg-red-950/50 rounded-2xl p-4 mb-6 border border-red-500/20">
+                        <ul className="text-gray-300 space-y-3">
+                          <li className="flex items-center gap-3">
+                            <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                            All your personal data will be permanently deleted
+                          </li>
+                          <li className="flex items-center gap-3">
+                            <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                            Your subscriptions will be cancelled
+                          </li>
+                          <li className="flex items-center gap-3">
+                            <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                            Your creator content (if any) will be removed
+                          </li>
+                          <li className="flex items-center gap-3">
+                            <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                            This action cannot be undone
+                          </li>
+                        </ul>
+                      </div>
+                      <Button 
+                        variant="destructive" 
+                        className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 border-0 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                      >
+                        Delete My Account
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -501,15 +678,16 @@ const validate = () => {
 
     if (activeTab === "payments") {
       return (
-        <div className="space-y-6">
-          <div className="flex items-center space-x-4 mb-6">
+        <div className="space-y-8">
+          {/* Sub Navigation */}
+          <div className="flex items-center space-x-2 mb-8 bg-white/5 rounded-2xl p-2 border border-white/10">
             {paymentSubTabs.map((subTab) => (
               <button
                 key={subTab.id}
                 onClick={() => handleSubTabClick(subTab.id)}
-                className={`px-4 py-2 rounded-lg transition-all duration-300 cursor-pointer ${
+                className={`flex-1 px-6 py-3 rounded-xl transition-all duration-300 font-medium text-sm cursor-pointer ${
                   activeSubTab === subTab.id
-                    ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white"
+                    ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg scale-105"
                     : "text-gray-400 hover:text-white hover:bg-white/10"
                 }`}
               >
@@ -527,40 +705,56 @@ const validate = () => {
           )}
 
           {activeSubTab === "wallet" && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-2">Wallet</h3>
-                <p className="text-gray-400">Manage your payment methods and balance</p>
+            <div className="space-y-8">
+              <div className="text-center">
+                <h3 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-3">
+                  Wallet
+                </h3>
+                <p className="text-gray-400 text-lg">Manage your payment methods and balance</p>
               </div>
 
-              <div className="bg-gradient-to-r from-green-500/20 to-emerald-600/20 rounded-2xl p-6 border border-green-500/30">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <Wallet className="w-6 h-6 text-green-400" />
-                    <h4 className="text-white font-semibold text-lg">Account Balance</h4>
+              {/* Balance Card */}
+              <div className="bg-gradient-to-br from-green-500/20 to-emerald-600/20 rounded-3xl p-8 border border-green-500/30 backdrop-blur-xl shadow-2xl">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg">
+                      <Wallet className="w-8 h-8 text-white" />
+                    </div>
+                    <h4 className="text-white font-bold text-2xl">Account Balance</h4>
                   </div>
                   <div className="text-right">
-                    <p className="text-3xl font-bold text-white">$25.00</p>
-                    <p className="text-green-400 text-sm">Available</p>
+                    <p className="text-5xl font-bold bg-gradient-to-r from-white to-green-200 bg-clip-text text-transparent">
+                      $25.00
+                    </p>
+                    <p className="text-green-400 font-semibold">Available</p>
                   </div>
                 </div>
-                <div className="flex space-x-3">
-                  <Button className="bg-green-500 hover:bg-green-600">
+                <div className="flex space-x-4">
+                  <Button className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl">
                     Add Funds
                   </Button>
-                  <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 border-2 border-white/30 text-white hover:bg-white/10 font-semibold py-3 rounded-xl transition-all duration-300 hover:scale-105 hover:border-white/50"
+                  >
                     Withdraw
                   </Button>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h4 className="text-white font-semibold">Payment Methods</h4>
-                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                  <div className="text-center py-6">
-                    <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-400 mb-4">No payment methods added</p>
-                    <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
+              {/* Payment Methods */}
+              <div className="space-y-6">
+                <h4 className="text-white font-bold text-2xl text-center">Payment Methods</h4>
+                <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-3xl p-8 border border-white/20 shadow-2xl backdrop-blur-xl">
+                  <div className="text-center py-12">
+                    <div className="w-24 h-24 bg-gradient-to-br from-gray-600 to-gray-700 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-2xl">
+                      <CreditCard className="w-12 h-12 text-gray-300" />
+                    </div>
+                    <p className="text-gray-400 mb-6 text-lg">No payment methods added yet</p>
+                    <Button 
+                      variant="outline" 
+                      className="border-2 border-white/30 text-white hover:bg-white/10 font-semibold py-3 px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:border-white/50"
+                    >
                       Add Payment Method
                     </Button>
                   </div>
@@ -574,31 +768,47 @@ const validate = () => {
 
     if (activeTab === "legal") {
       return (
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-2xl font-bold text-white mb-2">Privacy & Terms</h3>
-            <p className="text-gray-400">Review our policies and terms of service</p>
+        <div className="space-y-8">
+          <div className="text-center">
+            <h3 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-3">
+              Privacy & Terms
+            </h3>
+            <p className="text-gray-400 text-lg">Review our policies and terms of service</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {legalSubTabs.map((subTab) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {legalSubTabs.map((subTab, index) => (
               <button
                 key={subTab.id}
                 onClick={() => handleSubTabClick(subTab.id)}
-                className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 cursor-pointer text-left hover:bg-white/10 transition-all duration-300 group"
+                className="group relative overflow-hidden bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl border border-white/20 p-8 cursor-pointer text-left hover:bg-white/15 transition-all duration-500 hover:scale-105 hover:shadow-2xl"
+                style={{
+                  animationDelay: `${index * 150}ms`,
+                  animation: 'fadeInUp 0.6s ease-out forwards'
+                }}
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-xl font-semibold text-white mb-2 group-hover:text-green-400 transition-colors">
-                      {subTab.label}
-                    </h4>
-                    <p className="text-gray-400 text-sm">
-                      {subTab.id === "privacy" && "Learn how we protect your data"}
-                      {subTab.id === "terms" && "Review our terms and conditions"}
-                    </p>
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
+                
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-3 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <Shield className="w-6 h-6 text-white" />
+                    </div>
+                    <ExternalLink className="w-6 h-6 text-gray-400 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
                   </div>
-                  <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-green-400 transition-colors" />
+                  
+                  <h4 className="text-2xl font-bold text-white mb-3 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-orange-400 group-hover:to-red-400 group-hover:bg-clip-text transition-all duration-300">
+                    {subTab.label}
+                  </h4>
+                  <p className="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors duration-300">
+                    {subTab.id === "privacy" && "Learn how we protect your data and respect your privacy"}
+                    {subTab.id === "terms" && "Review our terms and conditions for using our platform"}
+                  </p>
                 </div>
+                
+                {/* Hover Border Effect */}
+                <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover:border-orange-500/30 transition-colors duration-300"></div>
               </button>
             ))}
           </div>
@@ -608,13 +818,38 @@ const validate = () => {
   };
 
   return (
-    <div>
-      <main className="flex-1 max-w-6xl mx-auto px-4 py-8 relative z-10">
-        <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl p-8">
-          {renderBreadcrumb()}
-          {renderMainTabContent()}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
+      {/* Animated Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
+      </div>
+
+      <main className="flex-1 max-w-7xl mx-auto px-6 py-12 relative z-10">
+        <div className="bg-white/5 backdrop-blur-2xl rounded-[2rem] border border-white/20 shadow-2xl p-10 relative overflow-hidden">
+          {/* Subtle inner glow */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-[2rem] pointer-events-none"></div>
+          
+          <div className="relative z-10">
+            {renderBreadcrumb()}
+            {renderMainTabContent()}
+          </div>
         </div>
       </main>
+
+      <style jsx>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }
