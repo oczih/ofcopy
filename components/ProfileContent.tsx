@@ -211,14 +211,20 @@ export default function ProfileContent({
 
       const signedUrlMap: Record<string, string> = {};
       const fetchPromises = postsToFetch.map(async (post: Post) => {
-        if (!post.s3Key) return;
         
-        const url = await getSignedUrl(typeof post.s3Key === 'string'
-          ? post.s3Key
-          : post.s3Key?.key);
-        if (url) {
-          signedUrlMap[post._id] = url;
-        }
+        const s3Key =
+                typeof post.s3Key === "string"
+                  ? post.s3Key
+                  : session?.user?.following?.some((f) => f.creatorId === post.creator) || creators.some(c => c.user === session?.user._id)
+                  ? post.s3Key?.key
+                  : post.s3Key?.blurredKey;
+
+              if (!s3Key) return; // ⛔ bail early if undefined
+
+              const url = await getSignedUrl(s3Key);
+              if (url) {
+                signedUrlMap[post._id] = url;
+              }
       });
 
       await Promise.all(fetchPromises);
@@ -229,7 +235,7 @@ export default function ProfileContent({
     }
 
     fetchSignedUrls();
-  }, [creators, postSignedUrls, urlCache, getSignedUrl, CACHE_TTL]);
+  }, [creators, postSignedUrls, urlCache, getSignedUrl, CACHE_TTL, session?.user._id, session?.user.following]);
   
   // Clean up expired cache entries periodically
   useEffect(() => {
@@ -292,10 +298,14 @@ export default function ProfileContent({
   const notifiedCreators = useRef<Set<string>>(new Set());
 
   const handleFollow = async (creator: Creator) => {
+    if(!session?.user) {
+      setJoinModalOpen(true)
+      return;
+    }
     if (!creator) return;
   
     try {
-      const alreadyFollowing = viewingUser.following.some(f => f.creatorId === creator._id);
+      const alreadyFollowing = viewingUser?.following.some(f => f.creatorId === creator._id);
       if (alreadyFollowing) return;
   
       await creatorservice.followCreator(creator._id);
@@ -602,9 +612,7 @@ function ContentTabs({
   const [activeTab, setActiveTab] = useState(creator ? 'posts' : 'purchased');
   const tabs = [
     { id: 'posts', label: 'Posts', count: creator?.posts?.length || 0 },
-    ...(status !== 'none'
-      ? [{ id: 'media', label: 'Media', count: creator?.posts?.filter(p => p.signedUrl).length || 0 }]
-      : []),
+    { id: 'media', label: 'Media', count: creator?.posts?.filter(p => p.signedUrl).length || 0 },
     ...((status === 'subscriber' || status === 'follower') && !isOwnProfile
       ? [{ id: 'purchased', label: 'Purchased Content', count: purchasedContent.length }]
       : []),
@@ -854,8 +862,10 @@ function MediaGrid({
           return (
             <div
               key={p._id}
-              className="relative w-full aspect-square overflow-hidden cursor-pointer"
-              onClick={() => setActiveImage(src)}
+              className={`relative w-full aspect-square overflow-hidden ${
+                status !== "none" ? "cursor-pointer" : ""
+              }`}
+              onClick={status !== "none" ? () => setActiveImage(src) : undefined}
             >
               {/* Blurred background */}
               <img

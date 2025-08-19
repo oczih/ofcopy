@@ -48,10 +48,8 @@ function resolveImageUrl(url: string) {
   const isViewingUserOwner = String(creator.user) === String(session?.user?._id);
   
   // Check if the post creator is the same as the viewing creator
-  const isthepostcreator = String(post.creator) === String(creator._id);
 
-  const canView =
-  isthepostcreator || // post owner
+  const canView = // post owner
   isViewingUserOwner || // creator owner
   (!isFollowersOnly && !isSubscribersOnly) ||
   status === "follower" ||
@@ -421,7 +419,7 @@ useEffect(() => {
   </div>
 
   {/* Repost info */}
-  {post.isRepost && post.originalContentId && (
+  {session?.user?.following?.some(f => f.creatorId === post.creator) && post.isRepost && post.originalContentId && (
     <div className="ml-auto text-xs text-gray-400 flex items-center space-x-1 truncate">
       <span>Reposted from</span>
       <Link href={`/post/${post.originalContentId}`}>
@@ -488,74 +486,73 @@ useEffect(() => {
     
     {/* Media */}
     <div className="relative bg-slate-900">
-      
-    {signedUrlLoading ? (
-  <div className="relative w-full" style={{ minHeight: 200 }}>
-    <Skeleton className="w-full rounded-none bg-gray-200 dark:bg-gray-700" />
-  </div>
-) : canView && signedUrl ? (
-  <div className="relative w-full">
-    {imageLoading && (
-      <div className="absolute inset-0 z-10">
-        <Skeleton className="w-full h-full rounded-none bg-gray-200 dark:bg-gray-700" />
-      </div>
-    )}
-    {resolvedUrl && (
-      
-  isImage(resolvedUrl) ? (
-    <Image
-      src={resolvedUrl}
-      alt={post.caption || ""}
-      width={post.width}
-      height={post.height}
-      onLoad={() => setImageLoading(false)}
-      onError={() => setImageLoading(false)}
-      style={{ objectFit: "contain", width: "100%", height: "auto" }}
-      sizes="(max-width: 1200px) 100vw, 1200px"
-      className={`transition-opacity duration-300 ${imageLoading ? "opacity-0" : "opacity-100"}`}
-    />
-  ) : 
-    <video width="100%" height="auto" controls preload="metadata">
-      <source src={resolvedUrl} type="video/mp4" />
-      Your browser does not support the video tag.
-    </video>
-  )
-  }
-  </div>
-) : (
-  // Restricted block (only shows when signedUrlLoading === false AND no signedUrl)
-  <div className="flex flex-col items-center justify-center h-72 w-full bg-slate-800 text-center space-y-3">
-    <span className="text-2xl text-gray-300">
-      {isSubscribersOnly
-        ? "Subscribe to view"
-        : isFollowersOnly
-        ? "Follow to view"
-        : "Restricted"}
-    </span>
-    <div className="flex gap-3">
-      {isSubscribersOnly && (
-        <Button className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-full shadow cursor-pointer">
-          <Heart className="w-4 h-4 mr-2" /> Subscribe
-        </Button>
-      )}
-      {isFollowersOnly && (
-        <Button
-          onClick={() => handleFollow(creator)}
-          className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-semibold rounded-full shadow cursor-pointer"
-        >
-          <UserPlus className="w-4 h-4 mr-2" /> Follow
-        </Button>
-      )}
+  {signedUrlLoading ? (
+    <div className="relative w-full" style={{ minHeight: 200 }}>
+      <Skeleton className="w-full rounded-none bg-gray-200 dark:bg-gray-700" />
     </div>
-  </div>
-)}
+  ) : (
+    <div className="relative w-full">
+      {/* Media (always rendered if signedUrl exists) */}
+      {resolvedUrl &&
+        (isImage(resolvedUrl) ? (
+          <Image
+            src={resolvedUrl}
+            alt={post.caption || ""}
+            width={post.width}
+            height={post.height}
+            onLoad={() => setImageLoading(false)}
+            onError={() => setImageLoading(false)}
+            style={{ objectFit: "contain", width: "100%", height: "auto" }}
+            sizes="(max-width: 1200px) 100vw, 1200px"
+            className={`transition-opacity duration-300 ${
+              imageLoading ? "opacity-0" : "opacity-100"
+            }`}
+          />
+        ) : (
+          <video width="100%" height="auto" controls preload="metadata">
+            <source src={resolvedUrl} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        ))}
 
-      {(isSubscribersOnly || isFollowersOnly) && (
-        <Badge className="absolute top-4 left-4 bg-pink-600/90 text-white border-none shadow">
-          {isSubscribersOnly ? "Subscribers only" : "Followers only"}
-        </Badge>
+      {/* Overlay if user cannot view */}
+      {!canView && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center space-y-3 bg-black/40">
+          <span className="text-2xl text-white drop-shadow-md">
+            {isSubscribersOnly
+              ? "Subscribe to view"
+              : isFollowersOnly
+              ? "Follow to view"
+              : "Restricted"}
+          </span>
+          <div className="flex gap-3">
+            {isSubscribersOnly && (
+              <Button className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-full shadow cursor-pointer">
+                <Heart className="w-4 h-4 mr-2" /> Subscribe
+              </Button>
+            )}
+            {isFollowersOnly && (
+              <Button
+                onClick={() => handleFollow(creator)}
+                className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-semibold rounded-full shadow cursor-pointer"
+              >
+                <UserPlus className="w-4 h-4 mr-2" /> Follow
+              </Button>
+            )}
+          </div>
+        </div>
       )}
     </div>
+  )}
+
+  {(isSubscribersOnly || isFollowersOnly) && (
+    <Badge className="absolute top-4 left-4 bg-pink-600/90 text-white border-none shadow">
+      {isSubscribersOnly ? "Subscribers only" : "Followers only"}
+    </Badge>
+  )}
+</div>
+
+
 
     {/* Caption */}
     {canView && (
@@ -568,7 +565,7 @@ useEffect(() => {
     )}
 
     {/* Footer */}
-    <div className="flex items-center justify-between px-5 py-3 border-t border-white/10 bg-slate-950/80">
+    {canView ? <div className="flex items-center justify-between px-5 py-3 border-t border-white/10 bg-slate-950/80">
       <div className="flex gap-2">
       <Button
             variant="ghost"
@@ -599,7 +596,7 @@ useEffect(() => {
         </button>
       </div>
     </div>
-
+      : ""}
     {/* Comments Section */}
     {(commentOpen) && (
       <div className="w-full px-5 pb-4 mt-5 mb-5 space-y-4 animate-fade-in-fast">

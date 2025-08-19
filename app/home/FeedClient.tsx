@@ -73,7 +73,7 @@ export default function App({ creators, users, session}: AppProps) {
       const signedUrlsMap: Record<string, string> = {};
       const postsWithKeys = allPosts.filter(post => typeof post.s3Key === 'string'
         ? post.s3Key
-        : post.s3Key?.key);
+        : session?.user?.following?.some(f => f.creatorId === post.creator) ? post.s3Key?.key : post.s3Key?.blurredKey);
   
       await Promise.all(
         postsWithKeys.map(async (post) => {
@@ -268,13 +268,15 @@ export default function App({ creators, users, session}: AppProps) {
           : 'none';
 
         // Filter posts based on viewableFor
-        const visiblePosts = creator.posts?.filter((post) => {
+        let visiblePosts = creator.posts?.filter((post) => {
           if (isCreator) return true;
           if (status === 'subscriber') return post.viewableFor === 'subscribers' || post.viewableFor === 'followers';
           if (status === 'follower') return post.viewableFor === 'followers';
           return false; // nobody else sees any posts
         });
-
+        visiblePosts = visiblePosts?.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
         if (!visiblePosts || visiblePosts.length === 0) return null;
 
         const handleDeletePost = async (creatorId: string, postId: string) => {
