@@ -5,7 +5,11 @@ import SessionProviderWrapper from "./SessionProviderWrapper";
 
 export const metadata: Metadata = {
   title: "Fanslio",
-  description: "Premium content platform for creators and fans.",
+  description: "Premium AI content platform for creators and fans.",
+  icons: {
+    icon: "/fanslioIconSVG.svg", // Path to your favicon
+     // Optional Apple touch icon
+  },
 };
 
 const geistSans = Geist({

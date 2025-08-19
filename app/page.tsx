@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client'
 
 import { useEffect, useState } from "react";
@@ -5,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { motion, Variants } from "framer-motion";
 import { 
-  Sparkles, 
   TrendingUp, 
   Users, 
   Star, 
@@ -208,8 +208,12 @@ function Landing() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="flex items-center gap-3"
           >
-            <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl transform hover:scale-110 transition-transform duration-200">
-              <Sparkles className="w-6 h-6 text-white" />
+            <div className="rounded-xl">
+              <img
+                src="/fanslioIconSVG.svg"
+                alt="Fanslio Icon"
+                className="w-10 h-10" // adjust size
+              />
             </div>
             <span className="text-2xl font-bold text-[#12251a]">Fanslio</span>
           </motion.div>
@@ -523,8 +527,12 @@ function Landing() {
       transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
       className="flex items-center justify-center gap-3 mb-4"
     >
-      <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl hover:scale-110 transition-transform duration-200">
-        <Sparkles className="w-6 h-6 text-white" />
+      <div className="">
+      <img
+                src="/fanslioIconSVG.svg"
+                alt="Fanslio Icon"
+                className="w-10 h-10" // adjust size
+              />
       </div>
       <span className="text-2xl font-bold text-gray-900">Fanslio</span>
     </motion.div>
