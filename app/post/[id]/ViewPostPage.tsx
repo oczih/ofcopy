@@ -45,7 +45,7 @@ export default function App({ creators, users, session, posts, postId }: AppProp
         return;
       }
       try {
-        const key = post.s3Key.replace(/^\/+/, ''); // Remove leading slash
+        const key = post.s3Key // Remove leading slash
         const res = await fetch("/api/media/download-url", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

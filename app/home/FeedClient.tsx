@@ -100,7 +100,7 @@ export default function App({ creators, users, session}: AppProps) {
     }
   
     fetchSignedUrls();
-  }, [postKeysSignature, creators]);
+  }, [postKeysSignature, creators, session?.user.following]);
   
 
   const handleResendVerification = async () => {

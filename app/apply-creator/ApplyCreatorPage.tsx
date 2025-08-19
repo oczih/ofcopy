@@ -214,7 +214,7 @@ if (session.user.email !== allowedEmail) {
         }
       
         const formDataToSend = new FormData();
-        formDataToSend.append("s3Key", s3Key);
+        formDataToSend.append("s3Key", s3Key.key);
         formDataToSend.append("fileName", file.name);
         // Add any other fields needed for your /apply endpoint
       

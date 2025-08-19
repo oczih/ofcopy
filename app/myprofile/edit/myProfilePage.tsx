@@ -265,7 +265,7 @@ export default function App({creators, session}: AppProps) {
 
                   // 5. Save avatar URL to user profile
                   await userservice.update(session.user._id, {
-                    avatarKey: s3Key,
+                    avatarKey: s3Key.key,
                   });
                   // 6. Update frontend state
                   const key = creator?.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
