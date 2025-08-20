@@ -297,7 +297,7 @@ export interface VerificationTokenDocument extends Document {
 }
 
 const verificationTokenSchema = new Schema<VerificationTokenDocument>({
-  userId: { type: Schema.Types.ObjectId, required: true, ref: 'OFUser' },
+  userId: { type: Schema.Types.ObjectId, ref: 'OFUser' },
   token: { type: String, required: true },
   expiresAt: { type: Date, required: true },
 }, { timestamps: true });

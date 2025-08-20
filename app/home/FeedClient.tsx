@@ -168,6 +168,7 @@ export default function App({ creators, users, session}: AppProps) {
       console.error("Error following creator:", err);
     }
   };
+  console.log(JSON.stringify(session.user))
   return (
     <div className="min-h-screen w-full relative">
       <Toaster position="top-center" reverseOrder={false} />
@@ -216,7 +217,9 @@ export default function App({ creators, users, session}: AppProps) {
 
           {/* Dashboard */}
           {!session?.user?.emailVerified && showBanner &&
-        (session.user as User).oauthProvider === "credentials" &&  (
+        session.user.oauthProvider
+        === 
+        "credentials" &&  (
       <div className="flex justify-center z-30 px-4">
         <div className="w-full max-w-md bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-lg relative overflow-hidden group text-sm">
           <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-cyan-500/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>

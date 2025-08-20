@@ -210,7 +210,6 @@ export type SafeUser = Partial<
     User,
     | "password"
     | "accessToken"
-    | "oauthProvider"
     | "emailVerificationToken"
     | "emailVerificationExpires"
     | "lastVerificationEmailSentAt"
@@ -221,4 +220,5 @@ export type SafeUser = Partial<
   name?: string;
   email?: string;
   image?: string;
+  oauthProvider: string; // <- required
 };

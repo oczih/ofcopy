@@ -15,22 +15,29 @@ export async function verifyPassword(password: string, hashedPassword: string): 
 }
 
 export async function createVerificationToken(
-  userId: string,
+  userId: string | null,
   email: string,
   type: 'email_verification' | 'password_reset' | 'password_confirm' | 'password_add',
-  expiresInMs: number = 24 * 60 * 60 * 1000 // default 24 hours
+  expiresInMs: number = 24 * 60 * 60 * 1000
 ) {
-  const token = generateVerificationToken();
-  const expiresAt = new Date(Date.now() + expiresInMs); // match schema field name
+  let token: string;
+  let exists: string | null;
+
+  // Loop until we find a token that doesn't exist in the DB
+  do {
+    token = crypto.randomBytes(32).toString('hex');
+    exists = await VerificationToken.findOne({ token });
+  } while (exists);
+
+  const expiresAt = new Date(Date.now() + expiresInMs);
 
   await VerificationToken.create({
     userId,
     email,
     token,
-    expiresAt, // match schema
+    expiresAt,
     type
   });
 
   return token;
 }
-

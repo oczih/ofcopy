@@ -1,72 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongoose';
-import OFUser from '@/app/models/usermodel';
+import OFUser, { VerificationToken } from '@/app/models/usermodel';
 import { hashPassword, createVerificationToken } from '@/lib/auth-utils';
 import { sendVerificationEmail } from '@/lib/email';
 
-
 export async function POST(request: NextRequest) {
-  console.log("bvoddy:", request.body)
   try {
     const { email, password, username } = await request.json();
-    console.log('Received username:', username);
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
-      );
+
+    if (!email || !password || !username) {
+      return NextResponse.json({ error: 'Email, username and password are required' }, { status: 400 });
     }
 
     await connectDB();
-
-    // Check if user already exists
     const normalizedEmail = email.trim().toLowerCase();
 
-    const existingUser = await OFUser.findOne({ email: normalizedEmail });
+    // 1️⃣ Check if a verified user already exists
+    const existingUser = await OFUser.findOne({ $or: [{ email: normalizedEmail }, { username }] });
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'User with this email already exists' },
-        { status: 409 }
-      );
+      return NextResponse.json({ error: 'User with this email or username already exists' }, { status: 409 });
     }
 
-    if (existingUser) {
-      return NextResponse.json(
-        { error: 'User with this email or username already exists' },
-        { status: 409 }
-      );
+    // 2️⃣ Check if a pending verification already exists
+    const pending = await VerificationToken.findOne({ email: normalizedEmail });
+    if (pending) {
+      await sendVerificationEmail(email, pending.token);
+      return NextResponse.json({
+        message: 'A verification email has already been sent. Please check your inbox.'
+      });
     }
 
-    // Hash password
+    // 3️⃣ Hash password
     const hashedPassword = await hashPassword(password);
 
-    // Create user (not verified yet)
+    // 4️⃣ Create verification token and save pending signup info in one step
+    const verificationToken = await createVerificationToken(
+      null,
+      normalizedEmail,
+      'email_verification',
+      24 * 60 * 60 * 1000
+    );
+
+    // Create the actual user
     const user = await OFUser.create({
       email: normalizedEmail,
-      password: hashedPassword,
       username,
-      name: username,
+      password: hashedPassword,
       emailVerified: false,
-      oauthProvider: 'credentials'
+      oauthProvider: 'credentials',
+      name: username
     });
-    
-    // Create verification token
-    const verificationToken = await createVerificationToken(user.id, email, 'email_verification', 24 * 60 * 60 * 1000);
-
-    // Send verification email
+    if(!user){
+      return NextResponse.json({ error: 'User creation failed' }, { status: 500 });
+    }
+    // 5️⃣ Send verification email
     await sendVerificationEmail(email, verificationToken);
 
     return NextResponse.json({
-      message: 'Registration successful! Please check your email to verify your account.',
-      userId: user._id
+      message: 'Registration initiated! Please check your email to verify your account.'
     });
 
   } catch (error) {
-    
     console.error('Registration error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}   
+}

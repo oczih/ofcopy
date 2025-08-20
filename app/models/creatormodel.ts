@@ -31,7 +31,7 @@ export interface CreatorDocument extends mongoose.Document {
   bio: string;
   googleId: string | null;
   avatarKey?: string;
-  oauthProvider?: string;
+  oauthProvider: string;
   oauthId?: string;
   gender: Gender;
   lastUsernameChange?: Date;

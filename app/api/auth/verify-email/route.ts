@@ -16,23 +16,18 @@ export async function GET(request: NextRequest) {
 
     const verificationRecord = await VerificationToken.findOne({
       token,
-      expiresAt: { $gt: new Date() } // token not expired
+      expiresAt: { $gt: new Date() }
     });
-
+    
     if (!verificationRecord) {
       return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/login?error=invalid-or-expired-token`);
     }
-
-    const user = await OFUser.findByIdAndUpdate(
-      verificationRecord.userId,
-      { emailVerified: true },
-      { new: true }
+    await OFUser.findOneAndUpdate(
+      { email: email.toLowerCase() },
+      { $set: { emailVerified: true } }
     );
 
-    if (!user) {
-      return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/login?error=user-not-found`);
-    }
-
+    // Remove the temporary token record
     await VerificationToken.deleteOne({ _id: verificationRecord._id });
 
     return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/login?verified=true`);

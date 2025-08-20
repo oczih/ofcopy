@@ -1,4 +1,4 @@
-import NextAuth, { NextAuthOptions, RequestInternal, Session, User } from "next-auth";
+import NextAuth, { NextAuthOptions, RequestInternal,  User } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import TwitterProvider from "next-auth/providers/twitter";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -137,10 +137,10 @@ export const authOptions: NextAuthOptions = {
             email: fallbackEmail,
             username: uniqueUsername,
             name: user.name,
-            avatar: user.avatarKey,
-            oauthProvider: "twitter",
-            oauthId: twitterId,
-            emailVerified: true, // OAuth emails are pre-verified
+            avatar: user.image,
+            oauthProvider: provider,  // "google" or "twitter"
+            oauthId: providerId,
+            emailVerified: true,
           });
         }
 
@@ -163,64 +163,63 @@ export const authOptions: NextAuthOptions = {
 
     async jwt({ token, user, account }) {
       if (user) {
-        // Completely replace old token values
         return {
           id: user._id,
           username: user.username,
           email: user.email,
           membership: user.membership ?? false,
           accessToken: account?.access_token ?? null,
+          oauthProvider: user.oauthProvider,
         };
       }
-      // Keep token as is only if it's valid
       return token;
     },
 
     async session({ session, token }) {
-      console.log("[Session] Callback triggered with token:", token);
-    
       if (!token || !session.user) return session;
     
       try {
         await connectDB();
     
-        // Always fetch by ID, ignore email/sub for safety
         const user = await OFUser.findById(token.id);
     
         let isCreator = false;
+
         if (user) {
-          const creator = await (await import("@/app/models/creatormodel")).default.findOne({ email: user.email });
+          const creatorModel = await import("@/app/models/creatormodel");
+          const creator = await creatorModel.default.findOne({ email: user.email });
           isCreator = !!creator;
     
+          // Map safely to session.user
           session.user._id = user._id.toString();
-          session.user.username = user.username;
-          session.user.email = user.email;
-          session.user.avatarKey = user.avatarKey;
-          session.user.name = user.name;
-          session.user.membership = user.membership;
-          session.user.hasAccess = user.hasAccess;
-          session.user.lastUsernameChange = user.lastUsernameChange;
-          session.user.isUsernameChangeBlocked = user.isUsernameChangeBlocked;
-          session.user.subscriptions = user.subscriptions || [];
-          session.user.notifications = user.notifications || [];
-          session.user.following = user.following || [];
+          session.user.username = user.username ?? "";
+          session.user.email = user.email ?? "";
+          session.user.avatarKey = user.avatarKey ?? "";
+          session.user.name = user.name ?? "";
+          session.user.membership = user.membership ?? false;
+          session.user.hasAccess = user.hasAccess ?? false;
+          session.user.lastUsernameChange = user.lastUsernameChange ?? null;
+          session.user.isUsernameChangeBlocked = user.isUsernameChangeBlocked ?? false;
+          session.user.subscriptions = user.subscriptions ?? [];
+          session.user.notifications = user.notifications ?? [];
+          session.user.following = user.following ?? [];
           session.user.creator = isCreator;
-          session.user.bio = user.bio;
-          session.user.emailVerified = user.emailVerified;
-          session.user.location = user.location;
-          session.user.createdAt = user.createdAt;
-          session.user.wallet = user.wallet;
-          session.user.paymentmethods = user.paymentmethods;
+          session.user.bio = user.bio ?? "";
+          session.user.emailVerified = user.emailVerified ?? false;
+          session.user.location = user.location ?? "";
+          session.user.createdAt = user.createdAt ?? new Date();
+          session.user.wallet = user.wallet ?? 0;
+          session.user.paymentmethods = user.paymentmethods ?? [];
+          session.user.oauthProvider = token.oauthProvider as string;
         }
-    
-        (session as Session).accessToken = token.accessToken as string;
+        
+        session.accessToken = token.accessToken as string | undefined;
         return session;
       } catch (err) {
         console.error("[Session] Error fetching user:", err);
         return session;
       }
     },
-
     async redirect({ url, baseUrl }) {
       if (url.startsWith("/")) return `${baseUrl}${url}`;
       if (new URL(url).origin === baseUrl) return url;

@@ -39,7 +39,7 @@ export default function SignupPage() {
     password: '',
     confirmPassword: '',
   });
-
+  
   // Fun username generator
   function generateUsername() {
     const adjectives = [

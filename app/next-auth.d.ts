@@ -1,6 +1,6 @@
 // types/next-auth.d.ts
 import { DefaultSession, DefaultUser } from "next-auth";
-import { Following, Subscription } from "./types";
+import { Following, Subscription, Notification } from "./types";
 
 declare module "next-auth" {
   interface User extends DefaultUser {
@@ -21,6 +21,7 @@ declare module "next-auth" {
     following?: Following[];
     creator?: boolean;
     emailVerified?: boolean;
+    oauthProvider: string; // optional to avoid TS errors
   }
 
   interface Session extends DefaultSession {

@@ -44,7 +44,7 @@ export default function LoginPageWrapper() {
     const error = searchParams.get('error');
 
     if (verified === 'true') {
-      toast.success('Email verified successfully! You can now sign in.');
+      toast.success('Email verified successfully!');
     }
 
     if (error) {

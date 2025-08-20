@@ -18,7 +18,7 @@ interface AppProps {
   users: User[];
 }
 
-export default function App({creators}: AppProps ) {
+export default function App({creators, users}: AppProps ) {
   const [searchQuery, setSearchQuery] = useState("");
   const [creatorsWithMedia, setCreatorsWithMedia] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +29,7 @@ export default function App({creators}: AppProps ) {
       postKeys: (c.posts || []).map(p => p.s3Key)
     }))
   );
+  console.log(users)
   useEffect(() => {
     const fetchCreators = async () => {
       try {
