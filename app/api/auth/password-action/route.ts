@@ -42,13 +42,14 @@ export async function POST(request: NextRequest) {
         15 * 60 * 1000 // 15 minutes
       );
   
-      await VerificationToken.findByIdAndUpdate(confirmationToken, {
-        tempPassword: hashedPassword,
-        originalAction: isAddingPassword ? 'add' : 'reset',
-        expiresAt: {
-            Date
+      await VerificationToken.findOneAndUpdate(
+        { token: confirmationToken },  // match by token
+        {
+          tempPassword: hashedPassword,
+          originalAction: isAddingPassword ? 'add' : 'reset',
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 mins
         }
-      });
+      );
   
       // Send appropriate email
       if (isAddingPassword) {
