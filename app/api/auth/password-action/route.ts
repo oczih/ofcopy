@@ -3,7 +3,6 @@ import { connectDB } from '@/lib/mongoose';
 import OFUser, { VerificationToken } from "@/app/models/usermodel";
 import { createVerificationToken } from '@/lib/auth-utils';
 import { sendPasswordResetEmail, sendPasswordAddConfirmationEmail } from '@/lib/email';
-import bcrypt from 'bcryptjs';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-client';
 
@@ -32,7 +31,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'User already has a password set' }, { status: 400 });
       }
   
-      const hashedPassword = await bcrypt.hash(password, 12);
+      //const hashedPassword = await bcrypt.hash(password, 12);
   
       // Create a token for password confirmation
       const confirmationToken = await createVerificationToken(
@@ -43,9 +42,8 @@ export async function POST(request: NextRequest) {
       );
   
       await VerificationToken.findOneAndUpdate(
-        { token: confirmationToken },  // match by token
+        { token: confirmationToken },
         {
-          tempPassword: hashedPassword,
           originalAction: isAddingPassword ? 'add' : 'reset',
           expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 mins
         }
