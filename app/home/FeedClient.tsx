@@ -168,7 +168,6 @@ export default function App({ creators, users, session}: AppProps) {
       console.error("Error following creator:", err);
     }
   };
-  console.log(JSON.stringify(session.user))
   return (
     <div className="min-h-screen w-full relative">
       <Toaster position="top-center" reverseOrder={false} />

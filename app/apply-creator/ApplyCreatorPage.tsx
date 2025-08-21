@@ -1,16 +1,15 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
 import { Camera, X, ZoomIn, ZoomOut } from 'lucide-react';
 import Cropper, { Area } from 'react-easy-crop';
 import getCroppedImg from '@/lib/utils'
-import { uploadContent } from "@/app/services/uploadmediaservice";
-import Image from "next/image";
 import { Creator, User } from "../types";
 import toast, { Toaster } from "react-hot-toast";
 import { Session } from "next-auth";
+import { uploadContent } from "../services/uploadmediaservice";
 
 interface AppProps {
     creators: Creator[];
@@ -26,26 +25,45 @@ export default function App({ users, session}: AppProps) {
   const [success, setSuccess] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(true)
   const [cropModalOpen, setCropModalOpen] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>([]);
+  const [previews, setPreviews] = useState({
+    profilePic: "",
+  });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [messages, setMessages] = useState<{
+    [key: string]: string;
+  }>({});
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
-  const [formData, setFormData] = useState({
+  type FormDataType = {
+    s3Key: string;
+    country: string;
+    gender: string;
+    handle: string;
+    displayName: string;
+    bio: string;
+    subscriptionPrice: string;
+    profilePic: File | null;
+    idFrontPhoto: File | null;
+    idBackPhoto: File | null;
+    selfieWithId: File | null;
+    birthDate: string;
+    fullLegalName: string;
+  };
+  const [formData, setFormData] = useState<FormDataType>({
     s3Key: "",
     country: "",
     gender: "",
-    profilePic: null as File | null,
     handle: "",
     displayName: "",
     bio: "",
-    subscriptionPrice: "3.99",
-    idFrontPhoto: null as string | null,
-    idBackPhoto: null as string | null,
-    selfieWithId: null as string | null,
+    subscriptionPrice: "",
+    profilePic: null,
+    idFrontPhoto: null,
+    idBackPhoto: null,
+    selfieWithId: null,
     birthDate: "",
-    fullLegalName: ""
+    fullLegalName: "",
   });
 
   const totalSteps = 6;
@@ -65,66 +83,65 @@ export default function App({ users, session}: AppProps) {
   
     checkUsername();
   }, [formData.handle, users]);
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (success && session?.user && !session.user.creator) {
-      interval = setInterval(async () => {
-        const res = await fetch(`/api/users/${session.user._id}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.user?.creator) {
-            //await update();
-            window.location.reload();
-          }
-        }
-      }, 10000);
-    }
-    return () => clearInterval(interval);
-  }, [success, session]);
+
   useEffect(() => {
     return () => {
-      previews.forEach((preview) => URL.revokeObjectURL(preview));
+      Object.values(previews).forEach((url) => {
+        if (url) URL.revokeObjectURL(url);
+      });
     };
   }, [previews]);
-  if (status === "loading") return null;
   if (!session?.user) {
     if (typeof window !== "undefined") router.replace("/");
     return null;
   }
-  const allowedEmail = process.env.SECEMAIL;
 
 if (!session?.user) {
   if (typeof window !== "undefined") router.replace("/");
   return null;
 }
 
-// Restrict access to only your email
-if (session.user.email !== allowedEmail) {
-  if (typeof window !== "undefined") router.replace("/"); // redirect
-}
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setError("");
   };
 
-  const handleFileChange = (key: string, file: File | null) => {
-    if (file) {
-      setSelectedImage(file);
-      setCropModalOpen(true);
-    }
-  };
+  function handleFileChange(
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: "profilePic" | "idFrontPhoto" | "idBackPhoto" | "selfieWithId"
+  ) {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
   
-  function handleFileIdPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const selectedFiles = Array.from(e.target.files ?? []);
-    const newFiles = selectedFiles.filter(
-      file => !files.some(f => f.name === file.name && f.size === file.size)
-    );
-    setFiles(prev => [...prev, ...newFiles]);
-    setPreviews(prev => [
-      ...prev,
-      ...newFiles.map(file => URL.createObjectURL(file))
-    ]);
+    const maxSize = 200 * 1024 * 1024;
+    if (selectedFile.size > maxSize) {
+      setMessages(prev => ({
+        ...prev,
+        [field]: `File too large: ${selectedFile.name}. Max size is 200MB.`,
+      }));
+      return;
+    }
+  
+    if (field === "profilePic") {
+      // Open cropper modal
+      setSelectedImage(selectedFile);
+      setCropModalOpen(true);
+    } else {
+      // Directly assign other files
+      setFormData(prev => ({
+        ...prev,
+        [field]: selectedFile,
+      }));
+      setMessages(prev => ({
+        ...prev,
+        [field]: `File uploaded successfully: ${selectedFile.name}`,
+      }));
+    }
   }
+  
+  
+  
+  
   const nextStep = () => {
     if (validateCurrentStep()) {
       setCurrentStep(prev => Math.min(prev + 1, totalSteps));
@@ -185,50 +202,91 @@ if (session.user.email !== allowedEmail) {
     }
     return true;
   };
-  
+  interface UploadedFileMeta {
+    s3Key: string;
+    fileName: string;
+    type: string;
+  }
+  interface CreatorApplicationPayload {
+    email: string;
+    username: string;
+    user: string;
+    country?: string;
+    gender?: string;
+    handle?: string;
+    displayName?: string;
+    bio?: string;
+    subscriptionPrice?: string;
+    birthDate?: string;
+    fullLegalName?: string;
+    profilePic?: UploadedFileMeta;
+    idFrontPhoto?: UploadedFileMeta;
+    idBackPhoto?: UploadedFileMeta;
+    selfieWithId?: UploadedFileMeta;
+    [key: string]: string | UploadedFileMeta | undefined;
+  }
+  interface UploadedFile {
+    key: string;
+    s3Key: {
+      key: string;
+      blurredKey: string;
+    };
+    file: File;
+  }
   const handleSubmit = async () => {
     if (!validateCurrentStep()) return;
-    
+  
     setLoading(true);
     setError("");
-    
+  
     try {
-      const formDataToSend = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value instanceof File) {
-          formDataToSend.append(key, value);
-        } else if (value !== null) {
-          formDataToSend.append(key, String(value));
-        }
-      });
-      
-      formDataToSend.append("email", session.user.email || "");
-      formDataToSend.append("username", session.user.name || session.user.email || "");
+      // First, handle files individually
+      const uploadPromises: Promise<UploadedFile | null>[] = Object.entries(formData)
+  .filter(([, value]) => value instanceof File)
+  .map(async ([key, file]) => {
+    const typedFile = file as File;
+    const s3Key = await uploadContent(typedFile);
+    if (!s3Key) {
+      console.error(`Failed to get s3Key for file: ${typedFile.name}`);
+      return null;
+    }
+    return { key, s3Key, file: typedFile };
+  });
 
-      const uploadPromises = files.map(async (file) => {
-        const s3Key = await uploadContent(file);
-      
-        if (!s3Key) {
-          console.error("Failed to get s3Key for file:", file.name);
-          return;
-        }
-      
-        const formDataToSend = new FormData();
-        formDataToSend.append("s3Key", s3Key.key);
-        formDataToSend.append("fileName", file.name);
-        // Add any other fields needed for your /apply endpoint
-      
-        const response = await fetch(`/api/creators/apply`, {
-          method: "POST",
-          body: formDataToSend,
-        });
-      
-        if (!response.ok) {
-          console.error('Post creation with file failed');
-        }
+const uploadedFiles = (await Promise.all(uploadPromises)).filter(
+  (f): f is UploadedFile => f !== null
+);
+  
+      // Prepare payload for backend
+      const payload: CreatorApplicationPayload = {
+        email: session.user.email || "",
+        username: session.user.name || session.user.email || "",
+        user: session.user._id,
+        ...Object.fromEntries(
+          Object.entries(formData).filter(([, value]) => !(value instanceof File))
+        ),
+      };
+  
+      // Add uploaded S3 keys to payload
+      uploadedFiles.forEach(({ key, s3Key, file }) => {
+        payload[key] = {
+          s3Key: s3Key.key,
+          fileName: file.name,
+          type: file.type,
+        };
       });
-      
-      await Promise.all(uploadPromises);
+  
+      // Send metadata to backend
+      const response = await fetch("/api/creators/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to submit application");
+      }
+  
       setSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -236,6 +294,8 @@ if (session.user.email !== allowedEmail) {
       setLoading(false);
     }
   };
+  
+  
   
   const renderStep = () => {
     switch (currentStep) {
@@ -563,7 +623,7 @@ if (session.user.email !== allowedEmail) {
                             Cancel
                           </button>
                           <button
-                            className="flex-1 px-6 py-3 rounded-xl text-sm font-medium bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white transition-all duration-200 shadow-lg"
+                            className="flex-1 px-6 py-3 rounded-xl text-sm font-medium cursor-pointer bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white transition-all duration-200 shadow-lg"
                             onClick={async () => {
                               if (!croppedAreaPixels) {
                                 toast.error("Please select an area to crop.");
@@ -580,7 +640,10 @@ if (session.user.email !== allowedEmail) {
                                 ...prev,
                                 profilePic: new File([cropped], "profile.jpg"),
                               }));
-                            
+                              setPreviews(prev => ({
+                                ...prev,
+                                profilePic: URL.createObjectURL(cropped),
+                              }));
                               setCropModalOpen(false);
                             }}
                             
@@ -593,34 +656,49 @@ if (session.user.email !== allowedEmail) {
                   </>
                 )}
                 
-                <div className="flex justify-center">
-                  <label
-                    htmlFor="profilePicUpload"
-                    className="relative w-40 h-40 flex items-center justify-center rounded-full bg-white/10 border-2 border-dashed cursor-pointer hover:bg-white/20 transition"
-                  >
-                    {formData.profilePic ? (
-                      <Image
-                        src={URL.createObjectURL(formData.profilePic)}
-                        alt="Profile preview"
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    ) : (
-                      <Camera className="w-6 h-6" />
-                    )}
-                    {/* Optional overlay icon to indicate "change" */}
-                    <div className="absolute bottom-0 right-0 bg-white p-1 rounded-full">
-                      <Camera className="w-4 h-4 text-black" />
-                    </div>
-                  </label>
+                <div className="flex flex-col items-center">
+  <label
+    htmlFor="profilePicUpload"
+    className="relative w-40 h-40 flex items-center justify-center rounded-full bg-white/10 border-2 border-dashed cursor-pointer hover:bg-white/20 transition"
+  >
+    {previews.profilePic ? (
+      <img
+        src={previews.profilePic}
+        alt="Profile preview"
+        className="w-full h-full rounded-full object-cover"
+      />
+    ) : (
+      <Camera className="w-6 h-6 text-white" />
+    )}
 
-                        <input
-                          id="profilePicUpload"
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleFileChange("profilePic", e.target.files?.[0] || null)}
-                          className="hidden"
-                        />
-                      </div>
+    {/* Overlay camera icon */}
+    <div className="absolute bottom-0 right-0 bg-white p-1 rounded-full shadow">
+      <Camera className="w-4 h-4 text-black" />
+    </div>
+  </label>
+
+  <input
+    id="profilePicUpload"
+    type="file"
+    accept="image/*"
+    onChange={(e) => handleFileChange(e, "profilePic")}
+    className="hidden"
+  />
+
+  {messages.profilePic && (
+    <p
+      className={`text-center text-sm mt-2 ${
+        messages.profilePic.includes("successful")
+          ? "text-green-400"
+          : "text-red-400"
+      }`}
+    >
+      {messages.profilePic}
+    </p>
+  )}
+</div>
+
+
 
                 </div>
               </div>
@@ -696,14 +774,14 @@ if (session.user.email !== allowedEmail) {
               <label className="block mb-2 text-white font-medium">Monthly Subscription Price (USD)</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
-                <Input
+                <input
                   type="number"
                   min="3.99"
                   max="100"
                   step="0.01"
                   value={formData.subscriptionPrice}
                   onChange={(e) => handleInputChange("subscriptionPrice", e.target.value)}
-                  className="pl-8"
+                   className="pl-8 w-full px-4 py-2 hover:bg-white/30 rounded-xl focus:outline focus:outline-white"
                 />
               </div>
               <p className="text-sm text-gray-400 mt-2">
@@ -749,16 +827,17 @@ if (session.user.email !== allowedEmail) {
 
             <div>
               <label className="block mb-2 text-white font-medium">Full Legal Name</label>
-              <Input
+              <input
                 value={formData.fullLegalName}
                 onChange={(e) => handleInputChange("fullLegalName", e.target.value)}
                 placeholder="As shown on your ID"
+                className="w-full px-4 py-2 pl-4 hover:bg-white/30 rounded-xl focus:outline focus:outline-white"
               />
             </div>
 
             <div>
               <label className="block mb-2 text-white font-medium">Date of Birth</label>
-              <Input
+              <input
                 type="date"
                 value={formData.birthDate}
                 onChange={(e) => handleInputChange("birthDate", e.target.value)}
@@ -766,29 +845,31 @@ if (session.user.email !== allowedEmail) {
             </div>
 
             <div>
-              <label className="block mb-2 text-white font-medium">ID Front Photo</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileIdPhotoChange}
-                className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-500 file:text-white hover:file:bg-pink-600"
-              />
-              {formData.idFrontPhoto && (
-                <p className="text-green-400 text-sm mt-1">✓ ID front photo uploaded</p>
-              )}
-            </div>
+            <label className="block mb-2 text-white font-medium">ID Front Photo</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleFileChange(e, "idFrontPhoto")}
+              className="block w-full text-sm text-gray-300 cursor-pointer file:cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full 
+                        file:border-0 file:text-sm file:font-semibold file:bg-pink-500 file:text-white 
+                        hover:file:bg-pink-600"
+            />
+            {formData.idFrontPhoto && (
+              <p className="text-green-400 text-sm mt-1">✓ ID front photo uploaded</p>
+            )}
+          </div>
 
             <div>
               <label className="block mb-2 text-white font-medium">ID Back Photo (if applicable)</label>
               <input
                 type="file"
                 accept="image/*"
-                onChange={handleFileIdPhotoChange}
-                className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-500 file:text-white hover:file:bg-gray-600"
+                onChange={(e) => handleFileChange(e, "idBackPhoto")}
+                className="block w-full text-sm text-gray-300 file:mr-4 cursor-pointer file:cursor-pointer file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-500 file:text-white hover:file:bg-gray-600"
               />
               {formData.idBackPhoto && (
-                <p className="text-green-400 text-sm mt-1">✓ ID back photo uploaded</p>
-              )}
+              <p className="text-green-400 text-sm mt-1">✓ ID back photo uploaded</p>
+            )}
             </div>
 
             <div>
@@ -796,7 +877,7 @@ if (session.user.email !== allowedEmail) {
               <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-2">
                 <p className="text-sm text-yellow-200">
                   <strong>Hold a sign with:</strong><br/>
-                  1. Today`&apos;`s date: {new Date().toLocaleDateString()}<br/>
+                  1. Today&apos;s date: {new Date().toLocaleDateString()}<br/>
                   2. Your date of birth<br/>
                   3. Your full legal name<br/>
                   4. The word &quot;Fanslio&quot;
@@ -805,12 +886,12 @@ if (session.user.email !== allowedEmail) {
               <input
                 type="file"
                 accept="image/*"
-                onChange={handleFileIdPhotoChange}
-                className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-500 file:text-white hover:file:bg-pink-600"
+                onChange={(e) => handleFileChange(e, "selfieWithId")}
+                className="block w-full text-sm text-gray-300 cursor-pointer file:cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-500 file:text-white hover:file:bg-pink-600"
               />
               {formData.selfieWithId && (
-                <p className="text-green-400 text-sm mt-1">✓ Selfie with ID uploaded</p>
-              )}
+              <p className="text-green-400 text-sm mt-1">✓ Selfie with ID and Sign uploaded</p>
+            )}
             </div>
 
             <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
@@ -819,10 +900,10 @@ if (session.user.email !== allowedEmail) {
                 The Fanslio team will review your application within <strong>24-48 hours</strong>.
               </p>
               <p className="text-sm text-gray-300 mb-2">
-              &quot;You&apos;ll&quot; receive an email once approved or if additional documentation is needed.
+              You&apos;ll receive an email once approved or if additional documentation is needed.
               </p>
               <p className="text-sm text-gray-300">
-                Questions? Contact us at <strong>ashleygreybiz@gmail.com</strong>
+                Questions? Contact us at <strong>support@fanslio.com</strong>
               </p>
             </div>
           </div>
@@ -845,17 +926,17 @@ if (session.user.email !== allowedEmail) {
                 <h3 className="font-semibold text-white">What happens next?</h3>
                 <div className="text-gray-300 text-sm space-y-2">
                   <p>✓ Our team will review your application within 24-48 hours</p>
-                  <p>✓ &quot;You&apos;ll&quot; receive an email confirmation once approved</p>
-                  <p>✓ If additional documentation is needed, &quot;we&apos;ll&quot; contact you via email</p>
-                  <p>✓ Add <strong>noreply@fanslio.com</strong> and <strong>help@fanslio.com</strong> to your safe senders list</p>
+                  <p>✓ You&apos;ll receive an email confirmation once approved</p>
+                  <p>✓ If additional documentation is needed, we&apos;ll contact you via email</p>
+                  <p>✓ Add <strong>noreply@mg.fanslio.com</strong> and <strong>support@fanslio.com</strong> to your safe senders list</p>
                 </div>
               </div>
               <p className="text-gray-300 mb-6">
-                Thank you for your interest in becoming a Fanslio creator! &quot;We&apos;re&quot; excited to potentially welcome you to our community.
+                Thank you for your interest in becoming a Fanslio creator! We&apos;re excited to potentially welcome you to our community.
               </p>
-              <Button onClick={() => router.push("/")} className="bg-gradient-to-r from-pink-500 to-purple-600">
+              <button onClick={() => router.push("/home")} className="bg-gradient-to-r p-4 hover:bg-white/30 rounded-full cursor-pointer from-pink-500 to-purple-600">
                 Back to Home
-              </Button>
+              </button>
             </div>
           </main>
         </div>
@@ -913,7 +994,7 @@ if (session.user.email !== allowedEmail) {
                 {currentStep < totalSteps ? (
                   <Button
                     onClick={nextStep}
-                    className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 px-6"
+                    className="bg-gradient-to-r from-pink-500 to-purple-600 cursor-pointer  hover:from-pink-600 hover:to-purple-700 px-6"
                   >
                     Next
                   </Button>
@@ -921,7 +1002,7 @@ if (session.user.email !== allowedEmail) {
                   <Button
                     onClick={handleSubmit}
                     disabled={loading}
-                    className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 px-8"
+                    className="bg-gradient-to-r cursor-pointer from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 px-8"
                   >
                     {loading ? "Submitting..." : "Submit Application"}
                   </Button>

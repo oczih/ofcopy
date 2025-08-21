@@ -6,7 +6,7 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Skeleton } from "../../components/ui/skeleton";
 import { Search, Filter, Sparkles, TrendingUp, Star, Compass } from "lucide-react";
-import toast from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
 import { Creator, User } from "../types";
 import Image from "next/image";
 import { resolveImageUrl } from "@/components/resolveImageUrl";
@@ -155,6 +155,10 @@ export default function App({creators, users}: AppProps ) {
 
   return (
     <div>
+      <Toaster
+      position="top-center"
+      reverseOrder={false}
+    />
       {/* Animated background elements */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse"></div>

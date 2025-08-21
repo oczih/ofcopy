@@ -2,97 +2,106 @@ import { notFound } from 'next/navigation';
 import UserModel from '@/app/models/usermodel';
 import PurchaseModel from '@/app/models/purchasemodel';
 import ProfileContent from '@/components/ProfileContent';
-import CreatorModel from '@/app/models/creatormodel'; // Assuming this is your creator model
-import { MediaPost,Subscriber, Purchase, Follower, User, Creator } from '../types';
+import CreatorModel from '@/app/models/creatormodel';
+import { MediaPost, Subscriber, Purchase, Follower, User, Creator } from '../types';
 import { PostDocument } from '../models/postmodel';
 import { Session } from 'next-auth';
+import { deepSanitize } from '@/lib/fetchDataPage';
 
 const RESERVED_ROUTES = [
   'discover', 'messages', 'settings', 'subscriptions', 'notifications', 'api', 'components',
-  'models', 'services', 'context', 'favicon.ico',
-  'globals.css', 'layout.tsx', 'page.tsx', 'public',
-  'lib', 'ui', 'auth', 'creators', 'stats', 'media',
-  'users', 'upload','uploads', 'settings', 'tos', 'child-policy',
+  'models', 'services', 'context', 'favicon.ico', 'globals.css', 'layout.tsx', 'page.tsx', 'public',
+  'lib', 'ui', 'auth', 'creators', 'stats', 'media', 'users', 'upload','uploads', 'tos', 'child-policy',
 ];
-interface AppProps {
-    creators: Creator[];
-    users: User[];
-    session: Session | null;
-    username: string;
-  }
-export default async function App({ creators, users, session, username }: AppProps) {
-    if (RESERVED_ROUTES.includes(username)) notFound();
-  
-    const user = await UserModel.findOne({ username });
-    if (!user) notFound();
-    console.log("usseri:", user)
-    const isOwnProfile = session?.user?.username === user.username;
-  
-    let relationshipStatus: 'subscriber' | 'follower' | 'none' = 'none';
-    let totalSpent = 0;
-    let purchasedContent: MediaPost[] = [];
-    let creator = null;
-  
-    if (user.creator) {
-      creator = await CreatorModel.findOne({ user: user.id });
-  
-      const viewerId = session?.user?._id;
-  
-      if (creator && viewerId) {
-        const isSubscriber = Array.isArray(creator.subscribers) &&
-  creator.subscribers.some((sub: Subscriber) => sub.userId.toString() === viewerId);
 
-const isFollower = creator.followers &&
-  creator.followers.some((fol: Follower) => fol.userId.toString() === viewerId);
-        console.log("isfollower:", isFollower)
-        if (isSubscriber) {
-          relationshipStatus = 'subscriber';
-        } else if (isFollower) {
-          relationshipStatus = 'follower';
-        }
+interface AppProps {
+  creators: Creator[];
+  users: User[];
+  session: Session | null;
+  username: string;
+}
+
+export default async function App({ creators, users, session, username }: AppProps) {
+  if (RESERVED_ROUTES.some(route => route.toLowerCase() === username.toLowerCase())) notFound();
+
+  const user = await UserModel.findOne({ username: username.toLowerCase() });
+  let creator: Creator | null = null;
+
+  if (!user) {
+    creator = await CreatorModel.findOne({ username: username.toLowerCase() });
+    if (!creator) notFound();
+  } else if (user.creator) {
+    creator = await CreatorModel.findOne({ user: user._id });
+  }
+
+  const isOwnProfile = (() => {
+    if (!session?.user) return false;
   
-        totalSpent = await getTotalSpentOnCreator(viewerId, creator._id.toString());
+    const sessionUsername = session?.user?.username?.toLowerCase();
+  
+    if (creator?.user) {
+      if (String(session.user._id) === String(creator.user)) {
+        return true;
       }
     }
   
-    function isPostDocument(post: PostDocument): post is PostDocument {
-      return post && typeof post === 'object' && '_id' in post;
+    if (user?.username) {
+      return sessionUsername === user.username.toLowerCase();
     }
   
-    function transformPostDocumentToMediaPost(postDoc: PostDocument): MediaPost {
-      const postObject = postDoc.toObject ? postDoc.toObject() : postDoc;
-      return {
-        ...postObject,
-        _id: postObject._id.toString(),
-      };
-    }
-  
-    if (session?.user?._id) {
-      // Tell TS that purchases have populated postId as PostDocument or string
-      const purchases = await PurchaseModel.find({ userId: session.user._id }).populate('postId') as Purchase<PostDocument>[];
-  
-      purchasedContent = purchases
-        .map(p => p.postId)
-        .filter(isPostDocument)
-        .map(transformPostDocumentToMediaPost);
-    }
-      
-    return (
-        <ProfileContent
-          userViewed={JSON.parse(JSON.stringify(user))}
-          viewingUser={session?.user && JSON.parse(JSON.stringify(session?.user)) || null}
-          purchasedContent={purchasedContent}
-          totalSpent={totalSpent}
-          relationshipStatus={relationshipStatus}
-          isOwnProfile={isOwnProfile}
-          users={users}
-          creators={creators}
-          session={session}
-        />
-    );
+    return false;
+  })();
+  console.log(creator && creator.username)
+  console.log(session?.user._id)
+  console.log(creator)
+  let relationshipStatus: 'subscriber' | 'follower' | 'none' = 'none';
+  let totalSpent = 0;
+  let purchasedContent: MediaPost[] = [];
+
+  if (creator && session?.user?._id) {
+    const viewerId = session.user._id.toString();
+
+    const isSubscriber = Array.isArray(creator.subscribers) &&
+      creator.subscribers.some((sub: Subscriber) => sub.userId.toString() === viewerId);
+
+    const isFollower = Array.isArray(creator.followers) &&
+      creator.followers.some((fol: Follower) => fol.userId.toString() === viewerId);
+
+    if (isSubscriber) relationshipStatus = 'subscriber';
+    else if (isFollower) relationshipStatus = 'follower';
+
+    totalSpent = await getTotalSpentOnCreator(viewerId, creator._id.toString());
   }
-  
-  async function getTotalSpentOnCreator(viewerId: string, creatorId: string) {
-    const purchases = await PurchaseModel.find({ userId: viewerId, creatorId });
-    return purchases.reduce((sum: number, p: { price: number }) => sum + p.price, 0);
+
+  if (session?.user?._id) {
+    const purchases = await PurchaseModel.find({ userId: session.user._id }).populate('postId') as Purchase<PostDocument>[];
+
+    purchasedContent = purchases
+      .map(p => p.postId)
+      .filter((post): post is PostDocument => post && typeof post === 'object' && '_id' in post)
+      .map(post => ({
+        ...post.toObject(),
+        _id: post._id,
+      }));
   }
+  const sanitizedCreator = creator ? deepSanitize(JSON.parse(JSON.stringify(creator))) : null;
+  return (
+    <ProfileContent
+      userViewed={JSON.parse(JSON.stringify(user || creator))}
+      viewingUser={session?.user ? JSON.parse(JSON.stringify(session.user)) : null}
+      purchasedContent={purchasedContent}
+      totalSpent={totalSpent}
+      relationshipStatus={relationshipStatus}
+      isOwnProfile={!!isOwnProfile}
+      users={users}
+      creators={creators}
+      session={session}
+      creator={sanitizedCreator}
+    />
+  );
+}
+
+async function getTotalSpentOnCreator(viewerId: string, creatorId: string) {
+  const purchases = await PurchaseModel.find({ userId: viewerId, creatorId });
+  return purchases.reduce((sum: number, p: { price: number }) => sum + (p.price || 0), 0);
+}

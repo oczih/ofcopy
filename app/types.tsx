@@ -30,6 +30,7 @@ export type User = {
     createdAt: string;
     wallet: number;
     paymentmethods?: PaymentMethod[];
+    creatorApplication?: CreatorApplicationType[];
   }
   export type PaymentMethod = {
     provider: string;
@@ -193,6 +194,7 @@ declare module "next-auth" {
     purchases: Purchase[];
     wallet: number;
     paymentmethods?: PaymentMethod[]
+    creatorApplication?: CreatorApplicationType[];
   }
 
   interface Session {
@@ -204,6 +206,42 @@ declare module "next-auth" {
     accessToken?: string;
   }
 }
+export type FileMetaType = {
+  s3Key: string;
+  fileName: string;
+  type: string;
+};
+
+export type CreatorApplicationType = {
+  _id: string;
+  user: string; // ObjectId as string
+  displayName: string;
+  username: string;
+  email: string;
+  bio?: string;
+  handle: string;
+  category?: string;
+  gender: 'Male' | 'Female' | 'Other' | 'PreferNotToSay';
+  status: 'pending' | 'approved' | 'rejected';
+  appliedAt: Date;
+  reviewedAt?: Date;
+  reviewedBy?: string; // ObjectId as string
+  rejectionReason?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+
+  // ✅ New fields to match frontend
+  country: string;
+  subscriptionPrice: number;
+  birthDate: string;
+  fullLegalName: string;
+
+  // ✅ File uploads
+  profilePic?: FileMetaType;
+  idFrontPhoto?: FileMetaType;
+  idBackPhoto?: FileMetaType;
+  selfieWithId?: FileMetaType;
+};
 
 export type SafeUser = Partial<
   Omit<

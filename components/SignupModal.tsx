@@ -127,8 +127,17 @@ export default function SignUpModal({ open, onClose, creator, avatarUrl }: { ope
         throw new Error(data.error || 'Registration failed');
       }
 
-      router.push("/home")
-      toast.success('Registration successful! Please check your email to verify your account.');
+      const loginResult = await signIn('credentials', {
+        redirect: false,  // important
+        email: formData.email,
+        password: formData.password,
+      });
+      if (loginResult?.error) {
+        toast.error(`Login failed: ${loginResult.error}`);
+      } else {
+        toast.success('Registration successful!');
+        router.push('/home');
+      }
       
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Registration failed';

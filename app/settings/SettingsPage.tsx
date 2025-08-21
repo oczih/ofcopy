@@ -17,7 +17,6 @@ interface AppProps {
   }
 
 export default function App({session}: AppProps) {
-  console.log("sessioni:", session?.user)
   const [activeTab, setActiveTab] = useState("");
   const [activeSubTab, setActiveSubTab] = useState("");
   const searchParams = useSearchParams();

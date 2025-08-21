@@ -22,7 +22,7 @@ async function main() {
       { $set: { creator: creator._id } }
     );
   }
-  console.log('Updated posts to reference creator._id instead of user._id');
+
   await mongoose.disconnect();
 }
 

@@ -16,6 +16,7 @@ import { Heart, Lock, Video, X } from 'lucide-react';
 import SignUpModal from './SignupModal';
 import { Session } from 'next-auth';
 import { createPortal } from 'react-dom';
+import { Toaster } from 'react-hot-toast';
 
 // Bio Modal Component
 const BioModal = ({ bio, creatorName }: { bio: string; creatorName: string }) => {
@@ -60,6 +61,7 @@ type UserProfileData = {
   users: User[],
   creators: Creator[],
   session: Session | null
+  creator: Creator | null;
 }
 
 export default function ProfileContent({ 
@@ -71,15 +73,14 @@ export default function ProfileContent({
   relationshipStatus,
   users,
   creators,
-  session
+  session,
+  creator
 }: UserProfileData) {
   
   const [modalOpen, setModalOpen] = useState(false);
   const [joinModalOpen, setJoinModalOpen] = useState(false);
-  const [creator, setCreator] = useState<Creator | null>(null);
   const [currentUser, setCurrentUser] = useState<User>(viewingUser);
   const [status, setStatus] = useState<'subscriber' | 'follower' | 'none'>('none');
-  const [userStatsLoading, setUserStatsLoading] = useState(true);
   console.log("kakkaka", creators)
   // Cache for signed URLs with timestamps
   const [urlCache, setUrlCache] = useState<Record<string, { url: string; timestamp: number }>>({});
@@ -89,30 +90,6 @@ export default function ProfileContent({
     setStatus(relationshipStatus);
   }, [relationshipStatus]);
   
-  useEffect(() => {
-    let userId: string | undefined;
-  
-    // Type guard
-    if (userViewed && typeof userViewed === 'object') {
-      if ('_id' in userViewed && typeof userViewed._id === 'string') {
-        userId = userViewed._id;
-      } else if ('id' in userViewed && typeof userViewed.id === 'string') {
-        userId = userViewed.id;
-      }
-    }
-  
-    if (!userId || !creators?.length) {
-      console.log('Missing userId or empty creators array');
-      return;
-    }
-  
-    const found = creators.find((c: Creator) => c.user === userId);
-  
-    console.log('Found creator:', found);
-  
-    setCreator(found ?? null);
-    setUserStatsLoading(false);
-  }, [userViewed, creators]);
   
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const avatarKey = creator?.avatarKey ?? userViewed?.avatarKey?.replace(/^\/+/, '');
@@ -374,11 +351,14 @@ export default function ProfileContent({
       console.error('Error unfollowing creator:', err);
     }
   };
-  
+  console.log(isOwnProfile)
   const resolvedSrc = resolveImageUrl(avatarUrl);
-  
   return (
     <div>
+      <Toaster
+      position="top-center"
+      reverseOrder={false}
+    />
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Profile Header */}
         <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 mb-8 border border-white/20">
@@ -420,7 +400,7 @@ export default function ProfileContent({
                 </div>
                 <div className='flex flex-col gap-3 flex-1'>          
                   {/* Follow Button - On the right side of name */}
-                  {status === 'none' && creator && userViewed.creator && !isOwnProfile && viewingUser && (
+                  {status === 'none' && creator &&  !isOwnProfile && viewingUser && (
                     <button 
                       onClick={() => handleFollow(creator)}  
                       className="border border-blue-500 hover:bg-blue-500/10 text-blue-400 px-4 py-2 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer whitespace-nowrap"
@@ -473,7 +453,7 @@ export default function ProfileContent({
               )}
               
               {/* User Stats (for non-creators) - Under profile pic and smaller */}
-              {!userStatsLoading && !creator && (
+              {!creator && (
                 <div className="flex flex-col gap-2 text-center">
                   <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
                     <div className="text-xs text-gray-300">Status</div>
@@ -528,6 +508,7 @@ export default function ProfileContent({
             >
               <div className='flex flex-row justify-between'>
                 <span>Subscribe Now</span>
+                
                 <span>${creator?.price}/Month</span>
               </div>
             </button>

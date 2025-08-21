@@ -103,3 +103,44 @@ export async function sendVerificationEmail(email: string, token: string) {
   // Use Mailgun API client instead of SMTP
   return sendWithMailgunAPI(email, "Verify your email address", html);
 }
+
+export async function sendRejectionEmail(email: string, reason?: string) {
+  const applicationUrl = `${process.env.NEXTAUTH_URL}/apply-creator`;
+
+  const html = `
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
+      <h2>Application Update</h2>
+      <p>Unfortunately, your application to become a creator has been <strong>rejected</strong>.</p>
+      ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ""}
+      <p>You can update your details and reapply by visiting the link below:</p>
+      <a href="${applicationUrl}" 
+         style="display: inline-block; padding: 12px 24px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
+        Reapply as Creator
+      </a>
+      <p>Or copy and paste this link in your browser:</p>
+      <p><a href="${applicationUrl}">${applicationUrl}</a></p>
+    </div>
+  `;
+
+  return sendWithMailgunAPI(email, "Your Creator Application Status", html);
+}
+
+export async function sendAcceptanceEmail(email: string) {
+  const dashboardUrl = `${process.env.NEXTAUTH_URL}/settings`;
+
+  const html = `
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
+      <h2>Congratulations!</h2>
+      <p>Your application to become a creator has been <strong>approved</strong>.</p>
+      <p>You can now access your creator dashboard and start uploading content. Please click here to set up your payout method:</p>
+      <a href="${dashboardUrl}" 
+         style="display: inline-block; padding: 12px 24px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
+        Go to Dashboard
+      </a>
+      <p>Or copy and paste this link in your browser:</p>
+      <p><a href="${dashboardUrl}">${dashboardUrl}</a></p>
+    </div>
+  `;
+
+  return sendWithMailgunAPI(email, "Your Creator Application Approved", html);
+}

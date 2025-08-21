@@ -4,12 +4,13 @@ import { authOptions } from "@/lib/auth-client";
 import { connectDB } from "@/lib/mongoose";
 import CreatorModel from "@/app/models/creatormodel";
 import UserModel from "@/app/models/usermodel";
-import { Creator, User, Notification, SafeUser, Post } from "@/app/types";
+import { Creator, User, Notification, SafeUser, Post, CreatorApplicationType } from "@/app/types";
 import NotificationModel from "@/app/models/notificationmodel";
 import { Session } from "next-auth";
 import PostModel from '@/app/models/postmodel'
+import CreatorApplication from "@/app/models/creatorapplicationmodel";
 // Convert ObjectId and Dates recursively
-function deepSanitize<T>(obj: T, seen = new WeakSet()): T {
+export function deepSanitize<T>(obj: T, seen = new WeakSet()): T {
   if (obj === null || obj === undefined) return obj as T;
 
   if (typeof obj === "object") {
@@ -80,8 +81,10 @@ export async function fetchPageData() {
 
   const creatorsRaw = await CreatorModel.find({}).populate("posts").lean<Creator[]>({ virtuals: true });
   const notificationsRaw = await NotificationModel.find({}).lean<Notification[]>({ virtuals: true });
+  const applicationsRaw = await CreatorApplication.find({}).lean<CreatorApplicationType[]>({ virtuals: true });
   const usersRaw = await UserModel.find({}).lean<User[]>({ virtuals: true });
   const postsRaw = await PostModel.find({}).lean<Post[]>({ virtuals: true });
+  const applicationsSanitized = deepSanitize(applicationsRaw) ?? [];
   const creatorsSanitized = deepSanitize(creatorsRaw) ?? [];
   const usersSanitized = deepSanitize(usersRaw) ?? [];
   const notificationsSanitized = deepSanitize(notificationsRaw) ?? [];
@@ -104,5 +107,6 @@ export async function fetchPageData() {
     users: usersSanitized as User[],
     notifications: notificationsSanitized as Notification[],
     safeSession: safeSession ? deepSanitize(safeSession) : null,
+    applications: applicationsSanitized as CreatorApplicationType[],
   };
 }

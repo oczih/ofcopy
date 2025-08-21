@@ -3,43 +3,82 @@ import { connectDB } from '@/lib/mongoose';
 import CreatorApplication from '@/app/models/creatorapplicationmodel';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-client';
+import { verifySystemAccess } from '@/lib/auth';
+export const config = {
+  api: {
+    bodyParser: false, // Important: disable Next.js default parser
+  },
+};
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  await connectDB();
+
   try {
-    await connectDB();
+    const data = await req.json(); // <-- Expect JSON from frontend
+    console.log("Received body:", data);
     const {
-      country, gender, profilePic, handle, displayName, bio,
-      subscriptionPrice, idFrontPhoto, idBackPhoto,
-      selfieWithId, birthDate, fullLegalName
-    } = await req.json();
+      country,
+      gender,
+      handle,
+      email,
+      username,
+      user,
+      displayName,
+      bio,
+      subscriptionPrice,
+      birthDate,
+      fullLegalName,
+      profilePic,
+      idFrontPhoto,
+      idBackPhoto,
+      selfieWithId,
+    } = data;
 
-    if (!handle || !displayName || !bio) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    // Check required S3 keys
+    if (!profilePic?.s3Key || !idFrontPhoto?.s3Key || !idBackPhoto?.s3Key || !selfieWithId?.s3Key) {
+      return NextResponse.json({ error: 'Missing required file data' }, { status: 400 });
     }
-
+    console.log('profilePic', profilePic);
+    console.log('idFrontPhoto', idFrontPhoto);
+    console.log('idBackPhoto', idBackPhoto);
+    console.log('selfieWithId', selfieWithId);
+    if (!profilePic?.s3Key?.key || !idFrontPhoto?.s3Key?.key || !idBackPhoto?.s3Key?.key || !selfieWithId?.s3Key?.key) {
+      return NextResponse.json({ error: 'Missing required file keys' }, { status: 400 });
+    }
     const application = await CreatorApplication.create({
-      country, gender, profilePic, handle, displayName, bio,
-      subscriptionPrice, idFrontPhoto, idBackPhoto,
-      selfieWithId, birthDate, fullLegalName
+      country,
+      gender,
+      handle,
+      displayName,
+      bio,
+      email,
+      username,
+      user,
+      status: 'pending',
+      subscriptionPrice,
+      birthDate,
+      fullLegalName,
+    
+      profilePic: profilePic?.s3Key?.key,
+      idFrontPhoto: idFrontPhoto?.s3Key?.key,
+      idBackPhoto: idBackPhoto?.s3Key?.key,
+      selfieWithId: selfieWithId?.s3Key?.key,
     });
 
     return NextResponse.json({ message: 'Application submitted', application }, { status: 201 });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: 'Failed to submit application' }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Unknown error' }, { status: 500 });
   }
 }
 
+
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
   try {
+    verifySystemAccess(req);
     await connectDB();
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
@@ -51,6 +90,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ applications });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: 'Failed to fetch applications' }, { status: 500 });
+    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/404`)
   }
 }

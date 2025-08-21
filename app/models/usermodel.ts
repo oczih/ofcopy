@@ -1,6 +1,7 @@
 import mongoose, { Schema, model, Document } from "mongoose";
 import { Message } from "./messagemodel";
 import { PostDocument } from "./postmodel";
+import { CreatorApplicationDocument } from "./creatorapplicationmodel";
 
 export interface Subscription {
   id: string;
@@ -82,6 +83,7 @@ export interface OFUserDocument extends Document {
   lastVerificationEmailSentAt: Date;
   lastPasswordResetSentAt: Date;
   wallet: number;
+  
   paymentmethods?: {
     provider: string;
     token: string;
@@ -92,6 +94,7 @@ export interface OFUserDocument extends Document {
     default: boolean;
     addedAt: Date;
   }[];
+  creatorApplications?: (mongoose.Types.ObjectId | CreatorApplicationDocument)[];
 }
 
 const userSchema = new Schema<OFUserDocument>({
@@ -267,6 +270,13 @@ const userSchema = new Schema<OFUserDocument>({
       default: { type: Boolean, default: false },
       addedAt: { type: Date, default: Date.now }
     }
+  ],
+  creatorApplications: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "CreatorApplication",
+      required: false,
+    },
   ],
 }, { timestamps: true });
 

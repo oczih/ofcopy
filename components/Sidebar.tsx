@@ -94,7 +94,7 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
       setLoadingSession(false);
     }
   }, [status]);
-  const avatarKey = session?.user?.avatarKey;
+  const avatarKey = creator?.avatarKey || session?.user?.avatarKey;
   const lastFetchedAvatarKey = useRef<string | null>(null);
   useEffect(() => {
     if (!avatarKey) {
@@ -213,7 +213,7 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
           <div className="relative group">
             {/* Clickable Avatar and Name Container */}
             <Link 
-              href={`/${session.user.username}`}
+              href={`/${creator?.username || session.user.username}`}
               className={`flex flex-col items-center cursor-pointer transition-all duration-300 ${
                 isCollapsed 
                   ? 'hover:bg-white/10 rounded-full p-2 hover:opacity-100' 
@@ -229,10 +229,10 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
               {!isCollapsed && (
                 <div className="text-center">
                   <div className="text-lg font-semibold text-white truncate max-w-[12rem]">
-                    {user?.name}
+                    {creator?.name || user?.name}
                   </div>
                   <div className="text-sm text-pink-400 truncate max-w-[12rem]">
-                    @{user?.username}
+                    @{creator?.username || user?.username}
                   </div>
                 </div>
               )}

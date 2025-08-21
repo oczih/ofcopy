@@ -1,7 +1,11 @@
 import axios from "axios";
 import { Post } from "../types";
 import imageCompression from 'browser-image-compression';
+import mime from "mime-types";
 
+function getContentType(file: File): string {
+  return file.type || mime.lookup(file.name) || "application/octet-stream";
+}
 interface SignedUrlResponse {
   uploadUrl: string;
   key: string;
@@ -85,22 +89,33 @@ async function createBlurredImage(file: File): Promise<File> {
 export async function uploadContent(file: File): Promise<{ key: string, blurredKey: string }> {
   let fileToUpload = file;
 
+  // Compress image if applicable
   if (file.type.startsWith("image/")) {
     fileToUpload = await compressImage(file);
   }
 
+  console.log(fileToUpload);
+
   const sanitizedFileName = sanitizeFileName(fileToUpload.name);
-  const { uploadUrl, key } = await getSignedUrl(sanitizedFileName, fileToUpload.type);
+  const contentType = getContentType(fileToUpload); // <-- get correct MIME type
+
+  if (!sanitizedFileName) throw new Error("File name is empty");
+
+  // Use contentType here, not fileToUpload.type
+  const { uploadUrl, key } = await getSignedUrl(sanitizedFileName, contentType);
   await uploadFileToS3(fileToUpload, uploadUrl);
 
   // Create blurred version
   const blurredFile = await createBlurredImage(fileToUpload);
   const blurredSanitizedName = sanitizeFileName(blurredFile.name);
-  const { uploadUrl: blurredUploadUrl, key: blurredKey } = await getSignedUrl(blurredSanitizedName, blurredFile.type);
+  const blurredContentType = getContentType(blurredFile); // also ensure MIME type for blurred
+
+  const { uploadUrl: blurredUploadUrl, key: blurredKey } = await getSignedUrl(blurredSanitizedName, blurredContentType);
   await uploadFileToS3(blurredFile, blurredUploadUrl);
 
   return { key, blurredKey };
 }
+
 
 export async function createPostWithUpload({
   creatorId,
