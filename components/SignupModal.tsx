@@ -105,7 +105,6 @@ export default function SignUpModal({ open, onClose, creator, avatarUrl }: { ope
   };
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(e)
     setIsLoading(true);
     
     try {
@@ -141,7 +140,6 @@ export default function SignUpModal({ open, onClose, creator, avatarUrl }: { ope
       
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Registration failed';
-      console.log(message)
       toast.error(message);
     } finally {
       setIsLoading(false);

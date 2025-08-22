@@ -29,7 +29,6 @@ export default function App({creators, users}: AppProps ) {
       postKeys: (c.posts || []).map(p => p.s3Key)
     }))
   );
-  console.log(users)
   useEffect(() => {
     const fetchCreators = async () => {
       try {

@@ -53,9 +53,7 @@ export default function App({ session, notifications, users, creators }: AppProp
   const [avatarSignedUrls, setAvatarSignedUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  Object.entries(avatarSignedUrls).forEach(([id, url]) => {
-    console.log(`ID: ${id} -> URL: ${url}`);
-  });
+
   useEffect(() => {
     setLoading(false);
   }, [notifications]);
@@ -75,7 +73,7 @@ export default function App({ session, notifications, users, creators }: AppProp
       Object.values(creators).forEach(c => {
         if (c.avatarKey) avatarsWithKeys.push({ id: c._id, avatarKey: c.avatarKey });
       });
-      console.log(avatarsWithKeys)
+
       const signedUrlsMap: Record<string, string> = {};
   
       await Promise.all(
@@ -210,8 +208,7 @@ function resolveByUser(by: string | User | Creator | Array<string | User | Creat
   return creatorArray.find((c: Creator) => c._id === by) || userArray.find((u: User) => u._id === by || u._id === by);
 }
 const byUser = resolveByUser(noti.by);
-  console.log("usseri:", byUser)
-  console.log("noti:", noti.by.toString())
+
   function getNotificationLink(noti: Notification) {
     switch (noti.type) {
       case "newfollower":
@@ -225,7 +222,7 @@ const byUser = resolveByUser(noti.by);
         }// Goes to creator's followers page
       case "comment":
       case "like":
-        console.log(noti.postId)
+
         return `/post/${noti.postId}`; // Go to the post page
       case "newsub":
         if(creators.find(c => c.user === noti.by)){

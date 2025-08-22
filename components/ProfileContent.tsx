@@ -81,7 +81,6 @@ export default function ProfileContent({
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User>(viewingUser);
   const [status, setStatus] = useState<'subscriber' | 'follower' | 'none'>('none');
-  console.log("kakkaka", creators)
   // Cache for signed URLs with timestamps
   const [urlCache, setUrlCache] = useState<Record<string, { url: string; timestamp: number }>>({});
   const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
@@ -351,7 +350,6 @@ export default function ProfileContent({
       console.error('Error unfollowing creator:', err);
     }
   };
-  console.log(isOwnProfile)
   const resolvedSrc = resolveImageUrl(avatarUrl);
   return (
     <div>
@@ -927,7 +925,8 @@ function MediaGrid({
     useEffect(() => {
       if (creator?.posts) {
         let filtered: Post[];
-        if (user?._id === creator.user) {
+        if (user?._id.toString() === creator._id.toString()) {
+          
           // Viewing own profile — show all posts
           filtered = creator.posts;
         } else {
@@ -942,9 +941,6 @@ function MediaGrid({
       }
     }, [creator, status, user]);
     if (!creator) return null;
-    
-    
-    
     const handleDeletePost = async (postId: string) => {
       try {
         const res = await fetch(`/api/posts/${postId}`, { method: "DELETE" });

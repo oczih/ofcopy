@@ -45,12 +45,12 @@ export const authOptions: NextAuthOptions = {
     
         try {
           await connectDB();
-          console.log("Logging in with:", credentials.email);
+
           const user = await OFUser.findOne({
             email: credentials.email,
             oauthProvider: "credentials"
           }).select("+password");
-          console.log("Found user:", user);
+
           if (!user || !user.password) {
             throw new Error("Invalid email or password");
           }

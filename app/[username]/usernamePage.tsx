@@ -6,7 +6,7 @@ import CreatorModel from '@/app/models/creatormodel';
 import { MediaPost, Subscriber, Purchase, Follower, User, Creator } from '../types';
 import { PostDocument } from '../models/postmodel';
 import { Session } from 'next-auth';
-import { deepSanitize } from '@/lib/fetchDataPage';
+
 
 const RESERVED_ROUTES = [
   'discover', 'messages', 'settings', 'subscriptions', 'notifications', 'api', 'components',
@@ -24,36 +24,41 @@ interface AppProps {
 export default async function App({ creators, users, session, username }: AppProps) {
   if (RESERVED_ROUTES.some(route => route.toLowerCase() === username.toLowerCase())) notFound();
 
-  const user = await UserModel.findOne({ username: username.toLowerCase() });
-  let creator: Creator | null = null;
+  // Always check creator first
+  let creator = await CreatorModel
+  .findOne({ username })
+  .populate("posts")
+  .lean<Creator>();
+  let user: User | null = null;
 
-  if (!user) {
-    creator = await CreatorModel.findOne({ username: username.toLowerCase() });
-    if (!creator) notFound();
-  } else if (user.creator) {
-    creator = await CreatorModel.findOne({ user: user._id });
+  if (!creator) {
+    // If not a creator, check if it's just a user
+    user = await UserModel.findOne({ username: username.toLowerCase() });
+    if (!user) notFound();
+
+    // If user has linked creator, load that too
+    if (user.creator) {
+      creator = await CreatorModel.findOne({ user: user._id });
+    }
+  } else {
+    // If a creator was found, get the linked user too
+    if (creator.user) {
+      user = await UserModel.findById(creator.user);
+    }
   }
 
   const isOwnProfile = (() => {
     if (!session?.user) return false;
-  
-    const sessionUsername = session?.user?.username?.toLowerCase();
-  
-    if (creator?.user) {
-      if (String(session.user._id) === String(creator.user)) {
-        return true;
-      }
+    const sessionUsername = session.user.username?.toLowerCase();
+
+    if (creator?.user && String(session.user._id) === String(creator.user)) {
+      return true;
     }
-  
-    if (user?.username) {
-      return sessionUsername === user.username.toLowerCase();
+    if (user?.username && sessionUsername === user.username.toLowerCase()) {
+      return true;
     }
-  
     return false;
   })();
-  console.log(creator && creator.username)
-  console.log(session?.user._id)
-  console.log(creator)
   let relationshipStatus: 'subscriber' | 'follower' | 'none' = 'none';
   let totalSpent = 0;
   let purchasedContent: MediaPost[] = [];
@@ -84,11 +89,12 @@ export default async function App({ creators, users, session, username }: AppPro
         _id: post._id,
       }));
   }
-  const sanitizedCreator = creator ? deepSanitize(JSON.parse(JSON.stringify(creator))) : null;
+  const sanitizedCreator = creator ? JSON.parse(JSON.stringify(creator)) : null;
+  const creatorId = creators.find((c: Creator) => String(c.user) === String(session?.user?._id));
   return (
     <ProfileContent
       userViewed={JSON.parse(JSON.stringify(user || creator))}
-      viewingUser={session?.user ? JSON.parse(JSON.stringify(session.user)) : null}
+      viewingUser={session?.user.creator ? creatorId : session?.user ? JSON.parse(JSON.stringify(session?.user)) : null}
       purchasedContent={purchasedContent}
       totalSpent={totalSpent}
       relationshipStatus={relationshipStatus}

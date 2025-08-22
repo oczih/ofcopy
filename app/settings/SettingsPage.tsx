@@ -244,7 +244,7 @@ const validate = () => {
 };
 
   const handlePasswordAction = async () => {
-    console.log("validate:", validate)
+
 
     if (!validate()) return;
     

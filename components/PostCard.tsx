@@ -460,10 +460,9 @@ export function PostCard({
   };
 
   const handleLike = async (post: Post) => {
-    console.log("Here are the likes:", post.likes)
-    console.log(post.likes.some(like => like.userId.toString() === viewingUser._id))
+
     if(post.likes.some(like => like.userId.toString() === viewingUser._id)){
-      console.log("Before: ", post.likes)
+
       try {
         const res = await fetch(`/api/media?username=${creator.username}`, {
           method: 'PUT',

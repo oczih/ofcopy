@@ -110,7 +110,7 @@ export default function App({session}: AppProps) {
   const handleSendMessage = () => {
     if (messageText.trim()) {
       // Here you would typically send the message to your backend
-      console.log("Sending message:", messageText);
+
       setMessageText("");
     }
   };
