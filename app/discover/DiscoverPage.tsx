@@ -18,7 +18,7 @@ interface AppProps {
   users: User[];
 }
 
-export default function App({creators, users}: AppProps ) {
+export default function App({creators }: AppProps ) {
   const [searchQuery, setSearchQuery] = useState("");
   const [creatorsWithMedia, setCreatorsWithMedia] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(true);

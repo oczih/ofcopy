@@ -6,7 +6,7 @@ import { toast, Toaster } from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
-
+import { motion } from "framer-motion";
 export default function LoginPageWrapper() {
   return (
     <Suspense fallback={<div className="text-white text-center">Loading...</div>}>
@@ -303,6 +303,50 @@ export default function LoginPageWrapper() {
           </p>
         </div>
       </div>
+      <motion.footer 
+  initial={{ opacity: 0, y: 30 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  viewport={{ once: true }}
+  transition={{ duration: 0.8 }}
+  className="px-6 py-12"
+>
+  <div className="max-w-7xl mx-auto text-center">
+
+
+
+
+    {/* Footer Links */}
+    <motion.div 
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{ delay: 0.5 }}
+      className="flex flex-wrap justify-center gap-4 text-sm text-white mb-4"
+    >
+      <Link href="/tos" className="hover:text-gray-200 transition">Terms of Service</Link>
+      <Link href="/privacy" className="hover:text-gray-200 transition">Privacy Policy</Link>
+      <Link href="/child-protection" className="hover:text-gray-200 transition">Child Protection</Link>
+      <Link href="/anti-slavery" className="hover:text-gray-200 transition">Anti-Slavery</Link>
+      <Link href="/guidelines" className="hover:text-gray-200 transition">Community Guidelines</Link>
+      <Link href="/dmca" className="hover:text-gray-200 transition">DMCA Policy</Link>
+      <Link href="/cookiepolicy" className="hover:text-gray-200 transition">Cookie Policy</Link>
+    </motion.div>
+
+    {/* Support Email */}
+    <motion.p 
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{ delay: 0.6 }}
+      className="text-white text-sm"
+    >
+      Need help? Contact us at{" "}
+      <a href="mailto:support@fanslio.com" className="text-yellow-500 hover:underline">
+        support@fanslio.com
+      </a>
+    </motion.p>
+  </div>
+</motion.footer>
     </div>
   );
 }

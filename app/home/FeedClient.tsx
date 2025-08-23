@@ -10,6 +10,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { CreatorPostCard } from "../../components/CreatorPostCard";
 import { Session } from "next-auth";
 import creatorservice from "../services/creatorservice";
+import { useRouter } from "next/navigation";
 interface AppProps {
   creators: Creator[];
   session: Session | null;
@@ -32,6 +33,7 @@ export default function App({ creators, users, session}: AppProps) {
   const [stats, setStats] = useState<Stats | null>(null);
   const HIDE_DURATION = 2 * 60 * 1000;
   const notifiedCreators = useRef<Set<string>>(new Set());
+  const router = useRouter()
   // Manage loading and redirect on unauthenticated
   useEffect(() => {
     async function fetchStats() {
@@ -125,10 +127,11 @@ export default function App({ creators, users, session}: AppProps) {
       toast.error(message);
     }
   };
-  if (!session) {
-    // Show a fallback or redirect or login prompt if session not passed
-    return <div>Please log in.</div>;
-  }
+  useEffect(() => {
+    if (!session) {
+      router.push("/login");
+    }
+  }, [session, router]);
 
   const handleFollow = async (creator: Creator) => {
     if (!creator) return;
@@ -216,7 +219,7 @@ export default function App({ creators, users, session}: AppProps) {
 
           {/* Dashboard */}
           {!session?.user?.emailVerified && showBanner &&
-        session.user.oauthProvider
+        session?.user.oauthProvider
         === 
         "credentials" &&  (
       <div className="flex justify-center z-30 px-4">
@@ -254,11 +257,11 @@ export default function App({ creators, users, session}: AppProps) {
   <div className="space-y-10 mt-10">
     {filteredCreators && filteredCreators.length > 0 ? (
       filteredCreators.map((creator) => {
-        const isCreator = creator.user === session.user._id;
-        const isSubscribed = session.user.subscriptions?.some(
+        const isCreator = creator.user === session?.user._id;
+        const isSubscribed = session?.user.subscriptions?.some(
           (sub) => sub.creatorId === creator._id
         );
-        const isFollower = session.user.following?.some(
+        const isFollower = session?.user.following?.some(
           (f) => f.creatorId === creator._id
         );
 
@@ -307,7 +310,7 @@ export default function App({ creators, users, session}: AppProps) {
                 creator={creator}
                 post={post}
                 session={session}
-                user={session.user as User}
+                user={session?.user as User}
                 status={status}
                 users={users}
                 signedUrl={postSignedUrls[post._id]}

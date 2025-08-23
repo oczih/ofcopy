@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
-
+import { motion } from "framer-motion";
 function Modal({ open, onClose, title, children }: { open: boolean, onClose: () => void, title: string, children: React.ReactNode }) {
   if (!open) return null;
   return (
@@ -264,7 +264,7 @@ export default function SignupPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-gray-400 hover:text-purple-600 transition-colors"
+                  className="absolute right-3 top-3 cursor-pointer text-gray-400 hover:text-purple-600 transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -298,7 +298,7 @@ export default function SignupPage() {
               <button
                 type="submit"
                 disabled={isLoading} 
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-purple-600 cursor-pointer hover:bg-purple-700 text-white py-2 px-4 rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Creating Account...' : 'Create Account'}
               </button>
@@ -308,7 +308,7 @@ export default function SignupPage() {
             By continuing, you agree to our
             <button
               type="button"
-              className="underline text-pink-400 hover:text-pink-300 mx-1"
+              className="underline cursor-pointer text-pink-400 hover:text-pink-300 mx-1"
               onClick={() => setShowTerms(true)}
             >
               Terms of Service
@@ -316,7 +316,7 @@ export default function SignupPage() {
             and
             <button
               type="button"
-              className="underline text-pink-400 hover:text-pink-300 mx-1"
+              className="underline cursor-pointer text-pink-400 hover:text-pink-300 mx-1"
               onClick={() => setShowPrivacy(true)}
             >
               Privacy Policy
@@ -494,6 +494,50 @@ export default function SignupPage() {
           </div>
         </div>
       </Modal>
+      <motion.footer 
+  initial={{ opacity: 0, y: 30 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  viewport={{ once: true }}
+  transition={{ duration: 0.8 }}
+  className="px-6 py-12"
+>
+  <div className="max-w-7xl mx-auto text-center">
+
+
+
+
+    {/* Footer Links */}
+    <motion.div 
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{ delay: 0.5 }}
+      className="flex flex-wrap justify-center gap-4 text-sm text-white mb-4"
+    >
+      <Link href="/tos" className="hover:text-gray-200 transition">Terms of Service</Link>
+      <Link href="/privacy" className="hover:text-gray-200 transition">Privacy Policy</Link>
+      <Link href="/child-protection" className="hover:text-gray-200 transition">Child Protection</Link>
+      <Link href="/anti-slavery" className="hover:text-gray-200 transition">Anti-Slavery</Link>
+      <Link href="/guidelines" className="hover:text-gray-200 transition">Community Guidelines</Link>
+      <Link href="/dmca" className="hover:text-gray-200 transition">DMCA Policy</Link>
+      <Link href="/cookiepolicy" className="hover:text-gray-200 transition">Cookie Policy</Link>
+    </motion.div>
+
+    {/* Support Email */}
+    <motion.p 
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{ delay: 0.6 }}
+      className="text-white text-sm"
+    >
+      Need help? Contact us at{" "}
+      <a href="mailto:support@fanslio.com" className="text-yellow-500 hover:underline">
+        support@fanslio.com
+      </a>
+    </motion.p>
+  </div>
+</motion.footer>
     </div>
   );
 } 
