@@ -1,7 +1,6 @@
 'use client';
 
 import { FC, SVGProps, useEffect, useState } from "react";
-import { Button } from "../../components/ui/button";
 import {CreditCard, ChevronRight, Calendar, Mail, Trash2, Wallet, ExternalLink, AlertCircle, UserCog, Shield, Settings, Star } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SubscriptionManagement from "@/components/SubscriptionManagement";
@@ -191,7 +190,7 @@ export default function App({session}: AppProps) {
       <div className="flex items-center space-x-2 text-sm mb-12">
         <button
           onClick={() => setActiveTab("")}
-          className="flex items-center space-x-2 text-gray-400 hover:text-white transition-all duration-200 hover:scale-105"
+          className="flex items-center space-x-2 text-gray-400 cursor-pointer hover:text-white transition-all duration-200 hover:scale-105"
         >
           <Settings className="w-4 h-4" />
           <span>Settings</span>
@@ -201,7 +200,7 @@ export default function App({session}: AppProps) {
             <div className="w-1 h-1 bg-gray-500 rounded-full"></div>
             <button
               onClick={() => handleTabClick(activeTab)}
-              className="text-gray-400 hover:text-white transition-all duration-200 hover:scale-105"
+              className="text-gray-400 hover:text-white cursor-pointer transition-all duration-200 hover:scale-105"
             >
               {currentMainTab.label}
             </button>
@@ -297,7 +296,7 @@ const validate = () => {
                 <button
                   key={tab.id}
                   onClick={() => handleTabClick(tab.id)}
-                  className="group relative overflow-hidden bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-8 text-left hover:bg-white/10 transition-all duration-500 hover:scale-105 hover:shadow-2xl cursor-pointer"
+                  className="group relative overflow-hidden cursor-pointer bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-8 text-left hover:bg-white/10 transition-all duration-500 hover:scale-105 hover:shadow-2xl cursor-pointer"
                   style={{
                     animationDelay: `${index * 100}ms`,
                     animation: 'fadeInUp 0.6s ease-out forwards'
@@ -342,7 +341,7 @@ const validate = () => {
               <button
                 key={subTab.id}
                 onClick={() => handleSubTabClick(subTab.id)}
-                className={`flex-1 px-6 py-3 rounded-xl transition-all duration-300 font-medium text-sm cursor-pointer ${
+                className={`flex-1 px-6 py-3 rounded-xl cursor-pointer transition-all duration-300 font-medium text-sm cursor-pointer ${
                   activeSubTab === subTab.id
                     ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg scale-105"
                     : "text-gray-400 hover:text-white hover:bg-white/10"
@@ -456,7 +455,7 @@ const validate = () => {
           <button
             onClick={handlePasswordAction}
             disabled={loading}
-            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-4 px-6 rounded-2xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 hover:shadow-2xl cursor-pointer"
+            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 cursor-pointer hover:from-green-600 hover:to-emerald-700 text-white py-4 px-6 rounded-2xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 hover:shadow-2xl cursor-pointer"
           >
             {loading ? (
               <div className="flex items-center justify-center gap-2">
@@ -576,7 +575,7 @@ const validate = () => {
           <button
             onClick={handlePasswordAction}
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white py-4 px-6 rounded-2xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 hover:shadow-2xl cursor-pointer"
+            className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 cursor-pointer hover:to-cyan-700 text-white py-4 px-6 rounded-2xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 hover:shadow-2xl cursor-pointer"
           >
             {loading ? (
               <div className="flex items-center justify-center gap-2">
@@ -659,12 +658,11 @@ const validate = () => {
                           </li>
                         </ul>
                       </div>
-                      <Button 
-                        variant="destructive" 
-                        className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 border-0 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                      <button 
+                        className="bg-gradient-to-r from-red-600 to-red-700 cursor-pointer hover:from-red-700 hover:to-red-800 border-0 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl"
                       >
                         Delete My Account
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -713,7 +711,7 @@ const validate = () => {
               </div>
 
               {/* Balance Card */}
-              <div className="bg-gradient-to-br from-green-500/20 to-emerald-600/20 rounded-3xl p-8 border border-green-500/30 backdrop-blur-xl shadow-2xl">
+              <div className="bg-gradient-to-br from-green-500/20 to-emerald-600/20 rounded-3xl text-center mx-auto items-center p-8 border border-green-500/30 backdrop-blur-xl shadow-2xl">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center space-x-4">
                     <div className="p-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg">
@@ -729,15 +727,9 @@ const validate = () => {
                   </div>
                 </div>
                 <div className="flex space-x-4">
-                  <Button className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                  <button className="flex-1 bg-gradient-to-r cursor-pointer from-green-500 to-emerald-600 max-w-xl hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl">
                     Add Funds
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="flex-1 border-2 border-white/30 text-white hover:bg-white/10 font-semibold py-3 rounded-xl transition-all duration-300 hover:scale-105 hover:border-white/50"
-                  >
-                    Withdraw
-                  </Button>
+                  </button>
                 </div>
               </div>
 
@@ -750,12 +742,12 @@ const validate = () => {
                       <CreditCard className="w-12 h-12 text-gray-300" />
                     </div>
                     <p className="text-gray-400 mb-6 text-lg">No payment methods added yet</p>
-                    <Button 
-                      variant="outline" 
-                      className="border-2 border-white/30 text-white hover:bg-white/10 font-semibold py-3 px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:border-white/50"
+                    <button 
+                      
+                      className="border-2 border-white/30 cursor-pointer text-white hover:bg-white/10 font-semibold py-3 px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:border-white/50"
                     >
                       Add Payment Method
-                    </Button>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -780,7 +772,7 @@ const validate = () => {
               <button
                 key={subTab.id}
                 onClick={() => handleSubTabClick(subTab.id)}
-                className="group relative overflow-hidden bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-3xl border border-white/20 p-8 cursor-pointer text-left hover:bg-white/15 transition-all duration-500 hover:scale-105 hover:shadow-2xl"
+                className="group relative overflow-hidden bg-gradient-to-br cursor-pointer from-white/10 to-white/5 backdrop-blur-xl rounded-3xl border border-white/20 p-8 cursor-pointer text-left hover:bg-white/15 transition-all duration-500 hover:scale-105 hover:shadow-2xl"
                 style={{
                   animationDelay: `${index * 150}ms`,
                   animation: 'fadeInUp 0.6s ease-out forwards'

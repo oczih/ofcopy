@@ -1,74 +1,71 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Creator, User } from "../types";
 import { Session } from "next-auth";
-
-interface AppProps {
-    creators: Creator[];
-    session: Session | null;
-    users: User[];
-  }
 
 interface PayPanelProps {
   onCancel: () => void;
   topUpAmount: string | null;
 }
 
+const amounts = ["$10", "$25", "$50", "$100", "$200", "$500"];
 
-  const amounts = ["$10", "$25", "$50", "$100", "$200", "$500"]
-  function TopUpPanel({
-    onContinue,
-  }: {
-    onContinue: (amount: string) => void;
-  }) {
-    const [selectedAmount, setSelectedAmount] = useState<string | null>(null);
-  
-    return (
-      <div className="space-y-6 p-4 bg-slate-900 rounded-xl">
-        <div className="text-center mb-6">
-          <p className="text-gray-300 font-bold">Add Wallet Credits</p>
-        </div>
-  
-        <div className="flex flex-wrap gap-4 justify-center">
-          {amounts.map((amount) => (
-            <button
-              key={amount}
-              className={`px-6 py-3 rounded-xl font-bold shadow-lg transition-all ${
-                selectedAmount === amount
-                  ? "bg-pink-500 outline-2 outline-white"
-                  : "bg-pink-500 hover:bg-pink-600 text-white"
-              }`}
-              onClick={() => setSelectedAmount(amount)}
-            >
-              {amount}
-            </button>
-          ))}
-        </div>
-  
-        <button
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!selectedAmount}
-          onClick={() => selectedAmount && onContinue(selectedAmount)}
-        >
-          Continue
-        </button>
+function TopUpPanel({
+  onContinue,
+}: {
+  onContinue: (amount: string) => void;
+}) {
+  const [selectedAmount, setSelectedAmount] = useState<string | null>(null);
+
+  return (
+    <div className="space-y-6 p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl">
+      <div className="text-center mb-6">
+        <p className="text-white font-bold text-lg">Add Wallet Credits</p>
       </div>
-    );
-  }
-  
-  
+
+      <div className="flex flex-wrap gap-4 justify-center">
+        {amounts.map((amount, index) => (
+          <button
+            key={amount}
+            className={`px-6 py-3 rounded-xl font-bold cursor-pointer transition-all duration-300 shadow-lg ${
+              selectedAmount === amount
+                ? "bg-gradient-to-r from-pink-500 to-pink-600 outline-2 outline-white text-white"
+                : "bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white"
+            }`}
+            onClick={() => setSelectedAmount(amount)}
+            style={{
+              animationDelay: `${index * 100}ms`,
+              animation: 'fadeInUp 0.6s ease-out forwards'
+            }}
+          >
+            {amount}
+          </button>
+        ))}
+      </div>
+
+      <button
+        className="w-full bg-gradient-to-r from-blue-500 cursor-pointer to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={!selectedAmount}
+        onClick={() => selectedAmount && onContinue(selectedAmount)}
+      >
+        Continue
+      </button>
+    </div>
+  );
+}
+
 function PayPanel({ onCancel, topUpAmount }: PayPanelProps) {
   return (
-    <div className="space-y-6 p-4 bg-slate-900 rounded-xl">
+    <div className="space-y-6 p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl">
       <div className="text-center mb-6">
         <p className="text-gray-300">Secure payment powered by Epoch</p>
         <div className="flex justify-center gap-2 mt-2">
-          <span className="text-xs bg-slate-800 px-2 py-1 rounded">🔒 SSL</span>
-          <span className="text-xs bg-slate-800 px-2 py-1 rounded">💳 Encrypted</span>
+          <span className="text-xs bg-white/10 px-2 py-1 rounded-lg border border-white/20">🔒 SSL</span>
+          <span className="text-xs bg-white/10 px-2 py-1 rounded-lg border border-white/20">💳 Encrypted</span>
         </div>
       </div>
-      <div className="text-center font-bold text-2xl">{topUpAmount}</div>
+      <div className="text-center font-bold text-2xl text-white">{topUpAmount}</div>
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -77,7 +74,7 @@ function PayPanel({ onCancel, topUpAmount }: PayPanelProps) {
           <input
             type="text"
             placeholder="1234 5678 9012 3456"
-            className="w-full hover:border-white bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 outline-none transition-all"
+            className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-white/40 transition-all duration-200"
           />
         </div>
 
@@ -89,7 +86,7 @@ function PayPanel({ onCancel, topUpAmount }: PayPanelProps) {
             <input
               type="text"
               placeholder="MM/YY"
-              className="w-full hover:border-white bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 outline-none transition-all"
+              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-white/40 transition-all duration-200"
             />
           </div>
           <div>
@@ -99,103 +96,129 @@ function PayPanel({ onCancel, topUpAmount }: PayPanelProps) {
             <input
               type="text"
               placeholder="123"
-              className="w-full hover:border-white bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 outline-none transition-all"
+              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-white/40 transition-all duration-200"
             />
           </div>
         </div>
 
-        <button className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 text-lg cursor-pointer">
+        <button className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 cursor-pointer text-white px-6 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transform transition-all duration-300 text-lg">
           💳 Add Payment / Top Up
         </button>
 
         <button
-          className="w-full text-sm text-gray-400 underline hover:text-gray-200 transition-colors py-2 cursor-pointer"
+          className="w-full text-sm text-gray-400 cursor-pointer hover:text-gray-200 transition-colors py-2 hover:underline"
           onClick={onCancel}
         >
           ← Back
         </button>
       </div>
 
-      <div className="text-xs text-gray-500 text-center pt-4 border-t border-slate-700/50">
+      <div className="text-xs text-gray-500 text-center pt-4 border-t border-white/10">
         By subscribing, you agree to our Terms of Service and Privacy Policy
       </div>
     </div>
   );
 }
+interface AppProps {
+  creators: Creator[];
+  session: Session | null;
+  users: User[];
+}
 
-export default function App({ session }: AppProps) {
+export default function App({session}: AppProps) {  
+
   const [showPayPanel, setShowPayPanel] = useState(false);
-  const [showTopUpPanel, setShowTopUpPanel] = useState(false)
+  const [showTopUpPanel, setShowTopUpPanel] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState<string | null>(null);
+
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
-      {/* Wallet Credit */}
-      <div className="text-2xl font-bold">Your Wallet & Payment Methods</div>
-      <div className="bg-slate-800/50 border border-slate-600 rounded-xl p-4 text-center">
-        <p className="text-gray-300 text-sm">Wallet Credit</p>
-        <p className="text-white text-2xl font-bold">${session?.user?.wallet || 0}</p>
-      </div>
-      
-      <div>
-        <button
-          className="w-full bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all"
-          onClick={() => setShowTopUpPanel(true)}
-        >
-          Top Up
-        </button>
-      </div>
-      {/* PayPanel modal */}
-      {showPayPanel && (
-        <div className="fixed inset-0 bg-black/70 flex justify-center items-center p-4">
-          <div className="w-full max-w-md">
-            <PayPanel
-              topUpAmount={topUpAmount}
-              onCancel={() => {
-                setShowPayPanel(false);
-                setTopUpAmount(null);
-              }}
-            />
-          </div>
+    <div className="min-h-screen w-full flex justify-center px-4 py-10">
+      <main className="max-w-3xl w-full space-y-8">
+        {/* Header */}
+        <header>
+          <h2 className="text-2xl font-bold text-white mb-2">Your Wallet & Payment Methods</h2>
+          <p className="text-gray-400 text-sm">Manage your wallet credits and payment methods</p>
+        </header>
+
+        {/* Wallet Credit */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-6 text-center shadow-2xl">
+          <p className="text-gray-300 text-sm mb-2">Wallet Credit</p>
+          <p className="text-white text-3xl font-bold">${session?.user?.wallet || 0}</p>
         </div>
-      )}
-      {showTopUpPanel && (
-        <div className="fixed inset-0 bg-black/70 flex justify-center items-center p-4">
-          <div className="w-full max-w-md">
-            <TopUpPanel
-              onContinue={(amount) => {
-                setTopUpAmount(amount);
-                setShowTopUpPanel(false);
-                setShowPayPanel(true);
-              }}
-            />
-          </div>
-        </div>
-      )}
-      <div className="space-y-2">
-        <p className="text-gray-300 text-sm mb-2">My Payment Methods</p>
-        {session?.user.paymentmethods?.length ? (
-          <ul className="space-y-2">
-            {session.user.paymentmethods.map((method, index) => (
-              <li
-                key={index}
-                className="bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 text-white flex justify-between items-center"
-              >
-                <span>{method.brand}</span>
-                <button className="text-xs text-pink-500 hover:underline">Use</button>
-              </li>
-            ))}
-          </ul>
-        ) : (
+        
+        {/* Top Up Button */}
         <div>
-            <button
-              className="w-full bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all"
-              onClick={() => setShowPayPanel(true)}
-            >
-              💳 Add Card
-            </button>
+          <button
+            className="w-full bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 cursor-pointer text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300"
+            onClick={() => setShowTopUpPanel(true)}
+          >
+            Top Up
+          </button>
+        </div>
+
+        {/* Payment Methods */}
+        <div className="space-y-4">
+          <p className="text-white text-lg font-semibold">My Payment Methods</p>
+          {session?.user?.paymentmethods?.length ? (
+            <div className="space-y-3">
+              {session.user.paymentmethods.map((method, index) => (
+                <div
+                  key={index}
+                  className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 px-6 py-4 text-white flex justify-between items-center hover:bg-white/10 transition-all duration-300 shadow-2xl"
+                  style={{
+                    animationDelay: `${index * 100}ms`,
+                    animation: 'fadeInUp 0.6s ease-out forwards'
+                  }}
+                >
+                  <span className="font-medium">{method.brand}</span>
+                  <button className="text-sm text-pink-400 hover:text-pink-300 hover:underline transition-colors">
+                    Use
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div>
+              <button
+                className="w-full bg-gradient-to-r cursor-pointer from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300"
+                onClick={() => setShowPayPanel(true)}
+              >
+                💳 Add Card
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* PayPanel modal */}
+        {showPayPanel && (
+          <div className="fixed inset-0 bg-black/70 flex justify-center items-center p-4 z-50">
+            <div className="w-full max-w-md">
+              <PayPanel
+                topUpAmount={topUpAmount}
+                onCancel={() => {
+                  setShowPayPanel(false);
+                  setTopUpAmount(null);
+                }}
+              />
+            </div>
           </div>
         )}
-      </div>
+
+        {/* TopUpPanel modal */}
+        {showTopUpPanel && (
+          <div className="fixed inset-0 bg-black/70 flex justify-center items-center p-4 z-50">
+            <div className="w-full max-w-md">
+              <TopUpPanel
+                onContinue={(amount) => {
+                  setTopUpAmount(amount);
+                  setShowTopUpPanel(false);
+                  setShowPayPanel(true);
+                }}
+              />
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
