@@ -3,10 +3,12 @@
 import React, { useState } from "react";
 import { Creator, User } from "../types";
 import { Session } from "next-auth";
-
+import { Bitcoin, Banknote, CreditCard } from "lucide-react";
+import { CryptoPaymentModal } from "@/components/CryptoModal";
 interface PayPanelProps {
   onCancel: () => void;
   topUpAmount: string | null;
+  showAlternativeMethods?: boolean; // NEW
 }
 
 const amounts = ["$10", "$25", "$50", "$100", "$200", "$500"];
@@ -55,7 +57,8 @@ function TopUpPanel({
   );
 }
 
-function PayPanel({ onCancel, topUpAmount }: PayPanelProps) {
+function PayPanel({ onCancel, topUpAmount, showAlternativeMethods = true }: PayPanelProps) {
+  const [showCryptoModal, setShowCryptoModal] = useState(false);
   return (
     <div className="space-y-6 p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl">
       <div className="text-center mb-6">
@@ -65,8 +68,32 @@ function PayPanel({ onCancel, topUpAmount }: PayPanelProps) {
           <span className="text-xs bg-white/10 px-2 py-1 rounded-lg border border-white/20">💳 Encrypted</span>
         </div>
       </div>
-      <div className="text-center font-bold text-2xl text-white">{topUpAmount}</div>
-      <div className="space-y-4">
+
+      <div className="text-center font-bold text-2xl text-white">${topUpAmount}</div>
+
+      {/* Alternative Payment Options */}
+      {showAlternativeMethods && (
+        <div className="space-y-3">
+          <button
+              onClick={() => setShowCryptoModal(true)}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 cursor-pointer text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-colors duration-200"
+            >
+              <Bitcoin size={20} /> Pay with Crypto
+            </button>
+          {showCryptoModal && (
+            <CryptoPaymentModal
+              amountUsd={topUpAmount || 0}
+              onClose={() => setShowCryptoModal(false)}
+            />
+          )}
+          <button className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 cursor-pointer text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-colors duration-200">
+            <Banknote size={20} /> Bank Transfer
+          </button>
+        </div>
+      )}
+
+      {/* Card Payment */}
+      <div className="space-y-4 pt-4 border-t border-white/10">
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Card Number
@@ -101,8 +128,8 @@ function PayPanel({ onCancel, topUpAmount }: PayPanelProps) {
           </div>
         </div>
 
-        <button className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 cursor-pointer text-white px-6 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transform transition-all duration-300 text-lg">
-          💳 Add Payment / Top Up
+        <button className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 cursor-pointer text-white px-6 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transform transition-all duration-300 text-lg">
+          <CreditCard size={20} /> Add Payment / Top Up
         </button>
 
         <button
@@ -181,7 +208,10 @@ export default function App({session}: AppProps) {
             <div>
               <button
                 className="w-full bg-gradient-to-r cursor-pointer from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300"
-                onClick={() => setShowPayPanel(true)}
+                onClick={() => {
+                  setShowPayPanel(true);
+                  setTopUpAmount(null); // since we’re just adding a card
+                }}
               >
                 💳 Add Card
               </button>
@@ -191,30 +221,31 @@ export default function App({session}: AppProps) {
 
         {/* PayPanel modal */}
         {showPayPanel && (
-          <div className="fixed inset-0 bg-black/70 flex justify-center items-center p-4 z-50">
-            <div className="w-full max-w-md">
-              <PayPanel
-                topUpAmount={topUpAmount}
-                onCancel={() => {
-                  setShowPayPanel(false);
-                  setTopUpAmount(null);
-                }}
-              />
-            </div>
-          </div>
-        )}
+  <div className="fixed inset-0 bg-black/70 flex justify-center items-center p-4 z-50">
+    <div className="w-full max-w-md">
+      <PayPanel
+        topUpAmount={topUpAmount}
+        showAlternativeMethods={!!topUpAmount} // only show when topping up
+        onCancel={() => {
+          setShowPayPanel(false);
+          setTopUpAmount(null);
+        }}
+      />
+    </div>
+  </div>
+)}
 
         {/* TopUpPanel modal */}
         {showTopUpPanel && (
           <div className="fixed inset-0 bg-black/70 flex justify-center items-center p-4 z-50">
             <div className="w-full max-w-md">
-              <TopUpPanel
-                onContinue={(amount) => {
-                  setTopUpAmount(amount);
-                  setShowTopUpPanel(false);
-                  setShowPayPanel(true);
-                }}
-              />
+            <TopUpPanel
+  onContinue={(amount) => {
+    setTopUpAmount(parseFloat(amount.replace('$', '')));
+    setShowTopUpPanel(false);
+    setShowPayPanel(true); // still shows alternatives
+  }}
+/>
             </div>
           </div>
         )}
