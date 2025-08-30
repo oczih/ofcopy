@@ -22,6 +22,17 @@ enum Gender {
   Other = 'Other',
   PreferNotToSay = 'PreferNotToSay'
 }
+export interface Following {
+  creatorId: mongoose.Types.ObjectId;
+  followedAt: Date;
+}
+export interface Purchase {
+  id: string;
+  price: number;
+  creatorId: mongoose.Types.ObjectId;
+  postId: string | PostDocument;
+  date: Date;
+}
 export interface CreatorDocument extends mongoose.Document {
   username: string;
   _id: string;
@@ -43,6 +54,8 @@ export interface CreatorDocument extends mongoose.Document {
   posts?: PostDocument[];
   totalEarnings: number,  // Lifetime earnings
   currentBalance: number, // Available for payout
+  following: Following[];
+  purchases: Purchase[];
 }
 
 const creatorSchema = new Schema<CreatorDocument>({
@@ -73,6 +86,39 @@ const creatorSchema = new Schema<CreatorDocument>({
     status: { type: String, enum: ['active', 'cancelled', 'expired'], required: true },
     nextBillingDate: { type: Date, default: null },
     autoRenew: { type: Boolean, default: true }
+  }],
+  purchases: [{
+    id: {
+      type: String
+    },
+    price: {
+      type: Number
+    },
+    creatorId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Creator',
+      required: true
+    },
+    postId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Post',
+      required: true
+    },
+    date: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  following: [{
+    creatorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Creator',
+      required: true
+    },
+    followedAt: {
+      type: Date,
+      default: Date.now
+    }
   }],
   followers: [{
     userId: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true },

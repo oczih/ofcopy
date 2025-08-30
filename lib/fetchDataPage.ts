@@ -9,6 +9,7 @@ import NotificationModel from "@/app/models/notificationmodel";
 import { Session } from "next-auth";
 import PostModel from '@/app/models/postmodel'
 import CreatorApplication from "@/app/models/creatorapplicationmodel";
+
 // Convert ObjectId and Dates recursively
 export function deepSanitize<T>(obj: T, seen = new WeakSet()): T {
   if (obj === null || obj === undefined) return obj as T;
@@ -84,6 +85,9 @@ export async function fetchPageData() {
   const applicationsRaw = await CreatorApplication.find({}).lean<CreatorApplicationType[]>({ virtuals: true });
   const usersRaw = await UserModel.find({}).lean<User[]>({ virtuals: true });
   const postsRaw = await PostModel.find({}).lean<Post[]>({ virtuals: true });
+
+  
+
   const applicationsSanitized = deepSanitize(applicationsRaw) ?? [];
   const creatorsSanitized = deepSanitize(creatorsRaw) ?? [];
   const usersSanitized = deepSanitize(usersRaw) ?? [];

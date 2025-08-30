@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { ObjectId } from "mongoose";
 
 export type User = {
     _id: string,
@@ -82,6 +82,8 @@ export type Creator = {
     user: string;
     totalEarnings: number;
     currentBalance: number;
+    following: Following[];
+    purchases: Purchase[];
   }
 
   export type NotificationType = 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comment' | 'like' | 'newfollower'| 'promotion' | 'purchase';
@@ -259,4 +261,28 @@ export type SafeUser = Partial<
   email?: string;
   image?: string;
   oauthProvider: string; // <- required
+};
+export type MessageType = {
+  id?: string; // optional if you want to store per-message IDs
+  type: "text" | "photo" | "video" | "file" | "voice";
+  senderId: string | ObjectId;
+  message: string;             // plain text OR caption
+  createdAt: string;           // ISO string
+  imageKey?: string;           // Supabase storage key for image
+  videoKey?: string;           // Supabase storage key for video
+  fileKey?: string;            // Supabase storage key for other files
+  voiceKey?: string;           // Supabase storage key for voice notes
+  blurredKey?: string;         // optional: blurred image placeholder
+  duration?: number;           // useful for voice or video messages
+  size?: number;               // file size in bytes
+
+  // New fields for paid content
+  price?: number;              // cost to unlock/view
+  requiresPayment?: boolean;   // true if message is locked until purchased
+};
+export type Chat = {
+  id: string;              // text, can store Mongo ObjectId
+  participants: string[];  // array of Mongo ObjectIds
+  created_at: string;
+  updated_at: string;
 };

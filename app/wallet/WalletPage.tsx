@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Creator, User } from "../types";
 import { Session } from "next-auth";
-import { Bitcoin, Banknote, CreditCard } from "lucide-react";
+import { Bitcoin, Banknote } from "lucide-react";
 import { CryptoPaymentModal } from "@/components/CryptoModal";
 interface PayPanelProps {
   onCancel: () => void;
@@ -57,12 +57,11 @@ function TopUpPanel({
   );
 }
 
-function PayPanel({ onCancel, topUpAmount, showAlternativeMethods = true }: PayPanelProps) {
+function PayPanel({ topUpAmount, showAlternativeMethods = true }: PayPanelProps) {
   const [showCryptoModal, setShowCryptoModal] = useState(false);
   return (
     <div className="space-y-6 p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl">
       <div className="text-center mb-6">
-        <p className="text-gray-300">Secure payment powered by Epoch</p>
         <div className="flex justify-center gap-2 mt-2">
           <span className="text-xs bg-white/10 px-2 py-1 rounded-lg border border-white/20">🔒 SSL</span>
           <span className="text-xs bg-white/10 px-2 py-1 rounded-lg border border-white/20">💳 Encrypted</span>
@@ -93,7 +92,7 @@ function PayPanel({ onCancel, topUpAmount, showAlternativeMethods = true }: PayP
       )}
 
       {/* Card Payment */}
-      <div className="space-y-4 pt-4 border-t border-white/10">
+      {/* <div className="space-y-4 pt-4 border-t border-white/10">
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Card Number
@@ -138,7 +137,7 @@ function PayPanel({ onCancel, topUpAmount, showAlternativeMethods = true }: PayP
         >
           ← Back
         </button>
-      </div>
+      </div>  */}
 
       <div className="text-xs text-gray-500 text-center pt-4 border-t border-white/10">
         By subscribing, you agree to our Terms of Service and Privacy Policy

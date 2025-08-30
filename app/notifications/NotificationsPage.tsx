@@ -218,6 +218,7 @@ const byUser = resolveByUser(noti.by);
         }
          else {
           const user = users.find(u => u._id === noti.by);
+          console.log(user)
           return `/${user?.username}`;
         }// Goes to creator's followers page
       case "comment":

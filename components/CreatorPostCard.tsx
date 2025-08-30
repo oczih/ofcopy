@@ -28,7 +28,7 @@ export function CreatorPostCard({
   post: Post;
   session: Session | null;
   status: 'follower' | 'subscriber' | 'none',
-  user: User
+  user: Creator | User
   users: User[]
   signedUrl: string;
   handleFollow: (creator: Creator) => void;
@@ -441,7 +441,7 @@ useEffect(() => {
         >
           <MoreHorizontal className="w-5 h-5" />
         </Button>
-        {modalOpen && !user?.creator && !canDeletePost() && (
+        {modalOpen && !session?.user?.creator && !canDeletePost() && (
   <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-100 opacity-100 animate-fade-in z-30">
     <Link href={`/${creator.username}`}>
       <Button variant="ghost" className="w-full justify-start text-left cursor-pointer">

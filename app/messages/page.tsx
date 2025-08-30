@@ -1,6 +1,6 @@
 import React from "react";
 import AppWrapper from "@/components/AppWrapper";
-import App from "./MessagesApp"
+import ChatApp from "./MessagesApp"
 import { fetchPageData } from "@/lib/fetchDataPage";
 
 export default async function Page() {
@@ -8,7 +8,7 @@ export default async function Page() {
 
   return (
     <AppWrapper creators={creators} users={users} session={safeSession}>
-      <App creators={creators} users={users} session={safeSession} />
+      <ChatApp creators={creators} users={users} session={safeSession} />
     </AppWrapper>
   );
 }

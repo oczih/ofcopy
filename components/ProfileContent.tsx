@@ -3,7 +3,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Creator, Follower, MediaPost, Post, Subscriber, User } from '@/app/types';
+import { Chat, Creator, MediaPost, Post, User } from '@/app/types';
 import SubscribeModal from '@/components/SubscribeModal';
 import creatorservice from '@/app/services/creatorservice';
 import { Skeleton } from "@/components/ui/skeleton"
@@ -17,6 +17,9 @@ import SignUpModal from './SignupModal';
 import { Session } from 'next-auth';
 import { createPortal } from 'react-dom';
 import { Toaster } from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { v4 as uuidv4 } from "uuid";
 
 // Bio Modal Component
 const BioModal = ({ bio, creatorName }: { bio: string; creatorName: string }) => {
@@ -53,7 +56,7 @@ const BioModal = ({ bio, creatorName }: { bio: string; creatorName: string }) =>
 
 type UserProfileData = {
   userViewed: User,
-  viewingUser: User,
+  viewingUser: Creator | User,
   purchasedContent: MediaPost[],
   totalSpent: number,
   isOwnProfile: boolean,
@@ -62,6 +65,7 @@ type UserProfileData = {
   creators: Creator[],
   session: Session | null
   creator: Creator | null;
+  chats: Chat[]
 }
 
 export default function ProfileContent({ 
@@ -74,23 +78,22 @@ export default function ProfileContent({
   users,
   creators,
   session,
-  creator
+  creator,
+  chats
 }: UserProfileData) {
-  
   const [modalOpen, setModalOpen] = useState(false);
   const [joinModalOpen, setJoinModalOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User>(viewingUser);
-  const [status, setStatus] = useState<'subscriber' | 'follower' | 'none'>('none');
+  const [currentUser, setCurrentUser] = useState<User | Creator>(viewingUser);
+  const [status, setStatus] = useState<'subscriber' | 'follower' | 'none'>(relationshipStatus);
   // Cache for signed URLs with timestamps
   const [urlCache, setUrlCache] = useState<Record<string, { url: string; timestamp: number }>>({});
   const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+  const router = useRouter();
+
   
-  useEffect(() => {
-    setStatus(relationshipStatus);
-  }, [relationshipStatus]);
-  
-  
+  console.log(status)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarImage, setAvatarImage] = useState<string | null>(null);
   const avatarKey = creator?.avatarKey ?? userViewed?.avatarKey?.replace(/^\/+/, '');
   const lastFetchedAvatarKey = useRef<string | null>(null);
   const [imageLoading, setImageLoading] = useState(!!avatarKey);
@@ -141,6 +144,13 @@ export default function ProfileContent({
   
     const fetchAvatarUrl = async () => {
       setImageLoading(true);
+      if (avatarKey.startsWith("http")) {
+        setAvatarImage(avatarKey);
+        setAvatarUrl(avatarKey); // use the URL directly
+        lastFetchedAvatarKey.current = avatarKey;
+        setImageLoading(false);
+        return;
+      }
       const url = await getSignedUrl(avatarKey);
       if (url) {
         setAvatarUrl(url);
@@ -234,30 +244,7 @@ export default function ProfileContent({
     return () => clearInterval(cleanup);
   }, [CACHE_TTL]);
 
-  useEffect(() => {
-    if (!creator || !viewingUser?._id) {
-      setStatus('none');
-      return;
-    }
-    const isSubscriber =
-      Array.isArray(creator.subscribers) &&
-      creator.subscribers.some(
-        (sub: Subscriber) => sub.userId.toString() === viewingUser?._id.toString()
-      );
-    const isFollower =
-      creator.followers &&
-      creator.followers.some(
-        (fol: Follower) => fol.userId.toString() === viewingUser?._id.toString()
-      );
-  
-    if (isSubscriber) {
-      setStatus('subscriber');
-    } else if (isFollower) {
-      setStatus('follower');
-    } else {
-      setStatus('none');
-    }
-  }, [creator, viewingUser]);
+
 
   // Calculate stats
   const getCreatorStats = () => {
@@ -351,6 +338,36 @@ export default function ProfileContent({
     }
   };
   const resolvedSrc = resolveImageUrl(avatarUrl);
+  
+  const handleStartChat = async (userId: string, sessionUserId: string) => {
+    // Find existing chat or create a new one
+    let chat = chats.find(c => c.participants.includes(userId));
+  
+    if (!chat) {
+      const newChat = {
+        id: uuidv4(),
+        participants: [sessionUserId, userId],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      console.log(newChat)
+      const { data, error } = await supabase
+        .from("chats")
+        .insert(newChat)
+        .select()
+        .single();
+  
+      if (error) return console.error("Error creating chat:", error);
+      chat = data;
+    }
+  
+    // Persist the chat ID
+    localStorage.setItem("currentChatIdentifier", chat?.id);
+  
+    // Navigate to messages page
+    router.push("/messages");
+  };
+  console.log(userViewed.id)
   return (
     <div>
       <Toaster
@@ -370,7 +387,7 @@ export default function ProfileContent({
                     <Skeleton className="w-40 h-40 rounded-full bg-gray-300 dark:bg-gray-700" />
                   ) : avatarUrl ? (
                     <img
-                      src={resolvedSrc ?? ""}
+                      src={resolvedSrc || avatarImage || ""}
                       alt={userViewed.username || "User profile image"}
                       className="w-40 h-40 rounded-full border border-black shadow-lg object-cover"
                       onLoad={() => setImageLoading(false)}
@@ -452,21 +469,25 @@ export default function ProfileContent({
               
               {/* User Stats (for non-creators) - Under profile pic and smaller */}
               {!creator && (
-                <div className="flex flex-col gap-2 text-center">
-                  <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
-                    <div className="text-xs text-gray-300">Status</div>
-                    <div className="text-sm font-semibold text-white capitalize">
-                      {status}
-                    </div>
-                  </div>
-                  <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
-                    <div className="text-xs text-gray-300">Total Spent</div>
-                    <div className="text-sm font-semibold text-green-400">
-                      ${totalSpent.toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              )}
+  <div className="w-full flex flex-col gap-2 text-center">
+    <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
+      <div className="text-xs text-gray-300">Status</div>
+      <div className="text-sm font-semibold text-white capitalize">
+        {status}
+      </div>
+    </div>
+    <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
+      <div className="text-xs text-gray-300">Total Spent</div>
+      <div className="text-sm font-semibold text-green-400">
+        ${totalSpent.toFixed(2)}
+      </div>
+    </div>
+
+    {/* Send Message Button */}
+
+  </div>
+)}
+
             </div>
             {/* Right Column - Profile Info and Action Buttons */}
             <div className="flex-1 text-center lg:text-left">
@@ -499,7 +520,7 @@ export default function ProfileContent({
             </div>
           </div>
           
-          {!isOwnProfile && viewingUser && status !== 'subscriber' && (
+          {!isOwnProfile && userViewed.creator && viewingUser && status !== 'subscriber' && (
             <button 
               className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-full font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
               onClick={() => setModalOpen(true)}
@@ -511,7 +532,18 @@ export default function ProfileContent({
               </div>
             </button>
           )}
-          
+              {(status === 'follower' || status === 'subscriber') && session?.user?.creator && (
+             <button
+             onClick={() => {
+              
+             
+              handleStartChat(userViewed.id, session.user._id)
+             }}
+             className="w-full mt-4 border border-purple-500 hover:bg-purple-500/10 text-purple-400 px-4 py-2 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
+           >
+             Send Message
+           </button>
+            )}
           {!viewingUser && (
             <button 
               className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-full font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
@@ -580,10 +612,10 @@ function ContentTabs({
   creator: Creator;
   isOwnProfile: boolean;
   status: 'subscriber' | 'follower' | 'none';
-  viewingUser: User
+  viewingUser: Creator | User
   postSignedUrls: Record<string, string>;
   handleFollow: (creator: Creator) => Promise<void>
-  user: User,
+  user: Creator | User,
   users: User[],
   session: Session | null,
   creators: Creator[]
@@ -651,7 +683,7 @@ function LikedContent({
   creator?: Creator;
   status: "follower" | "subscriber" | "none";
   postSignedUrls: Record<string, string>;
-  viewingUser: User;
+  viewingUser: Creator | User;
   creators: Creator[];
 }) {
   if (!creator) return null;
@@ -723,10 +755,10 @@ function PurchasedPostsGrid ({
   status,
 }: {
   creator?: Creator;
-  viewingUser: User;
+  viewingUser: Creator | User;
   postSignedUrls: Record<string, string>;
   handleFollow: (creator: Creator) => void;
-  user: User,
+  user: Creator | User,
   status: 'follower' | 'subscriber' | 'none',
   creators: Creator[]
 }) {
@@ -917,7 +949,7 @@ function MediaGrid({
     status: 'subscriber' | 'follower' | 'none';
     postSignedUrls: Record<string, string>;
     handleFollow: (creator: Creator) => void;
-    user: User,
+    user: Creator | User,
     users: User[],
     session: Session | null,
   }) {

@@ -28,7 +28,6 @@ export const Header = () => {
   const router = useRouter();
   const handleSignOut = async () => {
     await signOut({ redirect: false });
-    localStorage.removeItem('user');
     router.push('/');
     toast.success('Signed out successfully');
   };

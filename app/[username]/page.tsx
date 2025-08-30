@@ -11,19 +11,19 @@ type PageParams = { username: string };
 export default async function Page(props: unknown) {
   // Assert the type so TypeScript knows `params` exists
   const { params } = props as { params: PageParams };
-  const username = params.username.toLowerCase();
+  const username = await params.username.toLowerCase();
   await connectDB();
   const creator = await CreatorModel.findOne({ username: username.toLowerCase() })
  
   const user = await UserModel.findOne({ username: username.toLowerCase() });
   if (!creator && !user) notFound();
-  const { creators, users, safeSession } = await fetchPageData();
+  const { creators, users, safeSession, chats } = await fetchPageData();
 
   // Sanitize your data if needed here
   
   return (
     <AppWrapper creators={creators ?? []} users={users} session={safeSession}>
-    <App creators={creators} users={users} session={safeSession} username={username.toLowerCase()} />
+    <App creators={creators} users={users} session={safeSession} username={username.toLowerCase()} chats={chats} />
     </AppWrapper>
   );
 }
