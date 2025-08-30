@@ -500,15 +500,17 @@ export default function ChatApp({ session, users }: AppProps) {
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                 </div>
   
-                <div className="p-2 flex flex-row justify-between">
+                {session?.user.creator && <div className="p-2 flex flex-row justify-between">
                   <button
                     onClick={() => router.push("/mass-messages")}
-                    className="p-2 rounded-full disabled:hover:bg-transparent hover:bg-white/10 disabled:cursor-default disabled:text-gray-500 cursor-pointer transition"
+                    className="rounded-full items-center flex flex-row p-3 gap-3 w-full bg-white/30 disabled:hover:bg-transparent hover:bg-white/50 disabled:cursor-default disabled:text-gray-500 cursor-pointer transition"
                     disabled={files.length > 0}
                   >
                     <Package />
+                    Send A Mass Message
                   </button>
                 </div>
+                }
               </div>
   
               {/* Conversations List */}
@@ -704,21 +706,24 @@ export default function ChatApp({ session, users }: AppProps) {
   
                   {/* Message Input */}
                   <ChatInput
-                    messageText={messageText}
-                    setMessageText={setMessageText}
-                    files={files}
-                    setFiles={setFiles}
-                    previews={previews}
-                    setPreviews={setPreviews}
-                    uploading={uploading}
-                    handleSendMessage={handleSendMessage}
-                    handleFileChange={handleFileChange}
-                    setActiveImage={setActiveImage}
-                    isVoiceModalOpen={isVoiceModalOpen}
-                    setIsVoiceModalOpen={setIsVoiceModalOpen}
-                    isVoiceFile={isVoiceFile}
-                    price={price}
-                  />
+                      messageText={messageText}
+                      setMessageText={setMessageText}
+                      files={files}
+                      setFiles={setFiles}
+                      previews={previews}
+                      setPreviews={setPreviews}
+                      uploading={uploading}
+                      handleSendMessage={handleSendMessage}
+                      handleFileChange={handleFileChange}
+                      setActiveImage={setActiveImage}
+                      price={price}
+                      setPrice={setPrice}                       // <-- add this
+                      isPriceModalOpen={false}                  // <-- or use state
+                      setIsPriceModalOpen={() => {}}            // <-- or use state
+                      isVoiceModalOpen={isVoiceModalOpen}
+                      setIsVoiceModalOpen={setIsVoiceModalOpen}
+                      isVoiceFile={isVoiceFile}
+                      />
                 </>
               ) : null}
             </div>

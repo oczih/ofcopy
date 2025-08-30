@@ -60,7 +60,7 @@ export function ChatInput({
 
           <div className="relative flex flex-row gap-2 items-center w-full overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
             {/* Add more files button */}
-            {previews.length > 0 && <label
+            {previews?.length > 0 && <label
               htmlFor="file-upload-more"
               className="flex flex-col items-center justify-center w-20 h-25 outline-2 outline-gray-400 hover:outline-3 rounded-xl cursor-pointer bg-gray-50/50 text-white transition shrink-0"
             >
@@ -81,7 +81,7 @@ export function ChatInput({
                 }
             {previews?.map((preview, index) => {
               const isVoice = isVoiceFile(files[index]);
-              const voiceFullWidth = isVoice && previews.length === 1;
+              const voiceFullWidth = isVoice && previews?.length === 1;
 
               return (
                 <div
@@ -138,7 +138,7 @@ export function ChatInput({
       ) : (
         <div className="relative flex flex-row gap-2 mb-5 items-center w-full overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
           {/* Add more files button */}
-          {previews.length > 0 && <label
+          {previews?.length > 0 && <label
               htmlFor="file-upload-more"
               className="flex flex-col items-center justify-center w-20 h-25 outline-2 outline-gray-400 hover:outline-3 rounded-xl cursor-pointer bg-gray-50/50 text-white transition shrink-0"
             >

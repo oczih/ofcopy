@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { Session } from "next-auth";
 import { Globe, Star, Users, X } from "lucide-react";
-import { Creator, User } from "../types";
+import { Creator, MessageType, User } from "../types";
 import { sendMessage } from "@/lib/messages"; // helper
 import { supabase } from "@/lib/supabase";
 import { ChatInput } from "@/components/ChatInput";
 import { motion, AnimatePresence } from "framer-motion";
+import uploadmediaservice from "../services/uploadmediaservice";
+import { v4 as uuidv4 } from "uuid";
 interface AppProps {
   session: Session | null;
   creators: Creator[];
@@ -20,6 +22,26 @@ interface MassMessageModalProps {
   creators: Creator[];
   senderId: string;
   session: Session | null;
+  handleSendMassMessage: () => void,
+  messageText: string;
+  setMessageText: (val: string) => void;
+  files: File[];
+  setFiles: (val: File[]) => void;
+  previews: string[];
+  setPreviews: (val: string[]) => void;
+  uploading: boolean;
+  handleSendMessage: () => void;
+  handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  setActiveImage: (src: string) => void;
+  price: number | null;
+  setPrice: (val: number | null) => void;
+  isPriceModalOpen: boolean;
+  setIsPriceModalOpen: (val: boolean) => void;
+  isVoiceModalOpen: boolean;
+  setIsVoiceModalOpen: (val: boolean) => void;
+  isVoiceFile: (file: File) => boolean;
+  selectedCategories: string[]
+  setSelectedCategories:  (val: string) => void;
 }
 
 
@@ -42,8 +64,11 @@ export function MassMessageModal({
   setIsPriceModalOpen,
   isVoiceModalOpen,
   setIsVoiceModalOpen,
+  handleFileChange,
+  setActiveImage,
+  selectedCategories,
+  setSelectedCategories
 }: MassMessageModalProps) {
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const rightCreator = creators.find(c => c.user === session?.user._id);
 
   const toggleCategory = (key: string) => {
@@ -54,8 +79,8 @@ export function MassMessageModal({
 
   const categories = [
     {
-      key: "all",
-      label: "All",
+      key: "allcontacts",
+      label: "All Contacts",
       count: users.length + creators.length,
       icon: <Globe className="w-4 h-4" />,
     },
@@ -102,10 +127,11 @@ export function MassMessageModal({
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {/* Category Selectors */}
             <div className="flex gap-2 flex-wrap">
-              {categories.map(cat => (
+                {categories.map(cat => (
                 <button
                   key={cat.key}
                   onClick={() => toggleCategory(cat.key)}
+                  disabled={cat.key !== "allcontacts" && selectedCategories.includes("allcontacts")}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition ${
                     selectedCategories.includes(cat.key)
                       ? "bg-pink-500 text-white"
@@ -116,8 +142,8 @@ export function MassMessageModal({
                   <span>{cat.label}</span>
                   <span className="text-xs opacity-80">({cat.count})</span>
                 </button>
-              ))}
-            </div>
+                ))}
+                </div>
 
             {/* Chat Input */}
             <ChatInput
@@ -129,8 +155,8 @@ export function MassMessageModal({
               setPreviews={setPreviews}
               uploading={false}
               handleSendMessage={handleSendMassMessage}
-              handleFileChange={() => {}}
-              setActiveImage={() => {}}
+              handleFileChange={handleFileChange}
+              setActiveImage={setActiveImage}
               price={price}
               setPrice={setPrice}
               isPriceModalOpen={isPriceModalOpen}
@@ -156,7 +182,178 @@ interface AppProps {
 
 export default function MassMessageApp({ session, users, creators }: AppProps) {
   const [open, setOpen] = useState(false);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+  const [messageText, setMessageText] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [price, setPrice] = useState(0)
+  const [activeImage, setActiveImage] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
+  async function getChats({
+    selectedCategories,
+    users,
+    creators,
+    sessionUserId,
+  }: {
+    selectedCategories: string[];
+    users: User[];
+    creators: Creator[];
+    sessionUserId: string;
+  }): Promise<string[]> {
+    let recipients: string[] = [];
+  
+    // 1. Collect recipients based on selected categories
+    if (selectedCategories.includes("allcontacts")) {
+      recipients = [
+        ...users.map(u => u.id),
+        ...creators.map(c => c.user), // c.user is the creator's userId
+      ];
+    } else {
+      if (selectedCategories.includes("followers")) {
+        const creator = creators.find(c => c.user === sessionUserId);
+        if (creator?.followers) {
+          recipients.push(...creator.followers.map(f => f.userId)); // ✅ extract userId
+        }
+      }
+      if (selectedCategories.includes("subscribers")) {
+        const creator = creators.find(c => c.user === sessionUserId);
+        if (creator?.subscribers) {
+          recipients.push(...creator.subscribers.map(s => s.userId.toString())); // ✅ extract userId
+        }
+      }
+    }
+  
+    // Remove duplicates + yourself
+    recipients = [...new Set(recipients)].filter(id => id !== sessionUserId);
+  
+    const chatIds: string[] = [];
+  
+    // 2. For each recipient, find or create a chat
+    for (const userId of recipients) {
+      const { data: existingChats, error } = await supabase
+        .from("chats")
+        .select("*")
+        .contains("participants", [sessionUserId, userId]) // participants array contains both
+        .maybeSingle();
+  
+      if (error) {
+        console.error("Error checking chat:", error);
+        continue;
+      }
+  
+      let chatId: string;
+  
+      if (existingChats) {
+        chatId = existingChats.id;
+      } else {
+        const newChat = {
+          id: uuidv4(),
+          participants: [sessionUserId, userId],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+  
+        const { data, error: insertError } = await supabase
+          .from("chats")
+          .insert(newChat)
+          .select()
+          .single();
+  
+        if (insertError) {
+          console.error("Error creating chat:", insertError);
+          continue;
+        }
+  
+        chatId = data.id;
+      }
+  
+      chatIds.push(chatId);
+    }
+  
+    return chatIds;
+  }
+  const handleSendMassMessage = async () => {
+    if (!messageText.trim() && files.length === 0) return;
+  
+    setUploading(true);
+    try {
+      const chatIds = await getChats({
+        selectedCategories,
+        users,
+        creators,
+        sessionUserId: session?.user._id ?? "",
+      });
+  
+      for (const chatId of chatIds) {
+        let newMessage: MessageType;
+  
+        if (files.length > 0) {
+          const file = files[0];
+          const { key, blurredKey } = await uploadmediaservice.uploadContent(file);
+  
+          newMessage = await sendMessage({
+            chatId,
+            senderId: session?.user._id ?? "",
+            content: messageText || "",
+            isMassMessage: true,
+            imageKey: file.type.startsWith("image/") ? key : undefined,
+            videoKey: file.type.startsWith("video/") ? key : undefined,
+            voiceKey: file.type.startsWith("audio/") ? key : undefined,
+            fileKey:
+              !file.type.startsWith("image/") &&
+              !file.type.startsWith("video/") &&
+              !file.type.startsWith("audio/")
+                ? key
+                : undefined,
+            blurredKey,
+            size: file.size,
+          });
+        } else {
+          newMessage = await sendMessage({
+            chatId,
+            senderId: session?.user._id ?? "",
+            content: messageText,
+          });
+        }
+      }
+  
+      // Reset inputs
+      setMessageText("");
+      setFiles([]);
+      setPreviews([]);
+      setPrice(0);
+    } catch (err) {
+      console.error("Error sending mass message:", err);
+    } finally {
+      setUploading(false);
+    }
+  };
+  
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(e.target.files ?? []);
+    
+    // Filter out duplicates
+    const newFiles = selectedFiles.filter(
+      file => !files.some(f => f.name === file.name && f.size === file.size)
+    );
+  
+    // Filter out files over 200MB
+    const maxSize = 200 * 1024 * 1024; // 200MB in bytes
+    const oversizedFiles = newFiles.filter(file => file.size > maxSize);
+    if (oversizedFiles.length > 0) {
+     
+    }
+  
+    const validFiles = newFiles.filter(file => file.size <= maxSize);
+  
+    setFiles(prev => [...prev, ...validFiles]);
+    setPreviews(prev => [
+      ...prev,
+      ...validFiles.map(file => URL.createObjectURL(file))
+    ]);
+    
+  }
   return (
     <div>
       <div className="border-b flex items-center justify-between border-white px-10 py-2">
@@ -178,6 +375,17 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
           creators={creators}
           senderId={session?.user._id ?? ""}
           session={session}
+          handleSendMassMessage={handleSendMassMessage}
+          setPreviews={setPreviews}
+          previews={previews}
+          files={files}
+          setFiles={setFiles}
+          handleFileChange={handleFileChange}
+          setActiveImage={setActiveImage}
+          messageText={messageText}
+          setMessageText={setMessageText}
+          selectedCategories={selectedCategories}
+          setSelectedCategories={setSelectedCategories}
         />
       )}
     </div>

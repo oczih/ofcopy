@@ -8,6 +8,7 @@ export type Message = {
   sender_id: string        // user UUID
   content: string
   created_at: string
+  isMassMessage: boolean
 }
 
 export const supabase = createClient(

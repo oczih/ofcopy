@@ -275,7 +275,7 @@ export type MessageType = {
   blurredKey?: string;         // optional: blurred image placeholder
   duration?: number;           // useful for voice or video messages
   size?: number;               // file size in bytes
-
+  isMassMessage?: boolean;
   // New fields for paid content
   price?: number;              // cost to unlock/view
   requiresPayment?: boolean;   // true if message is locked until purchased
