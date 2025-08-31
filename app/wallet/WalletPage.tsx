@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Creator, User } from "../types";
 import { Session } from "next-auth";
-import { Bitcoin, Banknote } from "lucide-react";
+import { Bitcoin, Banknote, X } from "lucide-react";
 import { CryptoPaymentModal } from "@/components/CryptoModal";
 interface PayPanelProps {
   onCancel: () => void;
@@ -57,8 +57,9 @@ function TopUpPanel({
   );
 }
 
-function PayPanel({ topUpAmount, showAlternativeMethods = true }: PayPanelProps) {
+function PayPanel({ topUpAmount, showAlternativeMethods = true, onCancel }: PayPanelProps) {
   const [showCryptoModal, setShowCryptoModal] = useState(false);
+
   return (
     <div className="space-y-6 p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl">
       <div className="text-center mb-6">
@@ -73,23 +74,35 @@ function PayPanel({ topUpAmount, showAlternativeMethods = true }: PayPanelProps)
       {/* Alternative Payment Options */}
       {showAlternativeMethods && (
         <div className="space-y-3">
+          <div className="flex justify-end">
           <button
-              onClick={() => setShowCryptoModal(true)}
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 cursor-pointer text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-colors duration-200"
-            >
-              <Bitcoin size={20} /> Pay with Crypto
-            </button>
+        className="absolute top-4 right-4 cursor-pointer text-white hover:text-pink-400 transition-colors"
+        onClick={onCancel}
+      >
+        <X size={24} />
+      </button>
+          </div>
+
+          <button
+            onClick={() => setShowCryptoModal(true)}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 cursor-pointer text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-colors duration-200"
+          >
+            <Bitcoin size={20} /> Pay with Crypto
+          </button>
+
           {showCryptoModal && (
             <CryptoPaymentModal
-              amountUsd={topUpAmount || 0}
+              amountUsd={Number(topUpAmount) || 0}
               onClose={() => setShowCryptoModal(false)}
             />
           )}
+
           <button className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 cursor-pointer text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-colors duration-200">
             <Banknote size={20} /> Bank Transfer
           </button>
         </div>
       )}
+
 
       {/* Card Payment */}
       {/* <div className="space-y-4 pt-4 border-t border-white/10">
@@ -239,12 +252,12 @@ export default function App({session}: AppProps) {
           <div className="fixed inset-0 bg-black/70 flex justify-center items-center p-4 z-50">
             <div className="w-full max-w-md">
             <TopUpPanel
-  onContinue={(amount) => {
-    setTopUpAmount(parseFloat(amount.replace('$', '')));
-    setShowTopUpPanel(false);
-    setShowPayPanel(true); // still shows alternatives
-  }}
-/>
+                onContinue={(amount) => {
+                  setTopUpAmount(parseFloat(amount.replace('$', '')));
+                  setShowTopUpPanel(false);
+                  setShowPayPanel(true); // still shows alternatives
+                }}
+                />
             </div>
           </div>
         )}

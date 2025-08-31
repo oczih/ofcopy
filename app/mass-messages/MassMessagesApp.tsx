@@ -1,6 +1,7 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useState } from "react";
+import { SetStateAction, Dispatch, useCallback, useEffect, useState } from "react";
 import { Session } from "next-auth";
 import { Globe, Star, Users, X } from "lucide-react";
 import { Creator, MessageType, User } from "../types";
@@ -10,6 +11,8 @@ import { ChatInput } from "@/components/ChatInput";
 import { motion, AnimatePresence } from "framer-motion";
 import uploadmediaservice from "../services/uploadmediaservice";
 import { v4 as uuidv4 } from "uuid";
+import { MassMessagesTable } from "@/components/MassMessageTable";
+import SetPriceModal from "@/components/SetPriceModal";
 interface AppProps {
   session: Session | null;
   creators: Creator[];
@@ -34,7 +37,7 @@ interface MassMessageModalProps {
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   setActiveImage: (src: string) => void;
   price: number | null;
-  setPrice: (val: number | null) => void;
+  setPrice: Dispatch<SetStateAction<number | null>>;
   isPriceModalOpen: boolean;
   setIsPriceModalOpen: (val: boolean) => void;
   isVoiceModalOpen: boolean;
@@ -60,8 +63,6 @@ export function MassMessageModal({
   setPreviews,
   price,
   setPrice,
-  isPriceModalOpen,
-  setIsPriceModalOpen,
   isVoiceModalOpen,
   setIsVoiceModalOpen,
   handleFileChange,
@@ -144,7 +145,7 @@ export function MassMessageModal({
                 </button>
                 ))}
                 </div>
-
+                
             {/* Chat Input */}
             <ChatInput
               messageText={messageText}
@@ -159,8 +160,6 @@ export function MassMessageModal({
               setActiveImage={setActiveImage}
               price={price}
               setPrice={setPrice}
-              isPriceModalOpen={isPriceModalOpen}
-              setIsPriceModalOpen={setIsPriceModalOpen}
               isVoiceModalOpen={isVoiceModalOpen}
               setIsVoiceModalOpen={setIsVoiceModalOpen}
               isVoiceFile={(file) => file.type.startsWith("audio")}
@@ -189,7 +188,90 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
   const [price, setPrice] = useState(0)
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-
+  const [massMessages, setMassMessages] = useState<MessageType[]>([]);
+  const [massMediaUrlCache, setMassMediaUrlCache] = useState<Record<string, { url: string; timestamp: number }>>({});
+  const [massMessageMediaUrls, setMassMessageMediaUrls] = useState<Record<string, string>>({});
+  const CACHE_TTL = 15 * 60 * 1000;
+  const resolveMassMediaUrl = useCallback(
+    async (key: string | undefined | null): Promise<string | undefined> => {
+      if (!key) return undefined;
+  
+      const cached = massMediaUrlCache[key];
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        return cached.url;
+      }
+  
+      try {
+        const res = await fetch("/api/media/download-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ s3Key: key }),
+        });
+        const data = await res.json();
+        if (res.ok && data.downloadUrl?.startsWith("https://")) {
+          setMassMediaUrlCache(prev => ({
+            ...prev,
+            [key]: { url: data.downloadUrl, timestamp: Date.now() },
+          }));
+          return data.downloadUrl;
+        }
+      } catch (err) {
+        console.error("Error fetching mass message media URL:", err);
+      }
+      return undefined;
+    },
+    [massMediaUrlCache, CACHE_TTL]
+  );
+  useEffect(() => {
+    const fetchMassMessages = async () => {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("ismassmessage", true)
+        .order("created_at", { ascending: false });
+  
+      if (error) {
+        console.error("Error fetching mass messages:", error);
+        return;
+      }
+  
+      setMassMessages(data || []);
+    };
+  
+    fetchMassMessages();
+  }, []);
+  useEffect(() => {
+    setMassMessages(massMessages); // sync if props change
+  }, [massMessages]);
+  console.log(massMessages)
+  useEffect(() => {
+    if (massMessages.length === 0) return;
+  
+    const loadMassMediaUrls = async () => {
+      const updatedUrls: Record<string, string> = { ...massMessageMediaUrls };
+  
+      for (const msg of massMessages) {
+        const keys = [
+          msg.image_key,
+          msg.video_key,
+          msg.voice_key,
+          msg.file_key,
+          msg.blurred_key
+        ];
+  
+        for (const key of keys) {
+          if (key && !updatedUrls[key]) {
+            const url = await resolveMassMediaUrl(key);
+            if (url) updatedUrls[key] = url;
+          }
+        }
+      }
+  
+      setMassMessageMediaUrls(updatedUrls);
+    };
+  
+    void loadMassMediaUrls();
+  }, [massMessages, resolveMassMediaUrl]);
   async function getChats({
     selectedCategories,
     users,
@@ -206,7 +288,7 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
     // 1. Collect recipients based on selected categories
     if (selectedCategories.includes("allcontacts")) {
       recipients = [
-        ...users.map(u => u.id),
+        ...users.map(u => u._id),
         ...creators.map(c => c.user), // c.user is the creator's userId
       ];
     } else {
@@ -275,7 +357,7 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
   }
   const handleSendMassMessage = async () => {
     if (!messageText.trim() && files.length === 0) return;
-  
+    console.log("praissi", price)
     setUploading(true);
     try {
       const chatIds = await getChats({
@@ -296,7 +378,8 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
             chatId,
             senderId: session?.user._id ?? "",
             content: messageText || "",
-            isMassMessage: true,
+            price: price ? price : undefined,
+            ismassmessage: true,
             imageKey: file.type.startsWith("image/") ? key : undefined,
             videoKey: file.type.startsWith("video/") ? key : undefined,
             voiceKey: file.type.startsWith("audio/") ? key : undefined,
@@ -312,9 +395,11 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
         } else {
           newMessage = await sendMessage({
             chatId,
+            ismassmessage: true,
             senderId: session?.user._id ?? "",
             content: messageText,
           });
+          if(newMessage) return;
         }
       }
   
@@ -323,6 +408,7 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
       setFiles([]);
       setPreviews([]);
       setPrice(0);
+      setOpen(false);
     } catch (err) {
       console.error("Error sending mass message:", err);
     } finally {
@@ -356,7 +442,7 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
   }
   return (
     <div>
-      <div className="border-b flex items-center justify-between border-white px-10 py-2">
+      <div className="border-b flex items-center justify-between border-gray-500 px-10 py-2">
       <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
                       Mass Messages
                     </h2>
@@ -370,24 +456,33 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
 
       {open && (
         <MassMessageModal
-          onClose={() => setOpen(false)}
-          users={users}
-          creators={creators}
-          senderId={session?.user._id ?? ""}
-          session={session}
-          handleSendMassMessage={handleSendMassMessage}
-          setPreviews={setPreviews}
-          previews={previews}
-          files={files}
-          setFiles={setFiles}
-          handleFileChange={handleFileChange}
-          setActiveImage={setActiveImage}
-          messageText={messageText}
-          setMessageText={setMessageText}
-          selectedCategories={selectedCategories}
-          setSelectedCategories={setSelectedCategories}
-        />
+        onClose={() => setOpen(false)}
+        users={users}
+        creators={creators}
+        senderId={session?.user._id ?? ""}
+        session={session}
+        handleSendMassMessage={handleSendMassMessage}
+        setPreviews={setPreviews}
+        previews={previews}
+        files={files}
+        setFiles={setFiles}
+        handleFileChange={handleFileChange}
+        setActiveImage={setActiveImage}
+        messageText={messageText}
+        setMessageText={setMessageText}
+        selectedCategories={selectedCategories}
+        setSelectedCategories={setSelectedCategories}
+        price={price}                // ✅ pass price
+        setPrice={setPrice}          // ✅ pass setPrice
+      />
       )}
+      <div className="mass-messages-container space-y-4 p-4">
+      <MassMessagesTable 
+        massMessages={massMessages}
+        massMessageMediaUrls={massMessageMediaUrls}
+        setMassMessages={setMassMessages}
+      />
+</div>
     </div>
   );
 }

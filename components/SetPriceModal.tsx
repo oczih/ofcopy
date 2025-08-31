@@ -1,5 +1,7 @@
 'use client'
 
+import { X } from "lucide-react";
+
 
 // -------------------- SetPriceModal --------------------
 type SetPriceModalProps = {
@@ -14,7 +16,10 @@ export default function SetPriceModal({ isOpen, onClose, onSave, tempPrice, setT
   if (!isOpen) return null;
 
   const handleSavePrice = () => {
-    onSave(parseFloat(tempPrice) || 0);
+    const numericPrice = parseFloat(tempPrice);
+    if (!isNaN(numericPrice)) {
+      onSave(numericPrice);
+    }
     onClose();
     setTempPrice("");
   };

@@ -20,6 +20,7 @@ import { Toaster } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from "uuid";
+import { getChatsBetween } from '@/lib/messages';
 
 // Bio Modal Component
 const BioModal = ({ bio, creatorName }: { bio: string; creatorName: string }) => {
@@ -65,7 +66,6 @@ type UserProfileData = {
   creators: Creator[],
   session: Session | null
   creator: Creator | null;
-  chats: Chat[]
 }
 
 export default function ProfileContent({ 
@@ -79,7 +79,6 @@ export default function ProfileContent({
   creators,
   session,
   creator,
-  chats
 }: UserProfileData) {
   const [modalOpen, setModalOpen] = useState(false);
   const [joinModalOpen, setJoinModalOpen] = useState(false);
@@ -340,9 +339,11 @@ export default function ProfileContent({
   const resolvedSrc = resolveImageUrl(avatarUrl);
   
   const handleStartChat = async (userId: string, sessionUserId: string) => {
-    // Find existing chat or create a new one
-    let chat = chats.find(c => c.participants.includes(userId));
+    // 1. Find existing chat(s) between these users
+    let chats = await getChatsBetween(sessionUserId, userId);
+    let chat = chats[0]; // take the first one if it exists
   
+    // 2. If no chat found, create one
     if (!chat) {
       const newChat = {
         id: uuidv4(),
@@ -350,21 +351,26 @@ export default function ProfileContent({
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-      console.log(newChat)
+  
       const { data, error } = await supabase
         .from("chats")
         .insert(newChat)
         .select()
         .single();
   
-      if (error) return console.error("Error creating chat:", error);
+      if (error) {
+        console.error("Error creating chat:", error);
+        return;
+      }
+  
       chat = data;
     }
   
-    // Persist the chat ID
-    localStorage.setItem("currentChatIdentifier", chat?.id);
+    // 3. Persist the chat ID
+    if (!chat?.id) return;
+    localStorage.setItem("currentChatIdentifier", chat.id);
   
-    // Navigate to messages page
+    // 4. Navigate to messages page
     router.push("/messages");
   };
   console.log(userViewed.id)

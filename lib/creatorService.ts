@@ -1,6 +1,6 @@
 import CreatorModel from "@/app/models/creatormodel";
 import mongoose from "mongoose";
-import { Follower, Gender, Post } from "@/app/types";
+import { Follower, Gender, Post, Subscriber } from "@/app/types";
 
 type PublicCreator = {
   _id: string;
@@ -23,6 +23,7 @@ type LeanCreator = {
   gender: Gender;
   price: number;
   followers?: Follower[];
+  subscribers?: Subscriber[];
   user: mongoose.Types.ObjectId; // ObjectId of user
 };
 
@@ -54,6 +55,7 @@ export async function getAllCreators(fullFields: boolean = false) {
   if (fullFields) {
     const creators = await CreatorModel.find({})
   .populate("followers")
+  .populate("subscribers")
   .populate("posts")
   .lean<LeanCreator[]>();
   
@@ -63,9 +65,10 @@ export async function getAllCreators(fullFields: boolean = false) {
   // Include 'user' field explicitly
   const creators = await CreatorModel.find(
     {},
-    "username name bio avatarKey gender price followers user"
+    "username name bio avatarKey gender price followers subscribers user"
   )
     .populate("followers")
+    .populate("subscribers")
     .lean<LeanCreator[]>();
 
   return creators.map(sanitizeCreator);
@@ -80,14 +83,16 @@ export async function getNonPublicCreatorsByUserId(userId: string, fullFields: b
   if (fullFields) {
     return CreatorModel.find(query)
       .populate("followers")
+      .populate("subscribers")
       .lean();
   }
 
   const creators = await CreatorModel.find(
     query,
-    "username name bio avatarKey gender price followers user"
+    "username name bio avatarKey gender price followers subscribers user"
   )
     .populate("followers")
+    .populate("subscribers")
     .lean<LeanCreator[]>();
 
   return creators.map(sanitizeCreator);
@@ -98,6 +103,7 @@ export async function getCreatorsByUser(userId: string, fullFields: boolean = fa
   if (fullFields) {
     const creators = await CreatorModel.find(query)
       .populate("followers")
+      .populate("subscribers")
       .populate("posts")
       .lean<(LeanCreator & { posts?: Post[] })[]>(); 
 
@@ -106,9 +112,10 @@ export async function getCreatorsByUser(userId: string, fullFields: boolean = fa
 
   const creators = await CreatorModel.find(
     query,
-    "username name bio avatarKey gender price followers user"
+    "username name bio avatarKey gender price followers subscribers user"
   )
     .populate("followers")
+    .populate("subscribers")
     .lean<LeanCreator[]>();
 
   return creators.map(sanitizeCreator);

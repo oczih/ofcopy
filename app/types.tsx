@@ -265,20 +265,20 @@ export type SafeUser = Partial<
 export type MessageType = {
   id?: string; // optional if you want to store per-message IDs
   type: "text" | "photo" | "video" | "file" | "voice";
-  senderId: string | ObjectId;
-  message: string;             // plain text OR caption
-  createdAt: string;           // ISO string
-  imageKey?: string;           // Supabase storage key for image
-  videoKey?: string;           // Supabase storage key for video
-  fileKey?: string;            // Supabase storage key for other files
-  voiceKey?: string;           // Supabase storage key for voice notes
-  blurredKey?: string;         // optional: blurred image placeholder
+  sender_id: string | ObjectId;
+  content?: string;             // plain text OR caption
+  created_at: string;           // ISO string
+  image_key?: string;           // Supabase storage key for image
+  video_key?: string;           // Supabase storage key for video
+  file_key?: string;            // Supabase storage key for other files
+  voice_key?: string;           // Supabase storage key for voice notes
+  blurred_key?: string;         // optional: blurred image placeholder
   duration?: number;           // useful for voice or video messages
   size?: number;               // file size in bytes
-  isMassMessage?: boolean;
+  ismassmessage?: boolean;
   // New fields for paid content
   price?: number;              // cost to unlock/view
-  requiresPayment?: boolean;   // true if message is locked until purchased
+  requires_payment?: boolean;   // true if message is locked until purchased
 };
 export type Chat = {
   id: string;              // text, can store Mongo ObjectId

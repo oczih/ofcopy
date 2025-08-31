@@ -17,6 +17,7 @@ import uploadmediaservice from "../services/uploadmediaservice";
 import {MessageType }from "@/app/types"
 import { useRouter } from "next/navigation";
 import { ChatInput } from "@/components/ChatInput";
+import SetPriceModal from "@/components/SetPriceModal";
 interface AppProps {
   creators: Creator[];
   session: Session | null;
@@ -45,6 +46,7 @@ export default function ChatApp({ session, users }: AppProps) {
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const CACHE_TTL = 15 * 60 * 1000;
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [isPriceModalOpen, setIsPriceModalOpen] = useState(false)
   const router = useRouter();
   useEffect(() => {
     const storedIdentifier = localStorage.getItem("currentChatIdentifier");
@@ -76,9 +78,9 @@ export default function ChatApp({ session, users }: AppProps) {
         const rows: SupabaseMessage[] = await getMessages(currentChatIdentifier);
         const mapped: MessageType[] = rows.map((row) => ({
           id: String(row.id),
-          senderId: row.sender_id,
-          message: row.content,
-          createdAt: row.created_at,
+          sender_id: row.sender_id,
+          content: row.content,
+          created_at: row.created_at,
           type: row.image_key
             ? "photo"
             : row.video_key
@@ -88,9 +90,10 @@ export default function ChatApp({ session, users }: AppProps) {
             : row.file_key
             ? "file"
             : "text",
-          imageKey: row.image_key ?? undefined,
-          videoKey: row.video_key ?? undefined,
-          voiceKey: row.voice_key ?? undefined,
+          image_key: row.image_key ?? undefined,
+          video_key: row.video_key ?? undefined,
+          price: row.price ?? undefined,
+          voice_key: row.voice_key ?? undefined,
           fileKey: row.file_key ?? undefined,
           blurredKey: row.blurred_key ?? undefined,
           duration: row.duration ?? undefined,
@@ -178,7 +181,7 @@ export default function ChatApp({ session, users }: AppProps) {
     const loadAvatars = async () => {
       setImageLoading(true);
       try {
-        const map: Record<string, string> = {};
+        const map: Record<string, string | null> = {}; // allow null
         for (const chat of chats) {
           const otherParticipant = users.find(
             u => chat.participants.includes(u._id) && u._id !== session?.user?._id
@@ -186,7 +189,7 @@ export default function ChatApp({ session, users }: AppProps) {
           if (otherParticipant?.avatarKey) {
             map[chat.id] = await resolveAvatarUrl(otherParticipant.avatarKey);
           } else {
-            map[chat.id] = "/default-avatar.png";
+            map[chat.id] = null; // no avatar
           }
         }
         setChatAvatars(map);
@@ -201,35 +204,32 @@ export default function ChatApp({ session, users }: AppProps) {
     if (messages.length === 0) return;
   
     const loadMediaUrls = async () => {
-      try {
-        const updatedUrls: Record<string, string> = { ...messageMediaUrls };
+      const updatedUrls: Record<string, string> = { ...messageMediaUrls };
   
-        for (const msg of messages) {
-          // Check each media type
-          const keys = [
-            { key: msg.imageKey, type: 'imageKey' },
-            { key: msg.videoKey, type: 'videoKey' },
-            { key: msg.voiceKey, type: 'voiceKey' },
-            { key: msg.fileKey, type: 'fileKey' },
-            { key: msg.blurredKey, type: 'blurredKey' }
-          ];
+      for (const msg of messages) {
+        const keys = [msg.image_key, msg.video_key, msg.voice_key, msg.file_key, msg.blurred_key];
+        for (const key of keys) {
+          if (!key) continue;
   
-          for (const { key } of keys) {
-            if (key && !updatedUrls[key]) {
+          // Always fetch, bypassing cache for first load
+          if (!updatedUrls[key]) {
+            try {
               const url = await resolveMediaUrl(key);
               if (url) updatedUrls[key] = url;
+              else console.warn("Failed to resolve key:", key);
+            } catch (err) {
+              console.error("Error resolving media key:", key, err);
             }
           }
         }
-  
-        setMessageMediaUrls(updatedUrls);
-      } catch (err) {
-        console.error("Error loading message media URLs:", err);
       }
+  
+      setMessageMediaUrls(updatedUrls);
     };
   
     void loadMediaUrls();
-  }, [messages, resolveMediaUrl]);
+  }, [messages]);
+  
   type SupabaseMessageRealtime = {
     id: number;
     chat_id: string;
@@ -253,6 +253,7 @@ export default function ChatApp({ session, users }: AppProps) {
     video_key?: string;
     voice_key?: string;
     file_key?: string;
+    price?: number;
     blurred_key?: string;
     duration?: number;
     size?: number;
@@ -269,9 +270,9 @@ export default function ChatApp({ session, users }: AppProps) {
         const rows: SupabaseMessage[] = await getMessages(selectedChat.id);
         const mapped: MessageType[] = rows.map(row => ({
           id: String(row.id),
-          senderId: row.sender_id,
-          message: row.content,
-          createdAt: row.created_at,
+          sender_id: row.sender_id,
+          content: row.content,
+          created_at: row.created_at,
           type: row.image_key
             ? "photo"
             : row.video_key
@@ -281,9 +282,10 @@ export default function ChatApp({ session, users }: AppProps) {
             : row.file_key
             ? "file"
             : "text",
-          imageKey: row.image_key,
-          videoKey: row.video_key,
-          voiceKey: row.voice_key,
+          image_key: row.image_key,
+          video_key: row.video_key,
+          voice_key: row.voice_key,
+          price: row.price,
           fileKey: row.file_key,
           blurredKey: row.blurred_key,
           duration: row.duration,
@@ -302,9 +304,9 @@ export default function ChatApp({ session, users }: AppProps) {
       (msg: SupabaseMessageRealtime) => {
         const mappedMsg: MessageType = {
           id: String(msg.id),
-          senderId: msg.sender_id,
-          message: msg.content,
-          createdAt: msg.created_at,
+          sender_id: msg.sender_id,
+          content: msg.content,
+          created_at: msg.created_at,
           type: msg.image_key
             ? "photo"
             : msg.video_key
@@ -314,11 +316,11 @@ export default function ChatApp({ session, users }: AppProps) {
             : msg.file_key
             ? "file"
             : "text",
-          imageKey: msg.image_key,
-          videoKey: msg.video_key,
-          voiceKey: msg.voice_key,
-          fileKey: msg.file_key,
-          blurredKey: msg.blurred_key,
+          image_key: msg.image_key,
+          video_key: msg.video_key,
+          voice_key: msg.voice_key,
+          file_key: msg.file_key,
+          blurred_key: msg.blurred_key,
           duration: msg.duration,
           size: msg.size,
         };
@@ -361,9 +363,9 @@ export default function ChatApp({ session, users }: AppProps) {
           chatId: currentChatIdentifier, // ✅ FIXED
           senderId: session?.user._id ?? "",
           content: messageText || "",
-          imageKey: file.type.startsWith("image/") ? key : undefined,
-          videoKey: file.type.startsWith("video/") ? key : undefined,
-          voiceKey: file.type.startsWith("audio/") ? key : undefined,
+          image_key: file.type.startsWith("image/") ? key : undefined,
+          video_key: file.type.startsWith("video/") ? key : undefined,
+          voice_key: file.type.startsWith("audio/") ? key : undefined,
           fileKey:
             !file.type.startsWith("image/") &&
             !file.type.startsWith("video/") &&
@@ -399,14 +401,18 @@ export default function ChatApp({ session, users }: AppProps) {
   const otherParticipant = selectedChat
     ? users.find(u => selectedChat.participants.includes(u._id) && u._id !== session?.user?._id)
     : null;
-  const [otherAvatar, setOtherAvatar] = useState("/default-avatar.png");
+  const [otherAvatar, setOtherAvatar] = useState<string | null>(null);
 
   useEffect(() => {
-    if (otherParticipant?.avatarKey) {
-      resolveAvatarUrl(otherParticipant.avatarKey).then(setOtherAvatar);
+    if (otherParticipant) {
+      if (otherParticipant.avatarKey) {
+        resolveAvatarUrl(otherParticipant.avatarKey).then(setOtherAvatar);
+      } else {
+        setOtherAvatar(null); // no avatar key
+      }
     }
   }, [otherParticipant, resolveAvatarUrl]);
-
+  console.log(otherParticipant)
   // Helper function to format dates
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -432,8 +438,8 @@ export default function ChatApp({ session, users }: AppProps) {
   const shouldShowDateDivider = (currentMsg: MessageType, previousMsg: MessageType | undefined) => {
     if (!previousMsg) return true;
     
-    const currentDate = new Date(currentMsg.createdAt).toDateString();
-    const previousDate = new Date(previousMsg.createdAt).toDateString();
+    const currentDate = new Date(currentMsg.created_at).toDateString();
+    const previousDate = new Date(previousMsg.created_at).toDateString();
     
     return currentDate !== previousDate;
   };
@@ -537,18 +543,22 @@ export default function ChatApp({ session, users }: AppProps) {
                           onClick={() => handleConversationClick(chat)}
                         >
                           <div className="flex items-center gap-4">
-                            <div className="relative w-14 h-14">
-                              {imageLoading ? (
-                                <Skeleton className="w-14 h-14 rounded-full bg-gray-300/20" />
-                              ) : (
-                                <img
-                                  src={chatAvatars[chat.id] || "/default-avatar.png"}
-                                  alt="Chat Avatar"
-                                  className="w-14 h-14 rounded-full object-cover border-2 border-white/20 shadow-lg"
-                                />
-                              )}
-                              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white/20 shadow-lg"></div>
-                            </div>
+                          <div className="relative w-14 h-14">
+                                {imageLoading ? (
+                                  <Skeleton className="w-14 h-14 rounded-full bg-gray-300/20" />
+                                ) : chatAvatars[chat.id] ? (
+                                  <img
+                                    src={chatAvatars[chat.id]}
+                                    alt="Chat Avatar"
+                                    className="w-14 h-14 rounded-full object-cover border-2 border-white/20 shadow-lg"
+                                  />
+                                ) : (
+                                  <div className="w-14 h-14 rounded-full bg-gray-700 text-white flex items-center justify-center text-xl border-2 border-pink-500/40 shadow-lg">
+                                    {participant?.name?.charAt(0).toUpperCase() || "U"}
+                                  </div>
+                                )}
+                                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white/20 shadow-lg"></div>
+                              </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between mb-1">
                                 <h3 className="text-white font-semibold text-base truncate group-hover:text-blue-200 transition-colors">
@@ -559,7 +569,7 @@ export default function ChatApp({ session, users }: AppProps) {
                                 </span>
                               </div>
                               <p className="text-gray-400 text-sm truncate group-hover:text-gray-300 transition-colors">
-                                {lastMessage?.message || "No messages yet"}
+                                {lastMessage?.content || "No messages yet"}
                               </p>
                             </div>
                           </div>
@@ -587,14 +597,20 @@ export default function ChatApp({ session, users }: AppProps) {
                   <div className="p-8 border-b border-white/20 bg-gradient-to-r from-white/5 to-white/10">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="relative">
+                      <div className="relative">
+                        {otherAvatar ? (
                           <img
                             src={otherAvatar}
                             alt={otherParticipant?.username || "User Avatar"}
                             className="w-12 h-12 rounded-full object-cover border-2 border-white/20 shadow-lg"
                           />
-                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white/20 shadow-lg"></div>
-                        </div>
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gray-700 text-white flex items-center justify-center text-xl border-2 border-pink-500/40 shadow-lg">
+                            {otherParticipant?.name?.charAt(0).toUpperCase() || "U"}
+                          </div>
+                        )}
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white/20 shadow-lg"></div>
+                      </div>
                         <div>
                           <h3 className="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
                             {otherParticipant.username}
@@ -626,8 +642,8 @@ export default function ChatApp({ session, users }: AppProps) {
                     {messages.map((message, index) => {
                       const previousMessage = index > 0 ? messages[index - 1] : undefined;
                       const showDateDivider = shouldShowDateDivider(message, previousMessage);
-                      const isOwn = message.senderId === session?.user?._id;
-  
+                      const isOwn = message.sender_id === session?.user?._id;
+                      console.log(message)
                       return (
                         <div key={message.id}>
                           {showDateDivider && (
@@ -635,7 +651,7 @@ export default function ChatApp({ session, users }: AppProps) {
                               <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
                               <div className="px-4 py-2">
                                 <span className="text-xs font-medium text-gray-300">
-                                  {formatDate(message.createdAt)}
+                                  {formatDate(message.created_at)}
                                 </span>
                               </div>
                               <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
@@ -644,46 +660,91 @@ export default function ChatApp({ session, users }: AppProps) {
   
                           {/* Message Bubble */}
                           <div className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
-                            <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-sm transition-all duration-200 hover:shadow-md ${
-                              isOwn ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white" : "bg-gradient-to-br from-white/15 to-white/10 text-white border border-white/10"
-                            }`}>
-                              {message.type === "text" && (
-                                <p className="text-sm leading-relaxed break-words">{message.message}</p>
-                              )}
-  
-                              {(message.type === "photo" || message.type === "video") && message.imageKey && (
-                                <div className={`relative ${message.requiresPayment ? "blur-sm grayscale" : ""}`}>
-                                  {message.type === "photo" && (
-                                    <img
-                                      src={messageMediaUrls[message.imageKey]}
-                                      alt="Sent image"
-                                      className="max-w-full max-h-64 rounded-xl object-cover cursor-pointer"
-                                      onClick={() => message.imageKey ? setActiveImage(messageMediaUrls[message.imageKey]) : null}
+                              <div
+                                className={`relative max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-sm transition-all duration-200 hover:shadow-md ${
+                                  isOwn
+                                    ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
+                                    : "bg-gradient-to-br from-white/15 to-white/10 text-white border border-white/10"
+                                }`}
+                              >
+                               {(message.type === "photo" || message.type === "video") && (
+  <div className="relative">
+    {/* 🖼️ Image */}
+    {message.type === "photo" && message.image_key && (
+      <img
+        src={
+          message.price && message.blurred_key
+            ? messageMediaUrls[message.blurred_key]
+            : messageMediaUrls[message.image_key]
+        }
+        alt="Sent image"
+        className="max-w-full max-h-64 rounded-xl object-cover cursor-pointer"
+        onClick={() =>
+          !message.price && message.image_key
+            ? setActiveImage(messageMediaUrls[message.image_key])
+            : null
+        }
+      />
+    )}
+
+    {/* 🎥 Video */}
+    {message.type === "video" && message.video_key && (
+      <video
+        src={
+          message.price && message.blurred_key
+            ? messageMediaUrls[message.blurred_key]
+            : messageMediaUrls[message.video_key]
+        }
+        controls={!message.price}
+        className="max-w-full max-h-64 rounded-xl"
+      />
+    )}
+    {message &&
+    console.log(messageMediaUrls[message.blurred_key])}
+    {/* 🔒 Paywall Overlay */}
+    {message.price && (
+      <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-xl text-white text-sm font-semibold">
+        🔒 Pay to view
+      </div>
+    )}
+  </div>
+)}
+
+                                {/* Voice */}
+                                {message.type === "voice" && message.voice_key && (
+                                  <div className="w-48 relative">
+                                    <audio
+                                      controls={!message.price}
+                                      src={messageMediaUrls[message.voice_key]}
+                                      className="w-full"
                                     />
-                                  )}
-                                  {message.type === "video" && message.videoKey && messageMediaUrls[message.videoKey] && (
-                                    <video src={messageMediaUrls[message.videoKey]} controls className="max-w-full max-h-64 rounded-xl" />
-                                  )}
-  
-                                  {message.requiresPayment && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-xl text-white text-sm font-semibold">
-                                      🔒 Pay to view
-                                    </div>
-                                  )}
+                                    {message.price && (
+                                      <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-xl text-white text-sm font-semibold">
+                                        🔒 Pay to listen
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Text */}
+                                {message.content && (
+                                  <p className="text-sm leading-relaxed break-words mt-2">{message.content}</p>
+                                )}
+
+                                {/* Timestamp */}
+                                <div
+                                  className={`text-xs mt-2 ${
+                                    isOwn ? "text-blue-100/70" : "text-gray-400/70"
+                                  }`}
+                                >
+                                  {new Date(message.created_at).toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
                                 </div>
-                              )}
-  
-                              {message.type === "voice" && message.voiceKey && (
-                                <div className="w-48">
-                                  <audio controls={!message.requiresPayment} src={messageMediaUrls[message.voiceKey]} className="w-full" />
-                                </div>
-                              )}
-  
-                              <div className={`text-xs mt-2 ${isOwn ? "text-blue-100/70" : "text-gray-400/70"}`}>
-                                {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </div>
                             </div>
-                          </div>
+
                         </div>
                       );
                     })}
@@ -703,7 +764,7 @@ export default function ChatApp({ session, users }: AppProps) {
                       </div>,
                       document.body
                     )}
-  
+                    
                   {/* Message Input */}
                   <ChatInput
                       messageText={messageText}
@@ -718,8 +779,8 @@ export default function ChatApp({ session, users }: AppProps) {
                       setActiveImage={setActiveImage}
                       price={price}
                       setPrice={setPrice}                       // <-- add this
-                      isPriceModalOpen={false}                  // <-- or use state
-                      setIsPriceModalOpen={() => {}}            // <-- or use state
+                      isPriceModalOpen={isPriceModalOpen}                  // <-- or use state
+                      setIsPriceModalOpen={setIsPriceModalOpen}            // <-- or use state
                       isVoiceModalOpen={isVoiceModalOpen}
                       setIsVoiceModalOpen={setIsVoiceModalOpen}
                       isVoiceFile={isVoiceFile}

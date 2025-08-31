@@ -17,13 +17,13 @@ export default async function Page(props: unknown) {
  
   const user = await UserModel.findOne({ username: username.toLowerCase() });
   if (!creator && !user) notFound();
-  const { creators, users, safeSession, chats } = await fetchPageData();
+  const { creators, users, safeSession } = await fetchPageData();
 
   // Sanitize your data if needed here
   
   return (
     <AppWrapper creators={creators ?? []} users={users} session={safeSession}>
-    <App creators={creators} users={users} session={safeSession} username={username.toLowerCase()} chats={chats} />
+    <App creators={creators} users={users} session={safeSession} username={username.toLowerCase()} />
     </AppWrapper>
   );
 }

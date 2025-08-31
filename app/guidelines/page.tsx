@@ -11,7 +11,7 @@ export default function GuidelinesPage() {
       {/* Back Button */}
       <button
         onClick={() => router.push("/login")}
-        className="absolute top-8 left-8 flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full shadow-lg hover:from-pink-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 z-20"
+        className="absolute top-8 cursor-pointer left-8 flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full shadow-lg hover:from-pink-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 z-20"
       >
         <ArrowLeft className="w-5 h-5" />
         Back

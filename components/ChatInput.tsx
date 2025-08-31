@@ -20,8 +20,6 @@ type ChatInputProps = {
   setActiveImage: (src: string) => void;
   price: number | null;
   setPrice: (val: number | null) => void;
-  isPriceModalOpen: boolean;
-  setIsPriceModalOpen: (val: boolean) => void;
   isVoiceModalOpen: boolean;
   setIsVoiceModalOpen: (val: boolean) => void;
   isVoiceFile: (file: File) => boolean;
@@ -40,18 +38,28 @@ export function ChatInput({
   setActiveImage,
   price,
   setPrice,
-  isPriceModalOpen,
-  setIsPriceModalOpen,
   isVoiceModalOpen,
   setIsVoiceModalOpen,
   isVoiceFile
 }: ChatInputProps) {
   const [tempPrice, setTempPrice] = useState<string>("");
-
+  const [isPriceModalOpen, setIsPriceModalOpen] = useState(false)
   return (
     <div className="p-6 border-white/20">
-
+      
       {/* ---------- Media Preview Section ---------- */}
+      {isPriceModalOpen && (
+  <SetPriceModal 
+    isOpen={isPriceModalOpen}
+    onClose={() => setIsPriceModalOpen(false)}
+    tempPrice={tempPrice}
+    setTempPrice={setTempPrice}
+    onSave={(newPrice: number) => {
+      console.log(newPrice)
+      setPrice(newPrice); // <-- updates parent state
+    }}
+  />
+)}
       {price ? (
         <div className="bg-white/30 rounded-2xl p-4 mb-5 shadow-md">
           <p className="text-white font-semibold mb-3">
@@ -281,13 +289,7 @@ export function ChatInput({
       </div>
 
       {/* ---------- Modals ---------- */}
-      <SetPriceModal
-        isOpen={isPriceModalOpen}
-        onClose={() => setIsPriceModalOpen(false)}
-        tempPrice={tempPrice}
-        setTempPrice={setTempPrice}
-        onSave={(p) => setPrice(p)}
-      />
+      
     </div>
   );
 }

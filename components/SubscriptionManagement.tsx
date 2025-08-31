@@ -17,7 +17,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ session
       <div className="text-center py-12">
         <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-white mb-2">No Subscriptions</h3>
-        <p className="text-gray-400">You haven`&apos;`t subscribed to any creators yet.</p>
+        <p className="text-gray-400">You haven&apos;t subscribed to any creators yet.</p>
       </div>
     );
   }

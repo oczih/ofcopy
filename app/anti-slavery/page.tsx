@@ -1,14 +1,12 @@
 "use client";
-import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 export default function AntiSlaveryPolicyPage() {
-  const router = useRouter();
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center px-4 py-12 relative">
-      <button
-        onClick={() => router.push("/login")}
-        className="absolute top-8 left-8 flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full shadow-lg hover:from-pink-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 z-20"
+       <button
+        onClick={() => window.history.back()}
+        className="absolute top-8 cursor-pointer left-8 flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full shadow-lg hover:from-pink-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 z-20"
       >
         <ArrowLeft className="w-5 h-5" />
         Back

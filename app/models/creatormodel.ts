@@ -50,6 +50,7 @@ export interface CreatorDocument extends mongoose.Document {
   category?: string;
   subscriptions?: Subscriber[];
   followers: Follower[];
+  subscribers: Subscriber[];
   user: Types.ObjectId;  // Link to OFUser
   posts?: PostDocument[];
   totalEarnings: number,  // Lifetime earnings
@@ -125,6 +126,16 @@ const creatorSchema = new Schema<CreatorDocument>({
     username: { type: String, required: true },
     avatarKey: { type: String },
     followedAt: { type: Date, default: Date.now }
+  }],
+  subscribers: [{
+    userId: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true },
+    username: { type: String, required: true },
+    avatarKey: { type: String },
+    subscribedAt: { type: Date, default: Date.now },
+    subscriptionPrice: { type: Number, required: true },
+    status: { type: String, enum: ['active', 'cancelled', 'expired'], required: true },
+    nextBillingDate: { type: Date, default: null },
+    autoRenew: { type: Boolean, default: true }
   }],
   user: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true },
   totalEarnings: { type: Number, default: 0 },

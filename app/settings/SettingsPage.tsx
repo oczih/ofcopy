@@ -153,6 +153,12 @@ export default function App({session}: AppProps) {
   const legalSubTabs = [
     { id: "privacy", label: "Privacy Policy", href: "/privacy" },
     { id: "terms", label: "Terms of Service", href: "/tos" },
+    { id: "childprotection", label: "Child Protection", href: "/child-protection"},
+    { id: "anti-slavery", label: "Anti-Slavery", href: "/anti-slavery" },
+    { id: "dmca", label: "DMCA", href: "/dmca" },
+    {id: "cookie", label: "Cookie Policy", href: "/cookiepolicy"},
+    {id: "guideline", label: "Community Guidelines", href: "/guidelines"}
+
   ];
 
   const handleTabClick = (tabId: string) => {
@@ -190,7 +196,7 @@ export default function App({session}: AppProps) {
       <div className="flex items-center space-x-2 text-sm mb-12">
         <button
           onClick={() => setActiveTab("")}
-          className="flex items-center space-x-2 text-gray-400 cursor-pointer hover:text-white transition-all duration-200 hover:scale-105"
+          className="flex items-center space-x-2 text-gray-400 cursor-pointer hover:text-white transition-all duration-200 -105"
         >
           <Settings className="w-4 h-4" />
           <span>Settings</span>
@@ -200,7 +206,7 @@ export default function App({session}: AppProps) {
             <div className="w-1 h-1 bg-gray-500 rounded-full"></div>
             <button
               onClick={() => handleTabClick(activeTab)}
-              className="text-gray-400 hover:text-white cursor-pointer transition-all duration-200 hover:scale-105"
+              className="text-gray-400 hover:text-white cursor-pointer transition-all duration-200 -105"
             >
               {currentMainTab.label}
             </button>
@@ -296,7 +302,7 @@ const validate = () => {
                 <button
                   key={tab.id}
                   onClick={() => handleTabClick(tab.id)}
-                  className="group relative overflow-hidden cursor-pointer bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-8 text-left hover:bg-white/10 transition-all duration-500 hover:scale-105 hover:shadow-2xl cursor-pointer"
+                  className="group relative overflow-hidden cursor-pointer bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-8 text-left hover:bg-white/10 transition-all duration-500 -105 hover:shadow-2xl cursor-pointer"
                   style={{
                     animationDelay: `${index * 100}ms`,
                     animation: 'fadeInUp 0.6s ease-out forwards'
@@ -308,7 +314,7 @@ const validate = () => {
                   {/* Content */}
                   <div className="relative z-10">
                     <div className="flex items-start justify-between mb-4">
-                      <div className={`p-3 rounded-2xl bg-gradient-to-br ${tab.color} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                      <div className={`p-3 rounded-2xl bg-gradient-to-br ${tab.color} shadow-lg group--110 transition-transform duration-300`}>
                         <IconComponent className="w-6 h-6 text-white" />
                       </div>
                       <ChevronRight className="w-6 h-6 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all duration-300" />
@@ -363,7 +369,7 @@ const validate = () => {
 
               <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-3xl p-8 border border-white/20 shadow-2xl backdrop-blur-xl">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="group p-6 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-105">
+                  <div className="group p-6 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 -105">
                     <div className="flex items-center space-x-4">
                       <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
                         <Mail className="w-6 h-6 text-white" />
@@ -375,7 +381,7 @@ const validate = () => {
                     </div>
                   </div>
                   
-                  <div className="group p-6 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-105">
+                  <div className="group p-6 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 -105">
                     <div className="flex items-center space-x-4">
                       <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl shadow-lg">
                         <Calendar className="w-6 h-6 text-white" />
@@ -455,7 +461,7 @@ const validate = () => {
           <button
             onClick={handlePasswordAction}
             disabled={loading}
-            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 cursor-pointer hover:from-green-600 hover:to-emerald-700 text-white py-4 px-6 rounded-2xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 hover:shadow-2xl cursor-pointer"
+            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 cursor-pointer hover:from-green-600 hover:to-emerald-700 text-white py-4 px-6 rounded-2xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-2xl cursor-pointer"
           >
             {loading ? (
               <div className="flex items-center justify-center gap-2">
@@ -575,7 +581,7 @@ const validate = () => {
           <button
             onClick={handlePasswordAction}
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 cursor-pointer hover:to-cyan-700 text-white py-4 px-6 rounded-2xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 hover:shadow-2xl cursor-pointer"
+            className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 cursor-pointer hover:to-cyan-700 text-white py-4 px-6 rounded-2xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-2xl cursor-pointer"
           >
             {loading ? (
               <div className="flex items-center justify-center gap-2">
@@ -659,7 +665,7 @@ const validate = () => {
                         </ul>
                       </div>
                       <button 
-                        className="bg-gradient-to-r from-red-600 to-red-700 cursor-pointer hover:from-red-700 hover:to-red-800 border-0 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                        className="bg-gradient-to-r from-red-600 to-red-700 cursor-pointer hover:from-red-700 hover:to-red-800 border-0 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 -105 hover:shadow-xl"
                       >
                         Delete My Account
                       </button>
@@ -727,7 +733,7 @@ const validate = () => {
                   </div>
                 </div>
                 <div className="flex space-x-4">
-                  <button className="flex-1 bg-gradient-to-r cursor-pointer from-green-500 to-emerald-600 max-w-xl hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                  <button className="flex-1 bg-gradient-to-r cursor-pointer from-green-500 to-emerald-600 max-w-xl hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 -105 hover:shadow-xl">
                     Add Funds
                   </button>
                 </div>
@@ -744,7 +750,7 @@ const validate = () => {
                     <p className="text-gray-400 mb-6 text-lg">No payment methods added yet</p>
                     <button 
                       
-                      className="border-2 border-white/30 cursor-pointer text-white hover:bg-white/10 font-semibold py-3 px-8 rounded-xl transition-all duration-300 hover:scale-105 hover:border-white/50"
+                      className="border-2 border-white/30 cursor-pointer text-white hover:bg-white/10 font-semibold py-3 px-8 rounded-xl transition-all duration-300 -105 hover:border-white/50"
                     >
                       Add Payment Method
                     </button>
@@ -772,7 +778,7 @@ const validate = () => {
               <button
                 key={subTab.id}
                 onClick={() => handleSubTabClick(subTab.id)}
-                className="group relative overflow-hidden bg-gradient-to-br cursor-pointer from-white/10 to-white/5 backdrop-blur-xl rounded-3xl border border-white/20 p-8 cursor-pointer text-left hover:bg-white/15 transition-all duration-500 hover:scale-105 hover:shadow-2xl"
+                className="group relative overflow-hidden bg-gradient-to-br cursor-pointer from-white/10 to-white/5 backdrop-blur-xl rounded-3xl border border-white/20 p-8 cursor-pointer text-left hover:bg-white/15 transition-all duration-500 -105 hover:shadow-2xl"
                 style={{
                   animationDelay: `${index * 150}ms`,
                   animation: 'fadeInUp 0.6s ease-out forwards'
@@ -783,19 +789,15 @@ const validate = () => {
                 
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <div className="p-3 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl shadow-lg group--110 transition-transform duration-300">
                       <Shield className="w-6 h-6 text-white" />
                     </div>
-                    <ExternalLink className="w-6 h-6 text-gray-400 group-hover:text-white group-hover:scale-110 transition-all duration-300" />
+                    <ExternalLink className="w-6 h-6 text-gray-400 group-hover:text-white group--110 transition-all duration-300" />
                   </div>
                   
                   <h4 className="text-2xl font-bold text-white mb-3 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-orange-400 group-hover:to-red-400 group-hover:bg-clip-text transition-all duration-300">
                     {subTab.label}
                   </h4>
-                  <p className="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors duration-300">
-                    {subTab.id === "privacy" && "Learn how we protect your data and respect your privacy"}
-                    {subTab.id === "terms" && "Review our terms and conditions for using our platform"}
-                  </p>
                 </div>
                 
                 {/* Hover Border Effect */}

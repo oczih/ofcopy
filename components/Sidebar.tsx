@@ -275,9 +275,9 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
                 onMouseLeave={() => setHoveredItem(null)}
               >
                 <Link href={item.href}>
-                  <Button
-                    variant="ghost"
-                    className={`w-full ${isCollapsed ? 'justify-center px-2' : 'justify-start px-4'} py-3 rounded-2xl transition-all duration-300 ${getButtonStyles(isActive)}`}
+                  <button
+                   
+                    className={`w-full ${isCollapsed ? 'justify-center px-2' : 'justify-start px-4'} py-3 rounded-2xl text-center flex flex-row transition-all duration-300 ${getButtonStyles(isActive)}`}
                   >
                     <Icon className={`w-5 h-5 ${isCollapsed ? 'mr-0' : 'mr-3'} transition-all duration-300`} />
                     {!isCollapsed && (
@@ -291,7 +291,7 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
                     {isCollapsed && isActive && (
                       <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-white rounded-full animate-pulse"></div>
                     )}
-                  </Button>
+                  </button>
                 </Link>
                 
                 {/* Hover tooltip for collapsed state */}

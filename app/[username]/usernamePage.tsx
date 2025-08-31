@@ -19,10 +19,9 @@ interface AppProps {
   users: User[];
   session: Session | null;
   username: string;
-  chats: Chat[];
 }
 
-export default async function App({ creators, users, session, username, chats }: AppProps) {
+export default async function App({ creators, users, session, username}: AppProps) {
   if (RESERVED_ROUTES.some(route => route.toLowerCase() === username.toLowerCase())) notFound();
 
   let creator: Creator | null = await CreatorModel
@@ -46,7 +45,6 @@ export default async function App({ creators, users, session, username, chats }:
       user = await UserModel.findById(creator.user);
     }
   }
-  console.log(user)
   const isOwnProfile = (() => {
     if (!session?.user) return false;
     const sessionUsername = session.user.username?.toLowerCase();
@@ -60,15 +58,14 @@ export default async function App({ creators, users, session, username, chats }:
   const totalSpent = 0;
   let purchasedContent: MediaPost[] = [];
   const creatorId = creators.find((c: Creator) => String(c.user) === String(session?.user?._id));
-    
   if (creator) {
     // Person being viewed is a creator → check if viewingUser is a follower/subscriber
     const viewerId = session?.user?._id;
     if (viewerId) {
-      const isSubscriber = creator.subscribers?.some(
+      const isSubscriber = creator.subscribers && creator?.subscribers?.some(
         (sub: Subscriber) => String(sub.userId) === String(viewerId)
       );
-      const isFollower = creator.followers?.some(
+      const isFollower = creator?.followers?.some(
         (fol: Follower) => String(fol.userId) === String(viewerId)
       );
       if (isSubscriber) relationshipStatus = 'subscriber';
@@ -79,15 +76,13 @@ export default async function App({ creators, users, session, username, chats }:
     const viewingCreator = creators.find(
       (c: Creator) => c.user === session.user._id
     );
-    console.log(viewingCreator)
     if (viewingCreator) {
-      const isSubscriber = viewingCreator.subscribers && viewingCreator.subscribers?.some(
+      const isSubscriber = viewingCreator?.subscribers && viewingCreator?.subscribers?.some(
         (sub: Subscriber) => String(sub.userId) === String(user._id)
       );
       const isFollower = viewingCreator.followers?.some(
         fol => String(fol.userId) === String(user._id)
       );
-      console.log(isFollower)
       if (isSubscriber) relationshipStatus = 'subscriber';
       else if (isFollower) relationshipStatus = 'follower';
     }
@@ -104,7 +99,6 @@ export default async function App({ creators, users, session, username, chats }:
 
   const sanitizedCreator = creator ? JSON.parse(JSON.stringify(creator)) : null;
 
-    console.log(relationshipStatus)
 
   return (
     <ProfileContent
@@ -118,7 +112,6 @@ export default async function App({ creators, users, session, username, chats }:
       creators={creators}
       session={session}
       creator={sanitizedCreator}
-      chats={chats}
     />
   );
 }

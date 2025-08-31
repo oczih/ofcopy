@@ -25,7 +25,30 @@ export async function getChats(userId: string): Promise<Chat[]> {
   if (error) throw error;
   return data || [];
 }
+export async function getChatsBetween(sessionUserId: string, userViewedId: string): Promise<Chat[]> {
+  // 1. Find chats where userviewed is a participant
+  const { data: userChats, error } = await supabase
+    .from("chats")
+    .select("*")
+    .contains("participants", [userViewedId]);
 
+  if (error) throw error;
+  if (!userChats) return [];
+
+  // 2. Keep only chats where session user is also a participant
+  const filtered = userChats.filter(c => c.participants.includes(sessionUserId));
+
+  return filtered;
+}
+
+export async function deleteMessage(messageId: string): Promise<void> {
+  const { error } = await supabase
+    .from('messages')
+    .delete()
+    .eq('id', messageId);
+
+  if (error) throw error;
+}
 // Insert a new message
 
 export type SendMessageParams = {
@@ -36,6 +59,7 @@ export type SendMessageParams = {
   videoKey?: string;
   voiceKey?: string;
   fileKey?: string;
+  ismassmessage?: boolean;
   blurredKey?: string;
   duration?: number;
   size?: number;
@@ -56,6 +80,7 @@ export async function sendMessage({
   size,
   price,
   requiresPayment,
+  ismassmessage
 }: SendMessageParams): Promise<MessageType> {
   const { data, error } = await supabase
     .from("messages")
@@ -64,6 +89,7 @@ export async function sendMessage({
         chat_id: chatId,
         sender_id: senderId,
         content,
+        ismassmessage,
         image_key: imageKey,
         video_key: videoKey,
         voice_key: voiceKey,
@@ -91,14 +117,15 @@ export async function sendMessage({
       : fileKey
       ? "file"
       : "text",
-    senderId: data.sender_id,
-    message: data.content,
-    createdAt: data.created_at,
-    imageKey: data.image_key ?? undefined,
-    videoKey: data.video_key ?? undefined,
-    voiceKey: data.voice_key ?? undefined,
-    fileKey: data.file_key ?? undefined,
-    blurredKey: data.blurred_key ?? undefined,
+    sender_id: data.sender_id,
+    content: data.content,
+    created_at: data.created_at,
+    image_key: data.image_key ?? undefined,
+    video_key: data.video_key ?? undefined,
+    voice_key: data.voice_key ?? undefined,
+    price: data.price ?? undefined,
+    file_key: data.file_key ?? undefined,
+    blurred_key: data.blurred_key ?? undefined,
     duration: data.duration ?? undefined,
     size: data.size ?? undefined,
   };

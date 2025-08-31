@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Cropper, { Area } from 'react-easy-crop';
-import { ZoomIn, ZoomOut, X } from 'lucide-react';
+import { ZoomIn, ZoomOut, X, Users, LinkIcon, DollarSign, Edit3, ChevronRight, Edit3Icon, UserRoundCog } from 'lucide-react';
 import getCroppedImg from '@/lib/utils'
 import userservice from '@/app/services/userservice';
 import { uploadContent } from '@/app/services/uploadmediaservice';
@@ -92,18 +92,30 @@ export default function App({creators, session}: AppProps) {
       title: 'Profile Info',
       description: 'Edit your name, username, and bio.',
       href: '/myprofile/edit/profile-info',
+      icon: UserRoundCog,
+      color: 'from-blue-500 to-cyan-500',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200'
     },
     {
       title: 'Gender',
       description: 'Set your gender identity.',
       href: '/myprofile/edit/gender',
+      icon: Users,
+      color: 'from-purple-500 to-pink-500',
+      bgColor: 'bg-purple-50',
+      borderColor: 'border-purple-200'
     },
     {
       title: 'Social Media',
       description: 'Link your social accounts.',
       href: '/myprofile/edit/social-media',
+      icon: LinkIcon,
+      color: 'from-green-500 to-emerald-500',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200'
     },
-  ];
+  ];  
 
   return (
     <div>
@@ -151,23 +163,45 @@ export default function App({creators, session}: AppProps) {
           </div>
 
           {/* Edit Sections */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
-            {links.map(link => (
-              <Card
-                key={link.title}
-                className="bg-white/10 text-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow"
-              >
-                <CardContent className="p-6 flex flex-col gap-3">
-                  <h2 className="text-xl font-semibold">{link.title}</h2>
-                  <p className="text-sm text-gray-300">{link.description}</p>
-                  <Link href={link.href}>
-                    <Button className="bg-gradient-to-r from-pink-500 to-purple-600 text-white mt-2 cursor-pointer">
-                      Edit {link.title}
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="w-full max-w-3xl space-y-4">
+            {links.map((link, index) => {
+              const IconComponent = link.icon;
+              return (
+                <button
+                  key={link.title}
+                  onClick={() => window.location.href = link.href}
+                  className="group relative overflow-hidden rounded-2xl bg-white/5 cursor-pointer backdrop-blur-sm border border-white/10 hover:border-white/20 transition-colors duration-300 w-full text-left"
+                >
+                  {/* Gradient Background Effect */}
+                  <div className={`absolute inset-0 bg-gradient-to-r ${link.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
+                  
+                  <div className="relative p-6 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      {/* Icon Container */}
+                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${link.color} flex items-center justify-center shadow-lg transition-transform duration-300`}>
+                        <IconComponent className="w-6 h-6 text-white" />
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex flex-col">
+                        <h3 className="text-lg font-semibold text-white group-hover:from-blue-400 group-hover:to-purple-400 transition-all duration-300">
+                          {link.title}
+                        </h3>
+                        <p className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
+                          {link.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Arrow */}
+                    <ChevronRight className="w-6 h-6 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all duration-300" />
+                  </div>
+
+                  {/* Bottom Accent Line */}
+                  <div className={`h-1 bg-gradient-to-r ${link.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
+                </button>
+              );
+            })}
           </div>
           {cropModalOpen && selectedImage && (
       <>
