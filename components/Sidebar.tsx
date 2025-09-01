@@ -300,10 +300,55 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
                     {item.label}
                   </div>
                 )}
+                
               </div>
             );
           })}
+          {session?.user?.creator && (
+          <div 
+            className="relative mt-2 mb-100"
+            onMouseEnter={() => setHoveredItem('upload')}
+            onMouseLeave={() => setHoveredItem(null)}
+          >
+            <Link href="/upload">
+                    <button
+          className={`w-full cursor-pointer
+            ${isCollapsed ? 'justify-center px-2 py-3' : 'justify-center py-4 px-4'}
+            rounded-2xl
+            transition-[outline-color,outline-width,outline-offset,background-color]
+            hover:outline hover:outline-white transition-colors duration-300
+            bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500
+            text-white font-semibold
+            ${isCollapsed ? 'text-base' : 'text-lg'}
+            shadow-lg flex items-center
+            ${isCollapsed ? 'gap-0' : 'gap-3'}
+            mt-4 mb-2`}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className={`h-6 w-6 ${isCollapsed ? 'mr-0' : ''} transition-all duration-300`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" />
+          </svg>
+          {!isCollapsed && (
+            <span className="opacity-100 transition-opacity duration-300">
+              Upload Content
+            </span>
+          )}
+        </button>
+            </Link>
 
+            {/* Upload hover tooltip for collapsed state */}
+            {isCollapsed && hoveredItem === 'upload' && (
+              <div className="absolute left-16 top-1/2 transform -translate-y-1/2 opacity-100 bg-gray-800 text-white text-sm rounded-lg px-3 py-2 whitespace-nowrap shadow-lg z-50 pointer-events-none">
+                Upload Content
+              </div>
+            )}
+          </div>
+        )}
           
           {/* Lisää myöhemmin tämä testaa eka influenssereilla
           {session?.user && !session.user.creator && (
@@ -344,51 +389,7 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
         </nav>
 
         {/* Upload Content Button */}
-        {session?.user?.creator && (
-          <div 
-            className="relative mt-2 mb-1"
-            onMouseEnter={() => setHoveredItem('upload')}
-            onMouseLeave={() => setHoveredItem(null)}
-          >
-            <Link href="/upload">
-                    <button
-          className={`w-full cursor-pointer
-            ${isCollapsed ? 'justify-center px-2 py-3' : 'justify-center py-4 px-4'}
-            rounded-2xl
-            transition-[outline-color,outline-width,outline-offset,background-color] duration-1000
-            hover:outline hover:outline-white
-            bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500
-            text-white font-semibold
-            ${isCollapsed ? 'text-base' : 'text-lg'}
-            shadow-lg flex items-center
-            ${isCollapsed ? 'gap-0' : 'gap-3'}
-            mt-4 mb-2`}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={`h-6 w-6 ${isCollapsed ? 'mr-0' : ''} transition-all duration-300`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" />
-          </svg>
-          {!isCollapsed && (
-            <span className="opacity-100 transition-opacity duration-300">
-              Upload Content
-            </span>
-          )}
-        </button>
-            </Link>
-
-            {/* Upload hover tooltip for collapsed state */}
-            {isCollapsed && hoveredItem === 'upload' && (
-              <div className="absolute left-16 top-1/2 transform -translate-y-1/2 opacity-100 bg-gray-800 text-white text-sm rounded-lg px-3 py-2 whitespace-nowrap shadow-lg z-50 pointer-events-none">
-                Upload Content
-              </div>
-            )}
-          </div>
-        )}
+        
         {/* Sign Out Button */}
         <div
   className={`border-t border-gray-700 pt-3 ${isCollapsed ? 'mt-auto' : ''} relative `}

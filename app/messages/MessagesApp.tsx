@@ -95,7 +95,7 @@ export default function ChatApp({ session, users }: AppProps) {
           price: row.price ?? undefined,
           voice_key: row.voice_key ?? undefined,
           fileKey: row.file_key ?? undefined,
-          blurredKey: row.blurred_key ?? undefined,
+          blurred_key: row.blurred_key ?? undefined,
           duration: row.duration ?? undefined,
           size: row.size ?? undefined,
         }));
@@ -207,7 +207,7 @@ export default function ChatApp({ session, users }: AppProps) {
       const updatedUrls: Record<string, string> = { ...messageMediaUrls };
   
       for (const msg of messages) {
-        const keys = [msg.image_key, msg.video_key, msg.voice_key, msg.file_key, msg.blurred_key];
+        const keys = [msg.blurred_key, msg.image_key, msg.video_key, msg.voice_key, msg.file_key];
         for (const key of keys) {
           if (!key) continue;
   
@@ -229,7 +229,7 @@ export default function ChatApp({ session, users }: AppProps) {
   
     void loadMediaUrls();
   }, [messages]);
-  
+      console.log(messageMediaUrls)
   type SupabaseMessageRealtime = {
     id: number;
     chat_id: string;
@@ -287,7 +287,7 @@ export default function ChatApp({ session, users }: AppProps) {
           voice_key: row.voice_key,
           price: row.price,
           fileKey: row.file_key,
-          blurredKey: row.blurred_key,
+          blurred_key: row.blurred_key,
           duration: row.duration,
           size: row.size,
         }));
@@ -357,7 +357,7 @@ export default function ChatApp({ session, users }: AppProps) {
       // Case 1: Sending media
       if (files.length > 0) {
         const file = files[0]; // one file per message (extend later if needed)
-        const { key, blurredKey } = await uploadmediaservice.uploadContent(file);
+        const { key, blurred_key } = await uploadmediaservice.uploadContent(file);
   
         newMessage = await sendMessage({
           chatId: currentChatIdentifier, // ✅ FIXED
@@ -372,7 +372,7 @@ export default function ChatApp({ session, users }: AppProps) {
             !file.type.startsWith("audio/")
               ? key
               : undefined,
-          blurredKey,
+          blurred_key,
           size: file.size,
         });
       } else {
@@ -703,8 +703,13 @@ export default function ChatApp({ session, users }: AppProps) {
     console.log(messageMediaUrls[message.blurred_key])}
     {/* 🔒 Paywall Overlay */}
     {message.price && (
+      <div>
       <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-xl text-white text-sm font-semibold">
         🔒 Pay to view
+      </div>
+      <button className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/60 cursor-pointer rounded-xl text-white text-sm font-semibold">
+      ${message.price} to view
+      </button>
       </div>
     )}
   </div>
