@@ -75,7 +75,7 @@ export default function App({ creators, users, session}: AppProps) {
       const signedUrlsMap: Record<string, string> = {};
       const postsWithKeys = allPosts.filter(post => typeof post.s3Key === 'string'
         ? post.s3Key
-        : session?.user?.following?.some(f => f.creatorId === post.creator) ? post.s3Key?.key : post.s3Key?.blurredKey);
+        : session?.user?.following?.some(f => f.creatorId === post.creator) ? post.s3Key?.key : post.s3Key?.blurred_key);
   
       await Promise.all(
         postsWithKeys.map(async (post) => {
@@ -312,6 +312,7 @@ export default function App({ creators, users, session}: AppProps) {
                 session={session}
                 user={session?.user as User}
                 status={status}
+                blurredUrl=""
                 users={users}
                 signedUrl={postSignedUrls[post._id]}
                 handleFollow={handleFollow}

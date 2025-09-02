@@ -17,7 +17,7 @@ import uploadmediaservice from "../services/uploadmediaservice";
 import {MessageType }from "@/app/types"
 import { useRouter } from "next/navigation";
 import { ChatInput } from "@/components/ChatInput";
-import SetPriceModal from "@/components/SetPriceModal";
+//import SetPriceModal from "@/components/SetPriceModal";
 interface AppProps {
   creators: Creator[];
   session: Session | null;
@@ -37,16 +37,16 @@ export default function ChatApp({ session, users }: AppProps) {
   const [messageText, setMessageText] = useState("");
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const [urlCache, setUrlCache] = useState<Record<string, { url: string; timestamp: number }>>({});
-  const [chatAvatars, setChatAvatars] = useState<Record<string, string>>({});
+  const [chatAvatars, setChatAvatars] = useState<Record<string, string | null>>({});
   const [imageLoading, setImageLoading] = useState(true);
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
-  const [price, setPrice] = useState<number>(0);
+  const [price, setPrice] = useState<number | null>(0);
   const [uploading, setUploading] = useState(false);
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const CACHE_TTL = 15 * 60 * 1000;
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
-  const [isPriceModalOpen, setIsPriceModalOpen] = useState(false)
+  //const [isPriceModalOpen, setIsPriceModalOpen] = useState(false)
   const router = useRouter();
   useEffect(() => {
     const storedIdentifier = localStorage.getItem("currentChatIdentifier");
@@ -228,7 +228,7 @@ export default function ChatApp({ session, users }: AppProps) {
     };
   
     void loadMediaUrls();
-  }, [messages]);
+  }, [messages,messageMediaUrls,resolveMediaUrl]);
       console.log(messageMediaUrls)
   type SupabaseMessageRealtime = {
     id: number;
@@ -366,7 +366,7 @@ export default function ChatApp({ session, users }: AppProps) {
           image_key: file.type.startsWith("image/") ? key : undefined,
           video_key: file.type.startsWith("video/") ? key : undefined,
           voice_key: file.type.startsWith("audio/") ? key : undefined,
-          fileKey:
+          file_key:
             !file.type.startsWith("image/") &&
             !file.type.startsWith("video/") &&
             !file.type.startsWith("audio/")
@@ -548,7 +548,7 @@ export default function ChatApp({ session, users }: AppProps) {
                                   <Skeleton className="w-14 h-14 rounded-full bg-gray-300/20" />
                                 ) : chatAvatars[chat.id] ? (
                                   <img
-                                    src={chatAvatars[chat.id]}
+                                    src={chatAvatars[chat.id]!}
                                     alt="Chat Avatar"
                                     className="w-14 h-14 rounded-full object-cover border-2 border-white/20 shadow-lg"
                                   />
@@ -699,15 +699,13 @@ export default function ChatApp({ session, users }: AppProps) {
         className="max-w-full max-h-64 rounded-xl"
       />
     )}
-    {message &&
-    console.log(messageMediaUrls[message.blurred_key])}
     {/* 🔒 Paywall Overlay */}
     {message.price && (
       <div>
       <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-xl text-white text-sm font-semibold">
         🔒 Pay to view
       </div>
-      <button className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/60 cursor-pointer rounded-xl text-white text-sm font-semibold">
+      <button className="absolute inset-0 px-3 py-2 hover:bg-white/60 transition-colors duration-200 flex items-center justify-center rounded-xl bg-black/60 cursor-pointer rounded-xl text-white text-sm font-semibold">
       ${message.price} to view
       </button>
       </div>
@@ -783,9 +781,7 @@ export default function ChatApp({ session, users }: AppProps) {
                       handleFileChange={handleFileChange}
                       setActiveImage={setActiveImage}
                       price={price}
-                      setPrice={setPrice}                       // <-- add this
-                      isPriceModalOpen={isPriceModalOpen}                  // <-- or use state
-                      setIsPriceModalOpen={setIsPriceModalOpen}            // <-- or use state
+                      setPrice={setPrice}                       // <-- add this          // <-- or use state
                       isVoiceModalOpen={isVoiceModalOpen}
                       setIsVoiceModalOpen={setIsVoiceModalOpen}
                       isVoiceFile={isVoiceFile}

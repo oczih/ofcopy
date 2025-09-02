@@ -3,7 +3,7 @@ import UserModel from '@/app/models/usermodel';
 import PurchaseModel from '@/app/models/purchasemodel';
 import ProfileContent from '@/components/ProfileContent';
 import CreatorModel from '@/app/models/creatormodel';
-import { MediaPost, Subscriber, Purchase, Follower, User, Creator, Chat } from '../types';
+import { MediaPost, Subscriber, Purchase, Follower, User, Creator } from '../types';
 import { PostDocument } from '../models/postmodel';
 import { Session } from 'next-auth';
 

@@ -13,7 +13,7 @@ export interface PostDocument extends Document {
   creator: mongoose.Types.ObjectId;
   s3Key: {
     key: { type: string, required: true },
-    blurredKey: { type: string, required: true },
+    blurred_key: { type: string, required: true },
   },
   type: string;
   caption?: string;
@@ -34,7 +34,7 @@ const postSchema = new Schema<PostDocument>({
   // Media / text
   s3Key: {
     key: { type: String, required: true },
-    blurredKey: { type: String, required: true },
+    blurred_key: { type: String, required: true },
   }, 
   caption: { type: String },  
 
@@ -45,6 +45,7 @@ const postSchema = new Schema<PostDocument>({
       _id: { type: Schema.Types.ObjectId, default: () => new mongoose.Types.ObjectId() },
       userId: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true },
       username: { type: String, required: true },
+      postId: { type: Schema.Types.ObjectId, ref: 'Post', required: true },
       text: { type: String, required: true },
       createdAt: { type: Date, default: Date.now },
     },

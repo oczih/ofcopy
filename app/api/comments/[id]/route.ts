@@ -20,12 +20,10 @@ export async function DELETE(
 
     await connectDB();
 
-    // Validate commentId
     if (!commentId || !mongoose.Types.ObjectId.isValid(commentId)) {
       return NextResponse.json({ error: "Invalid commentId" }, { status: 400 });
     }
 
-    // Parse request body
     const body = await req.json();
     const { postId } = body;
 
@@ -43,7 +41,6 @@ export async function DELETE(
       return NextResponse.json({ error: "Comment not found" }, { status: 404 });
     }
 
-    // Only allow deletion by comment author or post creator
     const isCommentAuthor = comment.userId.toString() === session.user._id;
     const isPostOwner = post.creator.toString() === session.user._id;
 
@@ -51,13 +48,18 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Remove comment and save post
-    comment.deleteOne(); // `deleteOne()` is valid too, but `remove()` is Mongoose recommended for subdocs
-    await post.save();
+    // ✅ Atomic delete without re-validating Post
+    await Post.updateOne(
+      { _id: postId },
+      { $pull: { comments: { _id: commentId } } }
+    );
 
     return NextResponse.json({ message: "Comment deleted successfully" });
   } catch (error) {
     console.error("Error deleting comment:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

@@ -92,6 +92,7 @@ export async function fetchPageData() {
   const creatorsSanitized = deepSanitize(creatorsRaw) ?? [];
   const usersSanitized = deepSanitize(usersRaw) ?? [];
   const notificationsSanitized = deepSanitize(notificationsRaw) ?? [];
+
   const postsSanitized = deepSanitize(postsRaw) ?? [];
   const mergedUser = {
     ...session?.user,

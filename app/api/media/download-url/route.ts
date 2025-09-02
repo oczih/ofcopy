@@ -19,7 +19,6 @@ export async function POST(req: NextRequest) {
     if (!cfDomain) {
       return NextResponse.json({ error: "CF_DOMAIN not configured" }, { status: 500 });
     }
-    console.log("cash:", urlCache)
     // ✅ Check cache first
     const cached = urlCache[cleanedKey];
     if (cached && cached.expiresAt > Date.now()) {

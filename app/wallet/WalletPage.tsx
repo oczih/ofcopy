@@ -253,7 +253,7 @@ export default function App({session}: AppProps) {
             <div className="w-full max-w-md">
             <TopUpPanel
                 onContinue={(amount) => {
-                  setTopUpAmount(parseFloat(amount.replace('$', '')));
+                  setTopUpAmount(parseFloat(amount.replace('$', '')).toString());
                   setShowTopUpPanel(false);
                   setShowPayPanel(true); // still shows alternatives
                 }}

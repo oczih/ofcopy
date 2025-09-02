@@ -1,6 +1,7 @@
 import { Creator } from '@/app/types';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import PaymentForm from './PaymentForm';
 
 export default function SubscribeModal({ open, onClose, creator, avatarUrl }: {open: boolean,
   onClose: () => void, creator: Creator | null, avatarUrl: string | null
@@ -56,7 +57,7 @@ export default function SubscribeModal({ open, onClose, creator, avatarUrl }: {o
 
           <div className="relative z-10">
             <h2 className="text-3xl font-bold text-white mb-6 text-center bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
-              {step === 'select' ? 'Subscribe to Creator' : 'Complete Your Payment'}
+              {step === 'select' && 'Subscribe to Creator'}
             </h2>
 
             <div className="text-gray-300 text-sm">
@@ -137,7 +138,14 @@ export default function SubscribeModal({ open, onClose, creator, avatarUrl }: {o
               )}
 
               {step === 'pay' && (
-                <PayPanel onCancel={() => setStep('select')} />
+                <PaymentForm
+                type='subscription'
+                open={step === 'pay'}
+                onClose={() => setStep('select')}
+                creator={creator!}
+                avatarUrl={avatarUrl ?? ""}
+                price={creator?.price ?? 0}
+              />
               )}
             </div>
           </div>
@@ -174,10 +182,10 @@ export default function SubscribeModal({ open, onClose, creator, avatarUrl }: {o
     </>
   );
 }
-interface PayPanelProps {
+/* interface PayPanelProps {
   onCancel: () => void;
-}
-function PayPanel({ onCancel }: PayPanelProps) {
+} */
+/* function PayPanel({ onCancel }: PayPanelProps) {
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
@@ -242,4 +250,4 @@ function PayPanel({ onCancel }: PayPanelProps) {
       </div>
     </div>
   );
-}
+} */

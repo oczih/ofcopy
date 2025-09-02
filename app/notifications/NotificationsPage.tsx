@@ -208,7 +208,7 @@ function resolveByUser(by: string | User | Creator | Array<string | User | Creat
   return creatorArray.find((c: Creator) => c._id === by) || userArray.find((u: User) => u._id === by || u._id === by);
 }
 const byUser = resolveByUser(noti.by);
-
+  
   function getNotificationLink(noti: Notification) {
     switch (noti.type) {
       case "newfollower":
@@ -222,8 +222,10 @@ const byUser = resolveByUser(noti.by);
           return `/${user?.username}`;
         }// Goes to creator's followers page
       case "comment":
+        console.log(noti)
+        return `/post/${noti.postId}`;
       case "like":
-
+        console.log(noti)
         return `/post/${noti.postId}`; // Go to the post page
       case "newsub":
         if(creators.find(c => c.user === noti.by)){

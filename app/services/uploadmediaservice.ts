@@ -86,7 +86,7 @@ async function createBlurredImage(file: File): Promise<File> {
     });
   });
 }
-export async function uploadContent(file: File): Promise<{ key: string, blurredKey: string }> {
+export async function uploadContent(file: File): Promise<{ key: string, blurred_key: string }> {
   let fileToUpload = file;
 
   // Compress image if applicable
@@ -110,10 +110,10 @@ export async function uploadContent(file: File): Promise<{ key: string, blurredK
   const blurredSanitizedName = sanitizeFileName(blurredFile.name);
   const blurredContentType = getContentType(blurredFile); // also ensure MIME type for blurred
 
-  const { uploadUrl: blurredUploadUrl, key: blurredKey } = await getSignedUrl(blurredSanitizedName, blurredContentType);
+  const { uploadUrl: blurredUploadUrl, key: blurred_key } = await getSignedUrl(blurredSanitizedName, blurredContentType);
   await uploadFileToS3(blurredFile, blurredUploadUrl);
 
-  return { key, blurredKey };
+  return { key, blurred_key };
 }
 
 

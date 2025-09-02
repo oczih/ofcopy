@@ -145,7 +145,7 @@ export interface Like {
 }
 export type S3Key = {
   key: string;           // The actual S3 key for the file
-  blurredKey?: string;   // Optional blurred version
+  blurred_key?: string;   // Optional blurred version
 };
 export type Post = {
   _id: string;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MoreHorizontal, Eye, EyeOff, AlertCircle, X, Heart, MessageCircle } from 'lucide-react';
@@ -541,7 +541,7 @@ export function PostCard({
     const handleCommentModalOpen = (commentId: string) => {
       setCommentModalOpen(commentModalOpen === commentId ? null : commentId);
     };
-
+  const notifiedCreators = useRef<Set<string>>(new Set());
   const handleSendComment = async () => {
     if (!commentText.trim() || sending) return;
     
@@ -565,6 +565,32 @@ export function PostCard({
       } else {
         alert('Failed to send comment');
       }
+
+      if (!notifiedCreators.current.has(creator._id)) {
+        notifiedCreators.current.add(creator._id);
+        const response = await fetch("/api/notifications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "comment",
+            by: viewingUser._id,
+            postId: post._id,
+            forUsers: [
+              {
+                model: "Creator", // or "Creator" if the target is a creator
+                id: creator._id.toString(),
+              },
+            ],
+            creatorId: creator._id,
+          }),
+        });
+  
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("Failed to create notification:", errorData);
+        }
+      }
+
     } catch (error) {
       console.error(error);
       alert('Failed to send comment');

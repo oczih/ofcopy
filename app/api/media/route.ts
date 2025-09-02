@@ -74,8 +74,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Creator not found for given id' }, { status: 404 });
     }
   }
-  if (!s3Key?.key || !s3Key?.blurredKey) {
-    return NextResponse.json({ error: 's3Key must contain both key and blurredKey' }, { status: 400 });
+  if (!s3Key?.key || !s3Key?.blurred_key) {
+    return NextResponse.json({ error: 's3Key must contain both key and blurred_key' }, { status: 400 });
   }
 
   // Create the post

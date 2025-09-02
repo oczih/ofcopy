@@ -229,7 +229,7 @@ if (!session?.user) {
     key: string;
     s3Key: {
       key: string;
-      blurredKey: string;
+      blurred_key: string;
     };
     file: File;
   }

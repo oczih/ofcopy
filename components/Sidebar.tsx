@@ -190,7 +190,7 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
   className={`${isCollapsed ? 'w-20' : 'w-72'} h-screen fixed left-0 top-0 z-30
     bg-gradient-to-b from-slate-900/80 via-purple-900/70 to-slate-900/90
     backdrop-blur-xl border-r border-white/10 shadow-2xl p-4
-    flex flex-col justify-between transition-all duration-300 ease-in-out overflow-hidden`}
+    flex flex-col  transition-all duration-300 ease-in-out overflow-hidden`}
 >
       
       {/* Collapse Toggle Button */}
@@ -263,7 +263,7 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
         </div>
 
 
-        <nav className="space-y-1 mb-40"> 
+        <nav className="space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -305,8 +305,7 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
             );
           })}
           {session?.user?.creator && (
-          <div 
-            className="relative mt-2 mb-100"
+          <div className="relative mt-2 mb-20"
             onMouseEnter={() => setHoveredItem('upload')}
             onMouseLeave={() => setHoveredItem(null)}
           >
@@ -349,6 +348,28 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
             )}
           </div>
         )}
+        <div
+  className={`border-t border-gray-700 ${isCollapsed ? 'mt-auto' : ''} `}
+  onMouseEnter={() => setHoveredItem('signout')}
+  onMouseLeave={() => setHoveredItem(null)}
+>
+          <button
+            onClick={handleSignOut}
+            className={`flex items-center gap-2 mt-2 w-full cursor-pointer ${
+              isCollapsed ? 'justify-center px-2 py-2' : 'justify-start px-4 py-3'
+            } rounded-full text-white hover:bg-red-500/40 transition duration-200`}
+          >
+            <LogOut className="w-5 h-5" />
+            {!isCollapsed && <span className="ml-1">Sign Out</span>}
+          </button>
+
+          {/* Tooltip when collapsed */}
+          {isCollapsed && hoveredItem === 'signout' && (
+            <div className="absolute left-14 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-sm px-3 py-1 rounded-md shadow-md z-50 pointer-events-none whitespace-nowrap">
+              Sign Out
+            </div>
+          )}
+        </div>
           
           {/* Lisää myöhemmin tämä testaa eka influenssereilla
           {session?.user && !session.user.creator && (
@@ -391,28 +412,7 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
         {/* Upload Content Button */}
         
         {/* Sign Out Button */}
-        <div
-  className={`border-t border-gray-700 pt-3 ${isCollapsed ? 'mt-auto' : ''} relative `}
-  onMouseEnter={() => setHoveredItem('signout')}
-  onMouseLeave={() => setHoveredItem(null)}
->
-          <button
-            onClick={handleSignOut}
-            className={`flex items-center gap-2 w-full cursor-pointer ${
-              isCollapsed ? 'justify-center px-2 py-2' : 'justify-start px-4 py-3'
-            } rounded-full text-white hover:bg-red-500/40 transition duration-200`}
-          >
-            <LogOut className="w-5 h-5" />
-            {!isCollapsed && <span className="ml-1">Sign Out</span>}
-          </button>
-
-          {/* Tooltip when collapsed */}
-          {isCollapsed && hoveredItem === 'signout' && (
-            <div className="absolute left-14 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-sm px-3 py-1 rounded-md shadow-md z-50 pointer-events-none whitespace-nowrap">
-              Sign Out
-            </div>
-          )}
-        </div>
+        
         </>
       ) : (
         <>

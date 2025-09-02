@@ -287,9 +287,9 @@ function Landing() {
                     & Get Paid Fast
                   </h1>
                   <p className="text-xl text-[#12251a] max-w-xl mb-8 leading-relaxed">
-                    The ultimate platform for both{' '}
-                    <span className="text-purple-600 font-semibold">AI creators</span> and{' '}
-                    <span className="text-blue-600 font-semibold">human artists</span> to build communities,
+                    The ultimate platform for{' '}
+                    <span className="text-purple-600 font-semibold">creators</span> and{' '}
+                    <span className="text-blue-600 font-semibold">artists</span> to build communities,
                     share exclusive content, and earn sustainable income.
                   </p>
                 </motion.div>

@@ -3,7 +3,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Chat, Creator, MediaPost, Post, User } from '@/app/types';
+import { Creator, MediaPost, Post, User } from '@/app/types';
 import SubscribeModal from '@/components/SubscribeModal';
 import creatorservice from '@/app/services/creatorservice';
 import { Skeleton } from "@/components/ui/skeleton"
@@ -202,7 +202,7 @@ export default function ProfileContent({
                   ? post.s3Key
                   : session?.user?.following?.some((f) => f.creatorId === post.creator) || creators.some(c => c.user === session?.user._id)
                   ? post.s3Key?.key
-                  : post.s3Key?.blurredKey;
+                  : post.s3Key?.blurred_key;
 
               if (!s3Key) return; // ⛔ bail early if undefined
 
@@ -339,8 +339,7 @@ export default function ProfileContent({
   const resolvedSrc = resolveImageUrl(avatarUrl);
   
   const handleStartChat = async (userId: string, sessionUserId: string) => {
-    // 1. Find existing chat(s) between these users
-    let chats = await getChatsBetween(sessionUserId, userId);
+    const chats = await getChatsBetween(sessionUserId, userId);
     let chat = chats[0]; // take the first one if it exists
   
     // 2. If no chat found, create one
@@ -373,7 +372,6 @@ export default function ProfileContent({
     // 4. Navigate to messages page
     router.push("/messages");
   };
-  console.log(userViewed.id)
   return (
     <div>
       <Toaster
@@ -543,7 +541,7 @@ export default function ProfileContent({
              onClick={() => {
               
              
-              handleStartChat(userViewed.id, session.user._id)
+              handleStartChat(userViewed._id, session.user._id)
              }}
              className="w-full mt-4 border border-purple-500 hover:bg-purple-500/10 text-purple-400 px-4 py-2 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
            >
@@ -730,6 +728,7 @@ function LikedContent({
         likedPosts.map((post) => (
           <CreatorPostCard
             key={post._id}
+            blurredUrl=''
             post={post}
             creator={creator}
             status={status}
@@ -832,6 +831,7 @@ function PurchasedPostsGrid ({
           key={post._id}
           post={post}
           creator={creator}
+          blurredUrl=''
           status={status}
           session={session}
           users={users ?? []}
@@ -996,6 +996,7 @@ function MediaGrid({
           <CreatorPostCard
           key={post._id}
           post={post}
+          blurredUrl=''
           creator={creator}
           status={status}
           session={session}

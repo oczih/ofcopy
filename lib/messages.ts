@@ -55,12 +55,12 @@ export type SendMessageParams = {
   chatId: string;
   senderId: string;
   content: string;
-  imageKey?: string;
-  videoKey?: string;
-  voiceKey?: string;
-  fileKey?: string;
+  image_key?: string;
+  video_key?: string;
+  voice_key?: string;
+  file_key?: string;
   ismassmessage?: boolean;
-  blurredKey?: string;
+  blurred_key?: string;
   duration?: number;
   size?: number;
   price?: number;               // new
@@ -71,11 +71,11 @@ export async function sendMessage({
   chatId,
   senderId,
   content,
-  imageKey,
-  videoKey,
-  voiceKey,
-  fileKey,
-  blurredKey,
+  image_key,
+  video_key,
+  voice_key,
+  file_key,
+  blurred_key,
   duration,
   size,
   price,
@@ -90,11 +90,11 @@ export async function sendMessage({
         sender_id: senderId,
         content,
         ismassmessage,
-        image_key: imageKey,
-        video_key: videoKey,
-        voice_key: voiceKey,
-        file_key: fileKey,
-        blurred_key: blurredKey,
+        image_key,
+        video_key,
+        voice_key,
+        file_key,
+        blurred_key,
         duration,
         size,
         price,
@@ -108,13 +108,13 @@ export async function sendMessage({
 
   return {
     id: String(data.id),
-    type: imageKey
+    type: image_key
       ? "photo"
-      : videoKey
+      : video_key
       ? "video"
-      : voiceKey
+      : voice_key
       ? "voice"
-      : fileKey
+      : file_key
       ? "file"
       : "text",
     sender_id: data.sender_id,

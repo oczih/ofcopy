@@ -1,19 +1,18 @@
 /* eslint-disable @next/next/no-img-element */
 'use client'
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo,} from "react";
 import { MessageType } from "@/app/types";
 import { Calendar, DollarSign, Eye, MessageSquare, Paperclip, Send, ShoppingCart, X } from "lucide-react";
 import { createPortal } from "react-dom";
-import { deleteMessage } from "@/lib/messages";
+/* import { deleteMessage } from "@/lib/messages"; */
 
 interface MassMessagesTableProps {
   massMessages: MessageType[];
   massMessageMediaUrls: Record<string, string>;
-  setMassMessages: () => void;
 }
 
-export function MassMessagesTable({ massMessages, massMessageMediaUrls, setMassMessages }: MassMessagesTableProps) {
+export function MassMessagesTable({ massMessages, massMessageMediaUrls }: MassMessagesTableProps) {
   // Format date nicely
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const formatDate = (iso: string) => {
@@ -28,85 +27,79 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls, setMassM
   };
 
   // Count attachments
-  const getAttachmentCount = (msg: MessageType) => {
-    let count = 0;
-    if (msg.image_key) count++;
-    if (msg.video_key) count++;
-    if (msg.voice_key) count++;
-    if (msg.file_key) count++;
-    return count;
-  };
-
-  // Combine mass messages by sender + day
-  const combinedMassMessages = useMemo(() => {
-    const groups: Record<string, any> = {};
+  interface CombinedMessage {
+    ids: string[];
+    id: string;
+    date: string;
+    senderId: string;
+    text: string;
+    attachments: Record<'image' | 'video' | 'voice' | 'file', { key: string; url: string }>;
+    attachmentsArray: { key: string; url: string }[];
+    price: number;
+    sent: number;
+  }
+  
+  const combinedMassMessages = useMemo<CombinedMessage[]>(() => {
+    const groups: Record<string, Omit<CombinedMessage, 'attachmentsArray'>> = {};
   
     massMessages.forEach(msg => {
       if (!msg.ismassmessage) return;
   
-      // Round timestamp to minute
       const d = new Date(msg.created_at);
       const minuteKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}-${d.getMinutes()}`;
-  
-      // Combine with sender ID to form a unique group key
       const key = `${msg.sender_id}-${minuteKey}`;
   
       if (!groups[key]) {
         groups[key] = {
-          ids: [msg.id], // 👈 collect all IDs in the group
-          id: msg.id, // keep first ID for key
+          ids: [msg.id!],
+          id: msg.id!,
           date: msg.created_at,
-          senderId: msg.sender_id,
-          text: msg.content,
+          senderId: msg.sender_id.toString(),
+          text: msg.content!,
           attachments: {} as Record<'image' | 'video' | 'voice' | 'file', { key: string; url: string }>,
           price: msg.price ?? 0,
           sent: 1,
-          viewed: msg.viewedCount ?? 0,
-          purchased: msg.purchasedCount ?? 0,
         };
       } else {
-        groups[key].ids.push(msg.id); // 👈 keep collecting IDs
+        groups[key].ids.push(msg.id!);
         groups[key].sent += 1;
-        groups[key].viewed += msg.viewedCount ?? 0;
-        groups[key].purchased += msg.purchasedCount ?? 0;
       }
   
-      // Only store the first of each type
-      if (msg.image_key && !groups[key].attachments.image) {
-        groups[key].attachments.image = { key: msg.image_key, url: massMessageMediaUrls[msg.image_key] };
+      // Only store the first of each type, and ensure URL exists
+      if (msg.image_key && massMessageMediaUrls[msg.image_key] && !groups[key].attachments.image) {
+        groups[key].attachments.image = { key: msg.image_key, url: massMessageMediaUrls[msg.image_key]! };
       }
-      if (msg.video_key && !groups[key].attachments.video) {
-        groups[key].attachments.video = { key: msg.video_key, url: massMessageMediaUrls[msg.video_key] };
+      if (msg.video_key && massMessageMediaUrls[msg.video_key] && !groups[key].attachments.video) {
+        groups[key].attachments.video = { key: msg.video_key, url: massMessageMediaUrls[msg.video_key]! };
       }
-      if (msg.voice_key && !groups[key].attachments.voice) {
-        groups[key].attachments.voice = { key: msg.voice_key, url: massMessageMediaUrls[msg.voice_key] };
+      if (msg.voice_key && massMessageMediaUrls[msg.voice_key] && !groups[key].attachments.voice) {
+        groups[key].attachments.voice = { key: msg.voice_key, url: massMessageMediaUrls[msg.voice_key]! };
       }
-      if (msg.file_key && !groups[key].attachments.file) {
-        groups[key].attachments.file = { key: msg.file_key, url: massMessageMediaUrls[msg.file_key] };
+      if (msg.file_key && massMessageMediaUrls[msg.file_key] && !groups[key].attachments.file) {
+        groups[key].attachments.file = { key: msg.file_key, url: massMessageMediaUrls[msg.file_key]! };
       }
     });
   
-    // Convert attachments object to array for rendering
     return Object.values(groups).map(g => ({
       ...g,
-      attachmentsArray: Object.values(g.attachments).filter(Boolean),
+      attachmentsArray: Object.values(g.attachments),
     }));
   }, [massMessages, massMessageMediaUrls]);
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const handleUnsend = async (messageIds: number[]) => {
+  /* const [isDeleting, setIsDeleting] = useState<string | null>(null); */
+  /* const handleUnsend = async (messageIds: number[]) => {
     try {
       setIsDeleting(messageIds.join(",")); // just for button state
       await Promise.all(messageIds.map(id => deleteMessage(id.toString())));
   
       // Remove all messages locally
-      setMassMessages(prev => prev.filter(msg => !messageIds.includes(msg.id)));
+      setMassMessages(prev => prev.filter(msg => !messageIds.includes(Number(msg.id))));
     } catch (err) {
       console.error("Failed to delete messages:", err);
       alert("Error deleting messages");
     } finally {
       setIsDeleting(null);
     }
-  };
+  }; */
   
   console.log(massMessages)
   return (
@@ -192,7 +185,7 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls, setMassM
                   <td className="px-4 py-3 border-b border-slate-200">
   {msg.attachmentsArray.length ? (
     <div className="flex items-center gap-2">
-      {msg.attachmentsArray.map((att) => (
+      {msg.attachmentsArray.map((att: { key: string; url: string }) => (
         <div key={att.key}>
           {att.url && (
             <div
@@ -238,9 +231,9 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls, setMassM
                     </div>
                   </td>
 
-                  <td className="px-4 py-3 border-b border-slate-200 text-center">
+                  {/*<td className="px-4 py-3 border-b border-slate-200 text-center">
                     <div className="flex flex-col items-center gap-1">
-                      <span className="text-sm font-semibold text-slate-700">{msg.viewed}</span>
+                      <span className="text-sm font-semibold text-slate-700">{msg?.viewed}</span>
                       <div className="w-full bg-slate-200 rounded-full h-1.5">
                         <div className="bg-orange-500 h-1.5 rounded-full" style={{width: `${(msg.viewed / msg.sent) * 100}%`}}></div>
                       </div>
@@ -256,16 +249,16 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls, setMassM
                       </div>
                       <span className="text-xs text-slate-500">{((msg.purchased / msg.sent) * 100).toFixed(0)}%</span>
                     </div>
-                  </td>
+                  </td>*/}
 
-                  {/* Revenue */}
+                  {/* Revenue 
                   <td className="px-4 py-3 border-b border-slate-200 text-center">
                     <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md">
                       ${(msg.price * msg.purchased).toFixed(2)}
                     </span>
-                  </td>
+                  </td>*/}
 
-                  {/* Actions */}
+                  {/* Actions 
                   <td className="px-4 py-3 border-b border-slate-200 text-center">
                   <button 
   onClick={() => handleUnsend(msg.ids)} 
@@ -279,7 +272,7 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls, setMassM
   <X className="w-3 h-3" />
   {isDeleting === msg.ids.join(",") ? "Deleting..." : "Unsend"}
 </button>
-                  </td>
+                  </td> */}
                 </tr>
               ))}
             </tbody>
@@ -294,7 +287,7 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls, setMassM
             </span>
             <span className="text-slate-600 font-medium">
               Total Revenue: <span className="text-green-600 font-bold">
-                ${combinedMassMessages.reduce((sum, msg) => sum + (msg.price * msg.purchased), 0).toFixed(2)}
+                ${combinedMassMessages.reduce((sum, msg) => sum + (msg.price), 0).toFixed(2)}
               </span>
             </span>
           </div>

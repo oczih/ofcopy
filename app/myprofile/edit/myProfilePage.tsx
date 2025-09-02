@@ -1,12 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import Cropper, { Area } from 'react-easy-crop';
-import { ZoomIn, ZoomOut, X, Users, LinkIcon, DollarSign, Edit3, ChevronRight, Edit3Icon, UserRoundCog } from 'lucide-react';
+import { ZoomIn, ZoomOut, X, Users, LinkIcon, ChevronRight, UserRoundCog } from 'lucide-react';
 import getCroppedImg from '@/lib/utils'
 import userservice from '@/app/services/userservice';
 import { uploadContent } from '@/app/services/uploadmediaservice';
@@ -164,7 +161,7 @@ export default function App({creators, session}: AppProps) {
 
           {/* Edit Sections */}
           <div className="w-full max-w-3xl space-y-4">
-            {links.map((link, index) => {
+            {links.map((link) => {
               const IconComponent = link.icon;
               return (
                 <button

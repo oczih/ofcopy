@@ -2,10 +2,9 @@
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import Image from "next/image";
 import { MoreHorizontal, Heart, MessageCircle, UserPlus } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Session } from "next-auth";
 import { Comment, Creator, Post, User} from "../app/types";
 import { Skeleton } from "@/components/ui/skeleton"
@@ -20,6 +19,7 @@ export function CreatorPostCard({
   status,
   user,
   users,
+  blurredUrl,
   signedUrl,
   handleFollow,
   handleDeletePost
@@ -31,6 +31,7 @@ export function CreatorPostCard({
   user: Creator | User
   users: User[]
   signedUrl: string;
+  blurredUrl: string;
   handleFollow: (creator: Creator) => void;
   handleDeletePost: () => void;
 }) {
@@ -217,7 +218,7 @@ function resolveImageUrl(url: string) {
   const [userAvatars, setUserAvatars] = useState<Record<string, string>>({});
 const [avatarsLoading, setAvatarsLoading] = useState<Record<string, boolean>>({});
 const resolvedUrl = useMemo(() => resolveImageUrl(signedUrl), [signedUrl]);
-
+const resolvedBlurredUrl = useMemo(() => resolveImageUrl(blurredUrl), [blurredUrl]);
 const [signedUrlLoading, setSignedUrlLoading] = useState(true);
 const fetchUserAvatarUrl = async (user: User) => {
   if (!user.avatarKey) return;
@@ -261,10 +262,12 @@ useEffect(() => {
   const handleModalOpen = () => {
     setModalOpen((open) => !open)
   }
+  const notifiedCreators = useRef<Set<string>>(new Set());
   const handleSendComment = async () => {
     if (!commentText.trim()) return;
     setSending(true);
     try {
+      console.log(post._id)
       const res = await fetch(`/api/media?username=${creator.username}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -285,6 +288,30 @@ useEffect(() => {
         setCommentText("");
       } else {
         alert('Failed to add comment');
+      }
+      if (!notifiedCreators.current.has(creator._id)) {
+        notifiedCreators.current.add(creator._id);
+        const response = await fetch("/api/notifications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "comment",
+            by: session?.user?._id,
+            postId: post._id,
+            forUsers: [
+              {
+                model: "Creator", // or "Creator" if the target is a creator
+                id: creator._id.toString(),
+              },
+            ],
+            creatorId: creator._id,
+          }),
+        });
+  
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("Failed to create notification:", errorData);
+        }
       }
     } catch (error) {
       console.error(error);
@@ -333,30 +360,30 @@ useEffect(() => {
     setCommentModalOpen(commentModalOpen === commentId ? null : commentId);
   };
   const handleDeleteComment = async (postId: string, commentId: string) => {
-    if (!postId || !commentId) {
-      console.error('Missing postId or commentId');
-      return;
+  if (!postId || !commentId) {
+    console.error('Missing postId or commentId');
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/comments/${commentId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ postId }), // ✅ send postId
+    });
+
+    if (res.ok) {
+      setComments(prev => prev.filter(comment => comment._id !== commentId)); // ✅ correct filtering
+      setCommentModalOpen(null);
+    } else {
+      console.error(res);
+      alert('Failed to delete');
     }
-  
-    try {
-      const res = await fetch(`/api/comments/${commentId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId }),
-      });
-  
-      if (res.ok) {
-        setComments(prev => prev.filter(comment => comment._id !== commentId));
-        setCommentModalOpen(null);
-      } else {
-        
-        alert('Failed to delete');
-      }
-    } catch (error) {
-      console.error(error);
-      alert('Failed to delete comment');
-    }
-  };
+  } catch (error) {
+    console.error(error);
+    alert('Failed to delete comment');
+  }
+};
   const isImage = (url: string) => {
     // Remove query parameters and check the file extension
     const cleanUrl = url.split('?')[0].toLowerCase();
@@ -493,9 +520,9 @@ useEffect(() => {
   ) : (
     <div className="relative w-full">
       {/* Media (always rendered if signedUrl exists) */}
-      {resolvedUrl &&
-        (isImage(resolvedUrl) ? (
-          <Image
+      {resolvedUrl && resolvedBlurredUrl &&
+        (isImage(resolvedUrl) ? canView ? (
+          <img
             src={resolvedUrl}
             alt={post.caption || ""}
             width={post.width}
@@ -509,10 +536,26 @@ useEffect(() => {
             }`}
           />
         ) : (
+          <img
+            src={resolvedBlurredUrl}
+            alt={post.caption || ""}
+            width={post.width}
+            height={post.height}
+            onLoad={() => setImageLoading(false)}
+            onError={() => setImageLoading(false)}
+            style={{ objectFit: "contain", width: "100%", height: "auto" }}
+            sizes="(max-width: 1200px) 100vw, 1200px"
+            className={`transition-opacity duration-300 ${
+              imageLoading ? "opacity-0" : "opacity-100"
+            }`}
+          />
+        ) : (
+          <div>
           <video width="100%" height="auto" controls preload="metadata">
             <source src={resolvedUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
+          </div>
         ))}
 
       {/* Overlay if user cannot view */}
@@ -531,7 +574,7 @@ useEffect(() => {
                 <Heart className="w-4 h-4 mr-2" /> Subscribe
               </Button>
             )}
-            {isFollowersOnly && (
+            {isFollowersOnly &&  (
               <Button
                 onClick={() => handleFollow(creator)}
                 className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-semibold rounded-full shadow cursor-pointer"
