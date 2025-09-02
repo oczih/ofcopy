@@ -267,7 +267,6 @@ useEffect(() => {
     if (!commentText.trim()) return;
     setSending(true);
     try {
-      console.log(post._id)
       const res = await fetch(`/api/media?username=${creator.username}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

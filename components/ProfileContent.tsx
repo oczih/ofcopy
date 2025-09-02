@@ -90,7 +90,6 @@ export default function ProfileContent({
   const router = useRouter();
 
   
-  console.log(status)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarImage, setAvatarImage] = useState<string | null>(null);
   const avatarKey = creator?.avatarKey ?? userViewed?.avatarKey?.replace(/^\/+/, '');
@@ -815,7 +814,6 @@ function PurchasedPostsGrid ({
       alert("Failed to delete post");
     }
   };
-  console.log(Object.values(visiblePosts))
   return (
     <div>
       {visiblePosts.length === 0 && (
