@@ -707,7 +707,11 @@ const isImage = (url: string) => {
               {userAvatarUrl && (
                 <Avatar className="w-8 h-8 mt-1">
                   <AvatarImage src={resolveImageUrl(userAvatarUrl) || ""} alt={session?.user?.name || 'User'} />
-                  <AvatarFallback>{session?.user?.name?.[0] || 'U'}</AvatarFallback>
+                  <AvatarFallback>
+                    
+                  <div className="w-15 h-15 rounded-full bg-gray-700 text-white flex items-center justify-center text-xl  shadow-lg">
+                    {session?.user?.name?.[0] || 'U'}
+                    </div></AvatarFallback>
                 </Avatar>
               )}
               <textarea

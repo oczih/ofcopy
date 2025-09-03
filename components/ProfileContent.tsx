@@ -739,13 +739,14 @@ function LikedContent({
     <div className="grid grid-cols-1 gap-6">
       {likedPosts.length > 0 ? (
         likedPosts.map((post) => (
+         
           <CreatorPostCard
             key={post._id}
-            blurredUrl={postSignedUrls[post._id]?.blurredUrl}
+            blurredUrl={postSignedUrls[post._id]?.blurredUrl || ""}
             post={post}
             creator={creator}
             status={status}
-            signedUrl={postSignedUrls[post._id]?.signedUrl}
+            signedUrl={postSignedUrls[post._id]?.signedUrl || ""}
             user={viewingUser}
             handleFollow={() => {}}
             users={[]}
@@ -828,6 +829,7 @@ function PurchasedPostsGrid ({
       alert("Failed to delete post");
     }
   };
+
   return (
     <div>
       {visiblePosts.length === 0 && (
@@ -843,12 +845,12 @@ function PurchasedPostsGrid ({
           key={post._id}
           post={post}
           creator={creator}
-          blurredUrl={postSignedUrls[post._id].blurredUrl}
+          blurredUrl={postSignedUrls[post._id]?.blurredUrl || ""}
           status={status}
           session={session}
           users={users ?? []}
           user={user}
-          signedUrl={postSignedUrls[post._id].signedUrl}
+          signedUrl={postSignedUrls[post._id]?.signedUrl || ""}
           handleFollow={handleFollow}
           handleDeletePost={() => handleDeletePost(creator._id, post._id)}
         />
@@ -886,7 +888,7 @@ function MediaGrid({
       <div className="grid grid-cols-3 gap-1">
         {visiblePosts.map((p) => {
           const isLoaded = loadedImages[p._id];
-          const src = resolveImageUrl(postSignedUrls[p._id].signedUrl) || "";
+          const src = resolveImageUrl(postSignedUrls[p._id]?.signedUrl || "")
 
           return (
             <div
@@ -898,7 +900,7 @@ function MediaGrid({
             >
               {/* Blurred background */}
               <img
-                src={src}
+                src={src || ""}
                 alt="blurred background"
                 className="absolute inset-0 w-full h-full object-cover blur-lg scale-110 brightness-50"
               />
@@ -911,7 +913,7 @@ function MediaGrid({
               {/* Foreground image (centered, keeps aspect ratio) */}
               <div className="absolute inset-0 flex items-center justify-center z-30">
                 <img
-                  src={src}
+                  src={src || ""}
                   alt={p.caption || "Media post"}
                   className={`max-w-full max-h-full object-contain transition-opacity duration-300 ${
                     isLoaded ? "opacity-100" : "opacity-0"
@@ -1008,12 +1010,12 @@ function MediaGrid({
           <CreatorPostCard
           key={post._id}
           post={post}
-          blurredUrl={postSignedUrls[post._id].blurredUrl}
+          blurredUrl={postSignedUrls[post._id]?.blurredUrl || ""}
           creator={creator}
           status={status}
           session={session}
           users={users ?? []}
-          signedUrl={postSignedUrls[post._id].signedUrl}
+          signedUrl={postSignedUrls[post._id]?.signedUrl || ""}
           user={user}
           handleFollow={handleFollow}
           handleDeletePost={() => handleDeletePost(creator._id)}
