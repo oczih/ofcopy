@@ -479,6 +479,7 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
       <MassMessagesTable 
         massMessages={massMessages}
         massMessageMediaUrls={massMessageMediaUrls}
+        setMassMessages={setMassMessages}
       />
 </div>
     </div>

@@ -5,14 +5,15 @@ import { useState, useMemo,} from "react";
 import { MessageType } from "@/app/types";
 import { Calendar, DollarSign, Eye, MessageSquare, Paperclip, Send, ShoppingCart, X } from "lucide-react";
 import { createPortal } from "react-dom";
-/* import { deleteMessage } from "@/lib/messages"; */
+import { deleteMessage } from "@/lib/messages";
 
 interface MassMessagesTableProps {
   massMessages: MessageType[];
   massMessageMediaUrls: Record<string, string>;
+  setMassMessages: React.Dispatch<React.SetStateAction<MessageType[]>>;
 }
 
-export function MassMessagesTable({ massMessages, massMessageMediaUrls }: MassMessagesTableProps) {
+export function MassMessagesTable({ massMessages, massMessageMediaUrls, setMassMessages }: MassMessagesTableProps) {
   // Format date nicely
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const formatDate = (iso: string) => {
@@ -37,6 +38,8 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls }: MassMe
     attachmentsArray: { key: string; url: string }[];
     price: number;
     sent: number;
+    viewed: string[];
+    purchased: string[]
   }
   
   const combinedMassMessages = useMemo<CombinedMessage[]>(() => {
@@ -59,6 +62,8 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls }: MassMe
           attachments: {} as Record<'image' | 'video' | 'voice' | 'file', { key: string; url: string }>,
           price: msg.price ?? 0,
           sent: 1,
+          viewed: msg.viewed?.split(",") ?? [],
+          purchased: msg.purchased?.split(",") ?? [],
         };
       } else {
         groups[key].ids.push(msg.id!);
@@ -85,21 +90,22 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls }: MassMe
       attachmentsArray: Object.values(g.attachments),
     }));
   }, [massMessages, massMessageMediaUrls]);
-  /* const [isDeleting, setIsDeleting] = useState<string | null>(null); */
-  /* const handleUnsend = async (messageIds: number[]) => {
+  const [isDeleting, setIsDeleting] = useState<string | null>(null); 
+  const handleUnsend = async (messageIds: string[]) => {
     try {
       setIsDeleting(messageIds.join(",")); // just for button state
       await Promise.all(messageIds.map(id => deleteMessage(id.toString())));
   
       // Remove all messages locally
-      setMassMessages(prev => prev.filter(msg => !messageIds.includes(Number(msg.id))));
+      if(!messageIds) return;
+      setMassMessages(prev => prev.filter(msg => msg.id && !messageIds.includes(msg.id)));
     } catch (err) {
       console.error("Failed to delete messages:", err);
       alert("Error deleting messages");
     } finally {
       setIsDeleting(null);
     }
-  }; */
+  };
   
 
   return (
@@ -231,13 +237,13 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls }: MassMe
                     </div>
                   </td>
 
-                  {/*<td className="px-4 py-3 border-b border-slate-200 text-center">
+                  <td className="px-4 py-3 border-b border-slate-200 text-center">
                     <div className="flex flex-col items-center gap-1">
-                      <span className="text-sm font-semibold text-slate-700">{msg?.viewed}</span>
+                      <span className="text-sm font-semibold text-slate-700">{msg?.viewed.length}</span>
                       <div className="w-full bg-slate-200 rounded-full h-1.5">
-                        <div className="bg-orange-500 h-1.5 rounded-full" style={{width: `${(msg.viewed / msg.sent) * 100}%`}}></div>
+                        <div className="bg-orange-500 h-1.5 rounded-full" style={{width: `${(msg.viewed.length / msg.sent) * 100}%`}}></div>
                       </div>
-                      <span className="text-xs text-slate-500">{((msg.viewed / msg.sent) * 100).toFixed(0)}%</span>
+                      <span className="text-xs text-slate-500">{((msg.viewed.length / msg.sent) * 100).toFixed(0)}%</span>
                     </div>
                   </td>
 
@@ -245,20 +251,20 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls }: MassMe
                     <div className="flex flex-col items-center gap-1">
                       <span className="text-sm font-semibold text-slate-700">{msg.purchased}</span>
                       <div className="w-full bg-slate-200 rounded-full h-1.5">
-                        <div className="bg-green-500 h-1.5 rounded-full" style={{width: `${(msg.purchased / msg.sent) * 100}%`}}></div>
+                        <div className="bg-green-500 h-1.5 rounded-full" style={{width: `${(msg.purchased.length / msg.sent) * 100}%`}}></div>
                       </div>
-                      <span className="text-xs text-slate-500">{((msg.purchased / msg.sent) * 100).toFixed(0)}%</span>
+                      <span className="text-xs text-slate-500">{((msg.purchased.length / msg.sent) * 100).toFixed(0)}%</span>
                     </div>
-                  </td>*/}
+                  </td>
 
-                  {/* Revenue 
+                  
                   <td className="px-4 py-3 border-b border-slate-200 text-center">
                     <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md">
-                      ${(msg.price * msg.purchased).toFixed(2)}
+                      ${(msg.price * msg.purchased.length).toFixed(2)}
                     </span>
-                  </td>*/}
+                  </td>
 
-                  {/* Actions 
+                  
                   <td className="px-4 py-3 border-b border-slate-200 text-center">
                   <button 
   onClick={() => handleUnsend(msg.ids)} 
@@ -272,7 +278,7 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls }: MassMe
   <X className="w-3 h-3" />
   {isDeleting === msg.ids.join(",") ? "Deleting..." : "Unsend"}
 </button>
-                  </td> */}
+                  </td>
                 </tr>
               ))}
             </tbody>

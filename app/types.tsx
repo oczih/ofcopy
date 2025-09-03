@@ -278,7 +278,9 @@ export type MessageType = {
   ismassmessage?: boolean;
   // New fields for paid content
   price?: number;              // cost to unlock/view
-  requires_payment?: boolean;   // true if message is locked until purchased
+  requires_payment?: boolean;
+  viewed: string[];      // list of user IDs who viewed
+purchased: string[];   // true if message is locked until purchased
 };
 export type Chat = {
   id: string;              // text, can store Mongo ObjectId

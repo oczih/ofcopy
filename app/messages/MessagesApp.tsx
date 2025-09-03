@@ -76,9 +76,9 @@ export default function ChatApp({ session, users }: AppProps) {
     const loadMessages = async () => {
       try {
         const rows: SupabaseMessage[] = await getMessages(currentChatIdentifier);
-        const mapped: MessageType[] = rows.map((row) => ({
-          id: String(row.id),
-          sender_id: row.sender_id,
+        const mapped: MessageType[] = rows.map(row => ({
+          id: String(row.id),            // coerce number → string
+          sender_id: row.sender_id,      // string | ObjectId is compatible
           content: row.content,
           created_at: row.created_at,
           type: row.image_key
@@ -92,12 +92,16 @@ export default function ChatApp({ session, users }: AppProps) {
             : "text",
           image_key: row.image_key ?? undefined,
           video_key: row.video_key ?? undefined,
-          price: row.price ?? undefined,
+          file_key: row.file_key ?? undefined,
           voice_key: row.voice_key ?? undefined,
-          fileKey: row.file_key ?? undefined,
           blurred_key: row.blurred_key ?? undefined,
           duration: row.duration ?? undefined,
           size: row.size ?? undefined,
+          price: row.price ?? undefined,
+          viewed: row.viewed ?? [],       // always array
+          purchased: row.purchased ?? [], // always array
+          ismassmessage: row.ismassmessage ?? false,
+          requires_payment: row.price ? true : false,
         }));
   
         setMessages(mapped);
@@ -242,6 +246,8 @@ export default function ChatApp({ session, users }: AppProps) {
     duration?: number;
     size?: number;
     created_at: string;
+    viewed: string[];
+    purchased: string[];
   };
   type SupabaseMessage = {
     id: number;
@@ -257,6 +263,9 @@ export default function ChatApp({ session, users }: AppProps) {
     duration?: number;
     size?: number;
     created_at: string;
+    viewed: string[];
+    purchased: string[];
+    ismassmessage?: boolean;
   };
   useEffect(() => {
     if (!currentChatIdentifier || !session?.user?._id) return;
@@ -289,6 +298,8 @@ export default function ChatApp({ session, users }: AppProps) {
           blurred_key: row.blurred_key,
           duration: row.duration,
           size: row.size,
+          viewed: row.viewed ? row.viewed.split(",") : [],
+          purchased: row.purchased ? row.purchased.split(",") : [],
         }));
         setMessages(mapped);
       } catch (err) {
@@ -322,6 +333,8 @@ export default function ChatApp({ session, users }: AppProps) {
           blurred_key: msg.blurred_key,
           duration: msg.duration,
           size: msg.size,
+          viewed: msg.viewed,
+          purchased: msg.purchased
         };
         setMessages(prev => [...prev, mappedMsg]);
       }

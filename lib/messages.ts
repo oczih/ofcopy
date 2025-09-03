@@ -64,7 +64,9 @@ export type SendMessageParams = {
   duration?: number;
   size?: number;
   price?: number;               // new
-  requiresPayment?: boolean;    // new
+  requiresPayment?: boolean;
+  viewed?: string[];
+  purchased?: string[]    // new
 };
 
 export async function sendMessage({
@@ -99,6 +101,8 @@ export async function sendMessage({
         size,
         price,
         requires_payment: requiresPayment,
+        viewed: [],
+        purchased: []
       },
     ])
     .select()
@@ -128,5 +132,9 @@ export async function sendMessage({
     blurred_key: data.blurred_key ?? undefined,
     duration: data.duration ?? undefined,
     size: data.size ?? undefined,
+    viewed: data.viewed ?? undefined,
+    purchased: data.purchased ?? undefined,
+    requires_payment: data.requires_payment ?? undefined,
+    ismassmessage: data.ismassmessage ?? undefined
   };
 }
