@@ -166,6 +166,7 @@ export default function PaymentForm({
 
         <div>
           <h2 className="text-center text-2xl font-bold">Monara Club</h2>
+          <h2 className="text-center text-2xl font-bold">Country of Registration: Finland</h2>
           </div>
         <div className="max-w-md mx-auto p-6 space-y-6">
           <div className="text-center">
