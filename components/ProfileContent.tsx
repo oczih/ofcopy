@@ -161,65 +161,74 @@ export default function ProfileContent({
   }, [avatarKey, getSignedUrl]);
 
   // Post signed URLs - batch fetch and cache
-  const [postSignedUrls, setPostSignedUrls] = useState<Record<string, string>>({});
+  type SignedUrls = {
+    signedUrl: string;
+    blurredUrl: string;
+  };
+  const [postSignedUrls, setPostSignedUrls] = useState<Record<string, SignedUrls>>({});
   const fetchedPostsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     async function fetchSignedUrls() {
       if (!creators || creators.length === 0) return;
-
+  
       const allPosts = creators.flatMap((creator) => creator.posts || []);
-      const postsToFetch = allPosts.filter(post => {
+  
+      const postsToFetch = allPosts.filter((post) => {
         if (!post.s3Key) return false;
-        
-        // Check if we already have a valid cached URL
-        const cached = urlCache[typeof post.s3Key === 'string'
-          ? post.s3Key
-          : post.s3Key?.key];
-        if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
-          // Update postSignedUrls if we have cached data but it's not in postSignedUrls
-          if (!postSignedUrls[post._id]) {
-            setPostSignedUrls(prev => ({ ...prev, [post._id]: cached.url }));
-          }
-          return false;
-        }
-        
-        // Don't refetch if we've already tried recently
-        return !fetchedPostsRef.current.has(post._id);
+  
+        const fullKey = typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.key;
+        const blurredKey = typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.blurred_key;
+  
+        const canView =
+          session?.user?._id === post.creator ||
+          session?.user?.following?.some((f) => f.creatorId === post.creator) ||
+          session?.user?.subscriptions?.some((s) => s.creatorId === post.creator);
+  
+        const keyToFetch = canView ? fullKey : blurredKey;
+        if (!keyToFetch) return false;
+  
+        // Already fetched
+        if (fetchedPostsRef.current.has(post._id)) return false;
+  
+        return true;
       });
-
+  
       if (postsToFetch.length === 0) return;
-
-      // Mark these posts as being fetched
-      postsToFetch.forEach(post => fetchedPostsRef.current.add(post._id));
-
-      const signedUrlMap: Record<string, string> = {};
-      const fetchPromises = postsToFetch.map(async (post: Post) => {
-        
-        const s3Key =
-                typeof post.s3Key === "string"
-                  ? post.s3Key
-                  : session?.user?.following?.some((f) => f.creatorId === post.creator) || creators.some(c => c.user === session?.user._id)
-                  ? post.s3Key?.key
-                  : post.s3Key?.blurred_key;
-
-              if (!s3Key) return; // ⛔ bail early if undefined
-
-              const url = await getSignedUrl(s3Key);
-              if (url) {
-                signedUrlMap[post._id] = url;
-              }
-      });
-
-      await Promise.all(fetchPromises);
-
+  
+      // Mark posts as being fetched
+      postsToFetch.forEach((post) => fetchedPostsRef.current.add(post._id));
+  
+      const signedUrlMap: Record<string, SignedUrls> = {};
+  
+      await Promise.all(
+        postsToFetch.map(async (post: Post) => {
+          const fullKey = typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.key;
+          const blurredKey = typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.blurred_key;
+  
+          const canView =
+            session?.user?._id === post.creator ||
+            session?.user?.following?.some((f) => f.creatorId === post.creator) ||
+            session?.user?.subscriptions?.some((s) => s.creatorId === post.creator);
+  
+          const keyToFetch = canView ? fullKey : blurredKey;
+          if (!keyToFetch) return;
+  
+          const signedUrl = (await getSignedUrl(keyToFetch)) ?? ""; // fallback to empty string
+          const blurredUrl =
+            blurredKey && blurredKey !== keyToFetch ? (await getSignedUrl(blurredKey)) ?? signedUrl : signedUrl;
+  
+          signedUrlMap[post._id] = { signedUrl, blurredUrl };
+        })
+      );
+  
       if (Object.keys(signedUrlMap).length > 0) {
-        setPostSignedUrls(prev => ({ ...prev, ...signedUrlMap }));
+        setPostSignedUrls((prev) => ({ ...prev, ...signedUrlMap }));
       }
     }
-
+  
     fetchSignedUrls();
-  }, [creators, postSignedUrls, urlCache, getSignedUrl, CACHE_TTL, session?.user._id, session?.user.following]);
+  }, [creators, session?.user, getSignedUrl]);
   
   // Clean up expired cache entries periodically
   useEffect(() => {
@@ -597,7 +606,10 @@ export default function ProfileContent({
     </div>
   );
 }
-
+type SignedUrls = {
+  signedUrl: string;
+  blurredUrl: string;
+};
 function ContentTabs({  
   purchasedContent, 
   creator, 
@@ -616,7 +628,9 @@ function ContentTabs({
   isOwnProfile: boolean;
   status: 'subscriber' | 'follower' | 'none';
   viewingUser: Creator | User
-  postSignedUrls: Record<string, string>;
+ 
+
+  postSignedUrls: Record<string, SignedUrls>; 
   handleFollow: (creator: Creator) => Promise<void>
   user: Creator | User,
   users: User[],
@@ -685,7 +699,7 @@ function LikedContent({
 }: {
   creator?: Creator;
   status: "follower" | "subscriber" | "none";
-  postSignedUrls: Record<string, string>;
+  postSignedUrls: Record<string, SignedUrls>
   viewingUser: Creator | User;
   creators: Creator[];
 }) {
@@ -727,11 +741,11 @@ function LikedContent({
         likedPosts.map((post) => (
           <CreatorPostCard
             key={post._id}
-            blurredUrl=''
+            blurredUrl={postSignedUrls[post._id]?.blurredUrl}
             post={post}
             creator={creator}
             status={status}
-            signedUrl={postSignedUrls[post._id]}
+            signedUrl={postSignedUrls[post._id]?.signedUrl}
             user={viewingUser}
             handleFollow={() => {}}
             users={[]}
@@ -760,7 +774,7 @@ function PurchasedPostsGrid ({
 }: {
   creator?: Creator;
   viewingUser: Creator | User;
-  postSignedUrls: Record<string, string>;
+  postSignedUrls: Record<string, SignedUrls>
   handleFollow: (creator: Creator) => void;
   user: Creator | User,
   status: 'follower' | 'subscriber' | 'none',
@@ -829,12 +843,12 @@ function PurchasedPostsGrid ({
           key={post._id}
           post={post}
           creator={creator}
-          blurredUrl=''
+          blurredUrl={postSignedUrls[post._id].blurredUrl}
           status={status}
           session={session}
           users={users ?? []}
           user={user}
-          signedUrl={postSignedUrls[post._id]}
+          signedUrl={postSignedUrls[post._id].signedUrl}
           handleFollow={handleFollow}
           handleDeletePost={() => handleDeletePost(creator._id, post._id)}
         />
@@ -849,7 +863,7 @@ function MediaGrid({
 }: {
   status: "subscriber" | "follower" | "none";
   creator?: Creator;
-  postSignedUrls: Record<string, string>;
+  postSignedUrls: Record<string, SignedUrls>
 }) {
   const allPosts = creator?.posts || [];
 
@@ -872,7 +886,7 @@ function MediaGrid({
       <div className="grid grid-cols-3 gap-1">
         {visiblePosts.map((p) => {
           const isLoaded = loadedImages[p._id];
-          const src = resolveImageUrl(postSignedUrls[p._id]) || "";
+          const src = resolveImageUrl(postSignedUrls[p._id].signedUrl) || "";
 
           return (
             <div
@@ -951,7 +965,7 @@ function MediaGrid({
   }: {
     creator?: Creator;
     status: 'subscriber' | 'follower' | 'none';
-    postSignedUrls: Record<string, string>;
+    postSignedUrls: Record<string, SignedUrls>
     handleFollow: (creator: Creator) => void;
     user: Creator | User,
     users: User[],
@@ -994,12 +1008,12 @@ function MediaGrid({
           <CreatorPostCard
           key={post._id}
           post={post}
-          blurredUrl=''
+          blurredUrl={postSignedUrls[post._id].blurredUrl}
           creator={creator}
           status={status}
           session={session}
           users={users ?? []}
-          signedUrl={postSignedUrls[post._id]}
+          signedUrl={postSignedUrls[post._id].signedUrl}
           user={user}
           handleFollow={handleFollow}
           handleDeletePost={() => handleDeletePost(creator._id)}
