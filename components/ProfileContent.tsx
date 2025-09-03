@@ -742,11 +742,11 @@ function LikedContent({
          
           <CreatorPostCard
             key={post._id}
-            blurredUrl={postSignedUrls[post._id]?.blurredUrl || ""}
+            blurredUrl={`/api/media/proxy?s3Key=${encodeURIComponent(postSignedUrls[post._id].blurredUrl)}`}
             post={post}
             creator={creator}
             status={status}
-            signedUrl={postSignedUrls[post._id]?.signedUrl || ""}
+            signedUrl={`/api/media/proxy?s3Key=${encodeURIComponent(postSignedUrls[post._id].signedUrl)}`}
             user={viewingUser}
             handleFollow={() => {}}
             users={[]}
