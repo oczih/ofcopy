@@ -41,7 +41,7 @@ const isSubscribersOnly = post.viewableFor === "subscribers";
 
 function resolveImageUrl(url: string) {
   if (!url) return null;
-  if (url.startsWith('http')) return url; // leave absolute URLs as-is
+  if (url.startsWith("http")) return url; // signed URL is absolute
   return `https://cdn.fanslio.com/${url.replace(/^\/+/, '')}`;
 }
   // Example: find the creator that matches the current session user
@@ -383,12 +383,11 @@ useEffect(() => {
     alert('Failed to delete comment');
   }
 };
-  const isImage = (url: string) => {
-    // Remove query parameters and check the file extension
-    const cleanUrl = url.split('?')[0].toLowerCase();
-    return /\.(jpeg|jpg|gif|png|webp|avif|svg)$/.test(cleanUrl);
-  };
-  
+const isImage = (url: string) => {
+  if (!url) return false;
+  const cleanUrl = url.split('?')[0].toLowerCase();
+  return /\.(jpeg|jpg|gif|png|webp|avif|svg)(\?.*)?$/.test(cleanUrl);
+};
   const resolvedAvatarUrl = useMemo(
     () => resolveImageUrl(avatarUrl ?? ""), // Use empty string if null
     [avatarUrl]
@@ -522,7 +521,7 @@ useEffect(() => {
       {resolvedUrl && resolvedBlurredUrl &&
         (isImage(resolvedUrl) ? canView ? (
           <img
-            src={resolvedUrl}
+            src={encodeURI(resolvedUrl)}
             alt={post.caption || ""}
             width={post.width}
             height={post.height}

@@ -203,7 +203,10 @@ if (!session?.user) {
     return true;
   };
   interface UploadedFileMeta {
-    s3Key: string;
+    s3Key: {
+      key: string;
+      blurred_key: string;
+    };
     fileName: string;
     type: string;
   }
@@ -270,7 +273,7 @@ const uploadedFiles = (await Promise.all(uploadPromises)).filter(
       // Add uploaded S3 keys to payload
       uploadedFiles.forEach(({ key, s3Key, file }) => {
         payload[key] = {
-          s3Key: s3Key.key,
+          s3Key,
           fileName: file.name,
           type: file.type,
         };
@@ -934,7 +937,7 @@ const uploadedFiles = (await Promise.all(uploadPromises)).filter(
               <p className="text-gray-300 mb-6">
                 Thank you for your interest in becoming a Fanslio creator! We&apos;re excited to potentially welcome you to our community.
               </p>
-              <button onClick={() => router.push("/home")} className="bg-gradient-to-r p-4 hover:bg-white/30 rounded-full cursor-pointer from-pink-500 to-purple-600">
+              <button onClick={() => router.push("/home")} className="bg-gradient-to-r p-4 transition-colors duration-300 hover:bg-white/60 rounded-full cursor-pointer from-pink-500 to-purple-600">
                 Back to Home
               </button>
             </div>

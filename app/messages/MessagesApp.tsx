@@ -75,7 +75,7 @@ export default function ChatApp({ session, users }: AppProps) {
   
     const loadMessages = async () => {
       try {
-        const rows: SupabaseMessage[] = await getMessages(currentChatIdentifier);
+        const rows = await getMessages(currentChatIdentifier); 
         const mapped: MessageType[] = rows.map(row => ({
           id: String(row.id),            // coerce number → string
           sender_id: row.sender_id,      // string | ObjectId is compatible
@@ -233,40 +233,6 @@ export default function ChatApp({ session, users }: AppProps) {
   
     void loadMediaUrls();
   }, [messages, resolveMediaUrl]);
-  type SupabaseMessageRealtime = {
-    id: number;
-    chat_id: string;
-    sender_id: string;
-    content: string;
-    image_key?: string;
-    video_key?: string;
-    voice_key?: string;
-    file_key?: string;
-    blurred_key?: string;
-    duration?: number;
-    size?: number;
-    created_at: string;
-    viewed: string[];
-    purchased: string[];
-  };
-  type SupabaseMessage = {
-    id: number;
-    chat_id: string;
-    sender_id: string;
-    content: string;
-    image_key?: string;
-    video_key?: string;
-    voice_key?: string;
-    file_key?: string;
-    price?: number;
-    blurred_key?: string;
-    duration?: number;
-    size?: number;
-    created_at: string;
-    viewed: string[];
-    purchased: string[];
-    ismassmessage?: boolean;
-  };
   useEffect(() => {
     if (!currentChatIdentifier || !session?.user?._id) return;
   
@@ -275,7 +241,7 @@ export default function ChatApp({ session, users }: AppProps) {
   
     const loadMessages = async () => {
       try {
-        const rows: SupabaseMessage[] = await getMessages(selectedChat.id);
+        const rows = await getMessages(selectedChat.id);
         const mapped: MessageType[] = rows.map(row => ({
           id: String(row.id),
           sender_id: row.sender_id,
@@ -298,8 +264,8 @@ export default function ChatApp({ session, users }: AppProps) {
           blurred_key: row.blurred_key,
           duration: row.duration,
           size: row.size,
-          viewed: row.viewed ? row.viewed.split(",") : [],
-          purchased: row.purchased ? row.purchased.split(",") : [],
+          viewed: row.viewed ?? [],
+          purchased: row.purchased ?? [],
         }));
         setMessages(mapped);
       } catch (err) {
@@ -309,36 +275,9 @@ export default function ChatApp({ session, users }: AppProps) {
   
     void loadMessages();
   
-    const subscription = subscribeToMessages(
-      selectedChat.id,
-      (msg: SupabaseMessageRealtime) => {
-        const mappedMsg: MessageType = {
-          id: String(msg.id),
-          sender_id: msg.sender_id,
-          content: msg.content,
-          created_at: msg.created_at,
-          type: msg.image_key
-            ? "photo"
-            : msg.video_key
-            ? "video"
-            : msg.voice_key
-            ? "voice"
-            : msg.file_key
-            ? "file"
-            : "text",
-          image_key: msg.image_key,
-          video_key: msg.video_key,
-          voice_key: msg.voice_key,
-          file_key: msg.file_key,
-          blurred_key: msg.blurred_key,
-          duration: msg.duration,
-          size: msg.size,
-          viewed: msg.viewed,
-          purchased: msg.purchased
-        };
-        setMessages(prev => [...prev, mappedMsg]);
-      }
-    );
+    const subscription = subscribeToMessages(selectedChat.id, (msg: MessageType) => {
+      setMessages(prev => [...prev, msg]);
+    });
   
     return () => {
       if (subscription) subscription.unsubscribe();

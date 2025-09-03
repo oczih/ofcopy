@@ -1,10 +1,9 @@
 import { Chat, MessageType } from '@/app/types'
 import { supabase } from './supabase'
-import type { Message } from './supabase'
 
 // Fetch messages between two users
 
-export async function getMessages(chatId: string): Promise<Message[]> {
+export async function getMessages(chatId: string): Promise<MessageType[]> {
   const { data, error } = await supabase
     .from('messages')
     .select('*')

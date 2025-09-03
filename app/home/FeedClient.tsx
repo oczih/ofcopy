@@ -27,7 +27,11 @@ type Stats = {
 
 export default function App({ creators, users, session}: AppProps) {
   const [showBanner, setShowBanner] = useState(true);
-  const [postSignedUrls, setPostSignedUrls] = useState<Record<string, string>>({});
+  type SignedUrls = {
+    signedUrl: string;
+    blurredUrl: string;
+  };
+  const [postSignedUrls, setPostSignedUrls] = useState<Record<string, SignedUrls>>({});
   const [page, setPage] = useState("Feed");
   const [creator, setCreator] = useState<Creator | undefined>(undefined)
   const [stats, setStats] = useState<Stats | null>(null);
@@ -45,9 +49,6 @@ export default function App({ creators, users, session}: AppProps) {
     fetchStats();
   }, [creator?._id, setStats]);
   // Fetch signed URLs only client-side when creators are present
-  const postKeysSignature = JSON.stringify(
-    creators?.flatMap(c => (c.posts || []).map(p => p.s3Key)) || []
-  );
   const [filteredCreators, setFilteredCreators] = useState<Creator[]>([]);
   useEffect(() => {
     function creatorSet() {
@@ -71,29 +72,42 @@ export default function App({ creators, users, session}: AppProps) {
     async function fetchSignedUrls() {
       if (!creators || creators.length === 0) return;
   
+      const signedUrlsMap: Record<string, { signedUrl: string; blurredUrl: string }> = {};
+  
       const allPosts = creators.flatMap((creator) => creator.posts || []);
-      const signedUrlsMap: Record<string, string> = {};
-      const postsWithKeys = allPosts.filter(post => typeof post.s3Key === 'string'
-        ? post.s3Key
-        : session?.user?.following?.some(f => f.creatorId === post.creator) ? post.s3Key?.key : post.s3Key?.blurred_key);
   
       await Promise.all(
-        postsWithKeys.map(async (post) => {
+        allPosts.map(async (post) => {
           try {
+            // Decide which keys to fetch
+            const fullKey = typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.key;
+            const blurredKey = typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.blurred_key;
+  
+            // Determine access: follower/subscriber or owner
+            const canView =
+              session?.user?._id === post.creator || // post owner
+              session?.user?.following?.some((f) => f.creatorId === post.creator) ||
+              session?.user?.subscriptions?.some((s) => s.creatorId === post.creator);
+  
+            const keyToFetch = canView ? fullKey : blurredKey;
+  
+            if (!keyToFetch) return;
+  
             const res = await fetch("/api/media/download-url", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ s3Key: typeof post.s3Key === 'string'
-                ? post.s3Key
-                : post.s3Key?.key }),
+              body: JSON.stringify({ s3Key: keyToFetch }),
             });
-      
+  
             if (res.ok) {
               const data = await res.json();
-              signedUrlsMap[post._id] = data.downloadUrl;
+              signedUrlsMap[post._id] = {
+                signedUrl: data.downloadUrl,
+                blurredUrl: blurredKey ? await fetchBlurredUrl(blurredKey) : data.downloadUrl, // optional
+              };
             }
-          } catch (error) {
-            console.error("Failed to fetch signed URL for post:", post._id, error);
+          } catch (err) {
+            console.error("Failed to fetch signed URL for post:", post._id, err);
           }
         })
       );
@@ -101,10 +115,28 @@ export default function App({ creators, users, session}: AppProps) {
       setPostSignedUrls((prev) => ({ ...prev, ...signedUrlsMap }));
     }
   
-    fetchSignedUrls();
-  }, [postKeysSignature, creators, session?.user.following]);
+    // Helper function to fetch blurred URL if needed
+    async function fetchBlurredUrl(blurredKey: string) {
+      try {
+        const res = await fetch("/api/media/download-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ s3Key: blurredKey }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          return data.downloadUrl;
+        }
+      } catch (err) {
+        console.error("Failed to fetch blurred URL:", blurredKey, err);
+      }
+      return "";
+    }
   
-
+    fetchSignedUrls();
+  }, [creators, session?.user]);
+  
+  
   const handleResendVerification = async () => {
     try {
       const response = await fetch("/api/auth/resend-verification", {
@@ -312,9 +344,9 @@ export default function App({ creators, users, session}: AppProps) {
                 session={session}
                 user={session?.user as User}
                 status={status}
-                blurredUrl=""
+                blurredUrl={postSignedUrls[post._id]?.blurredUrl}
                 users={users}
-                signedUrl={postSignedUrls[post._id]}
+                signedUrl={postSignedUrls[post._id]?.signedUrl}
                 handleFollow={handleFollow}
                 handleDeletePost={() => handleDeletePost(creator._id, post._id)}
               />

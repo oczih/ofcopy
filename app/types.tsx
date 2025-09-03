@@ -279,8 +279,26 @@ export type MessageType = {
   // New fields for paid content
   price?: number;              // cost to unlock/view
   requires_payment?: boolean;
-  viewed: string[];      // list of user IDs who viewed
-purchased: string[];   // true if message is locked until purchased
+  viewed?: string[];      // list of user IDs who viewed
+  purchased?: string[];   // true if message is locked until purchased
+};
+export type SupabaseMessageRealtime = {
+  id: number;
+  chat_id: string;
+  sender_id: string;
+  content: string;
+  image_key?: string;
+  video_key?: string;
+  voice_key?: string;
+  file_key?: string;
+  blurred_key?: string;
+  duration?: number;
+  size?: number;
+  created_at: string;
+  viewed: string[];
+  purchased: string[];
+  price: number;
+  ismassmessage: boolean;
 };
 export type Chat = {
   id: string;              // text, can store Mongo ObjectId

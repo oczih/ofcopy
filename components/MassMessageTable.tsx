@@ -62,8 +62,8 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls, setMassM
           attachments: {} as Record<'image' | 'video' | 'voice' | 'file', { key: string; url: string }>,
           price: msg.price ?? 0,
           sent: 1,
-          viewed: msg.viewed?.split(",") ?? [],
-          purchased: msg.purchased?.split(",") ?? [],
+          viewed: msg.viewed ?? [],
+          purchased: msg.purchased ?? [],
         };
       } else {
         groups[key].ids.push(msg.id!);
