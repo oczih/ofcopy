@@ -94,7 +94,7 @@ export async function uploadContent(file: File): Promise<{ key: string, blurred_
     fileToUpload = await compressImage(file);
   }
 
-  console.log(fileToUpload);
+
 
   const sanitizedFileName = sanitizeFileName(fileToUpload.name);
   const contentType = getContentType(fileToUpload); // <-- get correct MIME type
@@ -127,7 +127,7 @@ export async function createPostWithUpload({
   // Lataa sekä normaali että blurattu versio yhdellä uploadContent-kutsulla
   const s3KeyObj = await uploadContent(file);
 
-  console.log('Uploaded S3 keys:', s3KeyObj);
+
 
   const response = await axios.post(`${POST_API}`, {
     s3Key: s3KeyObj,

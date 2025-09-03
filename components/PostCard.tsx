@@ -479,7 +479,7 @@ export function PostCard({
           const updated = data.posts.find((p: Post) => p._id === post._id);
           if (updated) {
             setLikes(updated.likes ?? []);
-            console.log("After: ", updated.likes);
+
           }
         } else {
           alert('Failed to unlike post');
@@ -503,7 +503,7 @@ export function PostCard({
         if (res.ok) {
           const data = await res.json();
           const updated = data.posts.find((p: Post) => p._id === post._id);
-          console.log("Like API response updated.likes:", updated?.likes);
+
           if (updated) setLikes(updated.likes ?? []);
         } else {
           alert('Failed to like post');

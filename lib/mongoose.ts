@@ -4,12 +4,10 @@ let isConnected = false;
 
 export const connectDB = async () => {
   if (isConnected || mongoose.connection.readyState === 1) {
-    console.log("✅ Already connected to MongoDB");
     return;
   }
 
   if (mongoose.connection.readyState === 2) {
-    console.log("⏳ MongoDB connection already in progress...");
     return;
   }
 
@@ -24,10 +22,8 @@ export const connectDB = async () => {
   }
 
   try {
-    console.log("🌐 Connecting to:", MONGO_URI.substring(0, 50) + "...");
     await mongoose.connect(MONGO_URI);
     isConnected = true;
-    console.log("✅ MongoDB connected successfully");
 
     // Import models once after connection
     if (!mongoose.models.User) {
@@ -40,7 +36,6 @@ export const connectDB = async () => {
       await import("@/app/models/postmodel");
     }
   } catch (error) {
-    console.error("❌ MongoDB connection error:", error);
     throw error;
   }
 };

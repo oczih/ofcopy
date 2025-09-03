@@ -11,11 +11,9 @@ export async function GET(request: NextRequest, context: unknown) {
   // Cast context as unknown then extract params carefully
   // OR just treat as any but keep the cast local and limited
   const { params } = context as { params: { id: string } };
-  console.log("[API] GET /api/creators/[id] - Starting request");
 
   try {
     await connectDB();
-    console.log("[API] Database connected successfully");
   } catch (error) {
     console.error("[API] Database connection failed:", error);
     return NextResponse.json({ message: "Database connection failed" }, { status: 500 });

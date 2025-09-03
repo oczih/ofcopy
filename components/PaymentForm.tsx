@@ -132,7 +132,6 @@ export default function PaymentForm({
   if (!open) return null;
 
   const onSubmit = (data: CreditCardFormData) => {
-    console.log("Form submitted:", data);
     toast.success(
       <div className="space-y-2">
         <p className="font-semibold">Payment Information Submitted</p>
@@ -165,7 +164,9 @@ export default function PaymentForm({
           <span className="font-medium">{creator.name}</span>
         </div>
 
-
+        <div>
+          <h2 className="text-center text-2xl font-bold">Monara Club</h2>
+          </div>
         <div className="max-w-md mx-auto p-6 space-y-6">
           <div className="text-center">
           <h2 className="text-2xl font-bold">Payment Information</h2>

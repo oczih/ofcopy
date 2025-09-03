@@ -239,7 +239,7 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
   useEffect(() => {
     setMassMessages(massMessages); // sync if props change
   }, [massMessages]);
-  console.log(massMessages)
+
   useEffect(() => {
     if (massMessages.length === 0) return;
   

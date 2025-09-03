@@ -4,7 +4,7 @@
   const urlCache: Record<string, { url: string; expiresAt: number }> = {};
 
 export async function POST(req: NextRequest) {
-  console.log("POST /api/media/download-url called");
+
 
   try {
     const body = await req.json();
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     // ✅ Check cache first
     const cached = urlCache[cleanedKey];
     if (cached && cached.expiresAt > Date.now()) {
-      console.log("Cache hit for", cleanedKey);
+
       return NextResponse.json({
         downloadUrl: cached.url,
         expiresAt: new Date(cached.expiresAt).toISOString(),
@@ -50,8 +50,6 @@ export async function POST(req: NextRequest) {
       url: signedUrl,
       expiresAt: expirationTime.getTime(),
     };
-
-    console.log("Generated new signed URL for", cleanedKey);
 
     return NextResponse.json({
       downloadUrl: signedUrl,

@@ -218,14 +218,14 @@ const byUser = resolveByUser(noti.by);
         }
          else {
           const user = users.find(u => u._id === noti.by);
-          console.log(user)
+
           return `/${user?.username}`;
         }// Goes to creator's followers page
       case "comment":
-        console.log(noti)
+
         return `/post/${noti.postId}`;
       case "like":
-        console.log(noti)
+
         return `/post/${noti.postId}`; // Go to the post page
       case "newsub":
         if(creators.find(c => c.user === noti.by)){

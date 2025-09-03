@@ -224,12 +224,11 @@ export default function ChatApp({ session, users }: AppProps) {
         }
       }
   
-      setMessageMediaUrls(updatedUrls);
+      setMessageMediaUrls(prev => ({ ...prev, ...updatedUrls }));
     };
   
     void loadMediaUrls();
-  }, [messages,messageMediaUrls,resolveMediaUrl]);
-      console.log(messageMediaUrls)
+  }, [messages, resolveMediaUrl]);
   type SupabaseMessageRealtime = {
     id: number;
     chat_id: string;
@@ -412,7 +411,6 @@ export default function ChatApp({ session, users }: AppProps) {
       }
     }
   }, [otherParticipant, resolveAvatarUrl]);
-  console.log(otherParticipant)
   // Helper function to format dates
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -470,7 +468,6 @@ export default function ChatApp({ session, users }: AppProps) {
     ]);
     
   }
-  console.log(messages)
   
   const isVoiceFile = (file: File) => file.type.startsWith("audio");
   return (
@@ -527,7 +524,6 @@ export default function ChatApp({ session, users }: AppProps) {
                       const lastMessage = messages
                       .filter(msg => msg.id === chat.id) // match on chatId not msg.id
                       .slice(-1)[0];
-                      console.log(chats)
                       const participant = users.find(
                         u => chat.participants.includes(u._id) && u._id !== session?.user?._id
                       );
@@ -643,7 +639,6 @@ export default function ChatApp({ session, users }: AppProps) {
                       const previousMessage = index > 0 ? messages[index - 1] : undefined;
                       const showDateDivider = shouldShowDateDivider(message, previousMessage);
                       const isOwn = message.sender_id === session?.user?._id;
-                      console.log(message)
                       return (
                         <div key={message.id}>
                           {showDateDivider && (

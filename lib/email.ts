@@ -31,7 +31,7 @@ export async function sendWithMailgunAPI(to: string, subject: string, html: stri
       subject,
       html,
     });
-    console.log("Mailgun API sent:", data.id);
+
     return data;
   } catch (error) {
     console.error("Mailgun API error:", error);

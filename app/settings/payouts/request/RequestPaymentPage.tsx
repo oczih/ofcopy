@@ -101,7 +101,6 @@ export default function App({creators, session}: AppProps) {
     // Simulate API call
     setTimeout(() => {
       setProcessing(prev => ({ ...prev, [optionId]: false }));
-      console.log(`Payout of $${amount} via ${option.name} requested`);
     }, 2000);
   };
 

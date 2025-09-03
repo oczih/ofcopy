@@ -101,7 +101,7 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls }: MassMe
     }
   }; */
   
-  console.log(massMessages)
+
   return (
     <div className="w-full">
       {/* Enhanced Table Container */}

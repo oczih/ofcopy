@@ -19,7 +19,6 @@ const getPublicUsers = async (): Promise<User[]> => {
 
 const getPrivateUsers = async (): Promise<User[]> => {
   const session = await getSession();
-  console.log("Session data:", session);
   const token = session?.accessToken; // depends on how your NextAuth is configured
   
   const response = await axios.get(privateUsersUrl, {

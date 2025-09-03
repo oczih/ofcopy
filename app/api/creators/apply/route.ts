@@ -18,7 +18,6 @@ export async function POST(req: Request) {
 
   try {
     const data = await req.json(); // <-- Expect JSON from frontend
-    console.log("Received body:", data);
     const {
       country,
       gender,
@@ -41,10 +40,6 @@ export async function POST(req: Request) {
     if (!profilePic?.s3Key || !idFrontPhoto?.s3Key || !idBackPhoto?.s3Key || !selfieWithId?.s3Key) {
       return NextResponse.json({ error: 'Missing required file data' }, { status: 400 });
     }
-    console.log('profilePic', profilePic);
-    console.log('idFrontPhoto', idFrontPhoto);
-    console.log('idBackPhoto', idBackPhoto);
-    console.log('selfieWithId', selfieWithId);
     if (!profilePic?.s3Key?.key || !idFrontPhoto?.s3Key?.key || !idBackPhoto?.s3Key?.key || !selfieWithId?.s3Key?.key) {
       return NextResponse.json({ error: 'Missing required file keys' }, { status: 400 });
     }

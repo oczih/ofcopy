@@ -11,7 +11,7 @@ async function generateUniqueUsername(baseUsername: string): Promise<string> {
   let count = 0;
   while (await OFUser.findOne({ username })) {
     count++;
-    console.log(`Trying username: ${username}_${count}`);
+
     username = `${baseUsername.toLowerCase().replace(/\s+/g, "_")}_${count}`;
   }
   return username;
@@ -85,9 +85,7 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async signIn({ user, account }) {
-      console.log("Sign in callback triggered:", { user, account });
-      console.log("Environment check - GOOGLE_CLIENT_ID:", !!process.env.GOOGLE_CLIENT_ID);
-      console.log("Environment check - MONGO_URI:", !!process.env.MONGO_URI);
+
       
       try {
         await connectDB();

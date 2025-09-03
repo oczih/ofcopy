@@ -11,11 +11,11 @@ export async function GET(request: NextRequest, context: unknown) {
   // Cast context as unknown then extract params carefully
   // OR just treat as any but keep the cast local and limited
   const { params } = context as { params: { id: string } };
-  console.log("[API] GET /api/users/[id] - Starting request");
+
   
   try {
     await connectDB();
-    console.log("[API] Database connected successfully");
+
   } catch (error) {
     console.error("[API] Database connection failed:", error);
     return NextResponse.json({ message: "Database connection failed" }, { status: 500 });
@@ -23,20 +23,19 @@ export async function GET(request: NextRequest, context: unknown) {
   
   // Use NextAuth v5 auth function
   const session = await getServerSession(authOptions);
-  console.log("[API] Session from auth():", !!session);
-  console.log("[API] Session user ID:", session?.user?._id);
+
   
   if (!session) {
-    console.log("[API] No session found - Unauthorized");
+
     return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/404`)
   }
 
   const { id } = await params;
-  console.log("[API] Requested user ID:", id);
 
-  console.log("[API] Session user ID:", session?.user?._id, "Requested ID:", id);
+
+
   if (session?.user?._id !== id) {
-    console.log("[API] Session user ID mismatch - Forbidden");
+
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 
@@ -70,8 +69,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 });
   }
-  console.log("Session user ID:", session.user?._id);
-  console.log("Request param ID:", id);
+
   // Prevent users from updating other users
   if (session.user?._id !== id) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });

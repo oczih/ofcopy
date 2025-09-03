@@ -55,7 +55,6 @@ export function ChatInput({
     tempPrice={tempPrice}
     setTempPrice={setTempPrice}
     onSave={(newPrice: number) => {
-      console.log(newPrice)
       setPrice(newPrice); // <-- updates parent state
     }}
   />
