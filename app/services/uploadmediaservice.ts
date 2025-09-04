@@ -40,8 +40,6 @@ async function uploadFileToS3(file: File, signedUrl: string): Promise<void> {
       headers: { "Content-Type": file.type },
       onUploadProgress: (progressEvent) => {
         if (progressEvent.total) {
-          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          console.log(`Upload progress: ${progress}%`);
         }
       },
     });

@@ -167,7 +167,7 @@ export default function ProfileContent({
   };
   const [postSignedUrls, setPostSignedUrls] = useState<Record<string, SignedUrls>>({});
   const fetchedPostsRef = useRef<Set<string>>(new Set());
-
+  const rightCreator = creators.find(c => c.user === session?.user._id)
   useEffect(() => {
     async function fetchSignedUrls() {
       if (!creators || creators.length === 0) return;
@@ -179,12 +179,11 @@ export default function ProfileContent({
   
         const fullKey = typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.key;
         const blurredKey = typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.blurred_key;
-  
+        const rightCreator = creators.find(c => c.user === session?.user._id)
         const canView =
-          session?.user?._id === post.creator ||
-          session?.user?.following?.some((f) => f.creatorId === post.creator) ||
-          session?.user?.subscriptions?.some((s) => s.creatorId === post.creator);
-  
+          rightCreator?._id.toString() === post.creator.toString() ||
+          status === "subscriber" ||
+          status === "follower";
         const keyToFetch = canView ? fullKey : blurredKey;
         if (!keyToFetch) return false;
   
@@ -205,9 +204,9 @@ export default function ProfileContent({
         postsToFetch.map(async (post: Post) => {
           const fullKey = typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.key;
           const blurredKey = typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.blurred_key;
-  
+          const rightCreator = creators.find(c => c.user === session?.user._id)
           const canView =
-            session?.user?._id === post.creator ||
+            rightCreator?._id.toString() === post.creator.toString() ||
             session?.user?.following?.some((f) => f.creatorId === post.creator) ||
             session?.user?.subscriptions?.some((s) => s.creatorId === post.creator);
   
@@ -228,7 +227,7 @@ export default function ProfileContent({
     }
   
     fetchSignedUrls();
-  }, [creators, session?.user, getSignedUrl]);
+  }, [creators, session?.user, getSignedUrl, status]);
   
   // Clean up expired cache entries periodically
   useEffect(() => {
@@ -480,7 +479,7 @@ export default function ProfileContent({
               )}
               
               {/* User Stats (for non-creators) - Under profile pic and smaller */}
-              {!creator && (
+              {!creator && (rightCreator?.subscribers.some(sub => sub.userId.toString() === userViewed._id) || rightCreator?.followers.some(fol => fol.userId === userViewed._id.toString())) && (
   <div className="w-full flex flex-col gap-2 text-center">
     <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
       <div className="text-xs text-gray-300">Status</div>
@@ -703,37 +702,49 @@ function LikedContent({
   viewingUser: Creator | User;
   creators: Creator[];
 }) {
+  const [likedPosts, setLikedPosts] = useState<Post[]>([]);
+
+  useEffect(() => {
+    if (!creator || !creator.posts) {
+      setLikedPosts([]);
+      return;
+    }
+
+    // Find the viewing user's creator object, if any
+    const viewingCreator = creators.find(
+      (c) => String(c.user) === String(viewingUser?._id)
+    );
+
+    // Check if viewingUser is the owner of this creator
+    const isOwner = creator._id === viewingCreator?._id;
+
+    // Filter posts liked by the viewingUser
+    let filtered =
+      creator.posts.filter((post) =>
+        post.likes?.some(
+          (like) => String(like.userId) === String(viewingUser?._id)
+        )
+      ) ?? [];
+
+    if (!isOwner) {
+      // Apply visibility rules
+      filtered = filtered.filter((post) => {
+        if (post.viewableFor === "subscribers") {
+          return status === "subscriber";
+        }
+        if (post.viewableFor === "followers") {
+          return status === "subscriber" || status === "follower";
+        }
+        return true; // public
+      });
+    }
+
+    setLikedPosts(filtered);
+  }, [creator, viewingUser?._id, creators, status]);
   if (!creator) return null;
 
-  // Find the viewing user's creator object, if any
-  const viewingCreator = creators.find(
-    (c) => String(c.user) === String(viewingUser?._id)
-  );
 
-  // Check if viewingUser is the owner of this creator
-  const isOwner = creator._id === viewingCreator?._id;
-
-  // Filter posts liked by the viewingUser
-  let likedPosts =
-    creator.posts?.filter((post) =>
-      post.likes?.some(
-        (like) => String(like.userId) === String(viewingUser?._id)
-      )
-    ) ?? [];
-
-  if (!isOwner) {
-    // Apply visibility rules
-    likedPosts = likedPosts.filter((post) => {
-      if (post.viewableFor === "subscribers") {
-        return status === "subscriber";
-      }
-      if (post.viewableFor === "followers") {
-        return status === "subscriber" || status === "follower";
-      }
-      // public posts
-      return true;
-    });
-  }
+  
 
   return (
     <div className="grid grid-cols-1 gap-6">
@@ -858,6 +869,7 @@ function PurchasedPostsGrid ({
     </div>
   );
 }
+
 function MediaGrid({
   creator,
   status,
@@ -888,7 +900,9 @@ function MediaGrid({
       <div className="grid grid-cols-3 gap-1">
         {visiblePosts.map((p) => {
           const isLoaded = loadedImages[p._id];
-          const src = resolveImageUrl(postSignedUrls[p._id]?.signedUrl || "")
+          const src = status === "subscriber" || status === "follower"
+  ? resolveImageUrl(postSignedUrls[p._id]?.signedUrl || "")
+  : resolveImageUrl(postSignedUrls[p._id]?.blurredUrl || "");
 
           return (
             <div
@@ -956,85 +970,91 @@ function MediaGrid({
 }
 
   
-  function PostsGrid({
-    creator,
-    status,
-    postSignedUrls,
-    handleFollow,
-    user,
-    users,
-    session,
-  }: {
-    creator?: Creator;
-    status: 'subscriber' | 'follower' | 'none';
-    postSignedUrls: Record<string, SignedUrls>
-    handleFollow: (creator: Creator) => void;
-    user: Creator | User,
-    users: User[],
-    session: Session | null,
-  }) {
-    const [visiblePosts, setVisiblePosts] = useState<Post[]>([]);
-    useEffect(() => {
-      if (creator?.posts) {
-        let filtered: Post[];
-        if (user?._id.toString() === creator._id.toString()) {
-          
-          // Viewing own profile — show all posts
-          filtered = creator.posts;
-        } else {
-          // Viewing someone else's profile — filter by status
-          filtered = creator.posts.filter((post) => {
-            if (status === "subscriber") return true;
-            if (status === "follower") return post.viewableFor === "followers";
-            return post.viewableFor === "followers"; // public/followers only
-          });
-        }
-        setVisiblePosts(filtered);
+function PostsGrid({
+  creator,
+  status,
+  postSignedUrls,
+  handleFollow,
+  user,
+  users,
+  session,
+}: {
+  creator?: Creator;
+  status: 'subscriber' | 'follower' | 'none';
+  postSignedUrls: Record<string, SignedUrls>;
+  handleFollow: (creator: Creator) => void;
+  user: Creator | User;
+  users: User[];
+  session: Session | null;
+}) {
+  const [visiblePosts, setVisiblePosts] = useState<Post[]>([]);
+
+  useEffect(() => {
+    if (creator?.posts) {
+      let filtered: Post[];
+      if (user?._id.toString() === creator.user.toString()) {
+        // Viewing own profile — show all posts
+        filtered = creator.posts;
+      } else {
+        // Viewing someone else's profile — filter by status
+        filtered = creator.posts.filter((post) => {
+          if (status === 'subscriber') return true;
+          if (status === 'follower') return post.viewableFor === 'followers';
+          return post.viewableFor === 'followers'; // treat "none" as followers-only list
+        });
       }
-    }, [creator, status, user]);
-    if (!creator) return null;
-    const handleDeletePost = async (postId: string) => {
-      try {
-        const res = await fetch(`/api/posts/${postId}`, { method: "DELETE" });
-        if (!res.ok) throw new Error("Failed to delete post");
-    
-        setVisiblePosts((prev) => prev.filter((p) => p._id !== postId));
-      } catch (error) {
-        console.error(error);
-        alert("Failed to delete post");
-      }
-    };
-    return (
-      <div className="grid grid-cols-1 gap-6">
-        {visiblePosts.length > 0 ? visiblePosts.map((post) => (
-          <CreatorPostCard
-          key={post._id}
-          post={post}
-          blurredUrl={postSignedUrls[post._id]?.blurredUrl || ""}
-          creator={creator}
-          status={status}
-          session={session}
-          users={users ?? []}
-          signedUrl={postSignedUrls[post._id]?.signedUrl || ""}
-          user={user}
-          handleFollow={handleFollow}
-          handleDeletePost={() => handleDeletePost(creator._id)}
-        />
-        )) : creator?.posts && creator.posts.length > 0 ? (
-          <div className="text-center text-gray-400 py-12">
-            <div className="text-6xl mb-4">🔒</div>
-            <p>Subscribe to view more content!</p>
-          </div>
-        ) : (
-          <div className="text-center text-gray-400 py-12">
-            <div className="text-6xl mb-4">🤔</div>
-            <p>This person hasn&apos;t posted anything yet!</p>
-          </div>
-        )}
-      </div>
-    );
-  }
-  
-  
-  
+      setVisiblePosts(filtered);
+    }
+  }, [creator, status, user]);
+
+  if (!creator) return null;
+
+  const handleDeletePost = async (postId: string) => {
+    try {
+      const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete post');
+      setVisiblePosts((prev) => prev.filter((p) => p._id !== postId));
+    } catch (error) {
+      console.error(error);
+      alert('Failed to delete post');
+    }
+  };
+
+  return (
+    <div className="grid grid-cols-1 gap-6">
+      {visiblePosts.length > 0 ? (
+        visiblePosts.map((post) => {
+          const urls = postSignedUrls[post._id] ?? { signedUrl: '', blurredUrl: '' };
+          return (
+            <CreatorPostCard
+              key={post._id}
+              post={post}
+              creator={creator}
+              status={status}
+              session={session}
+              users={users ?? []}
+              user={user}
+              handleFollow={handleFollow}
+              handleDeletePost={() => handleDeletePost(post._id)}
+              // 👇 satisfy the required props
+              signedUrl={urls.signedUrl}
+              blurredUrl={urls.blurredUrl}
+            />
+          );
+        })
+      ) : creator?.posts && creator.posts.length > 0 ? (
+        <div className="text-center text-gray-400 py-12">
+          <div className="text-6xl mb-4">🔒</div>
+          <p>Subscribe to view more content!</p>
+        </div>
+      ) : (
+        <div className="text-center text-gray-400 py-12">
+          <div className="text-6xl mb-4">🤔</div>
+          <p>This person hasn&apos;t posted anything yet!</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
   

@@ -82,10 +82,10 @@ export default function App({ creators, users, session}: AppProps) {
             // Decide which keys to fetch
             const fullKey = typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.key;
             const blurredKey = typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.blurred_key;
-  
+            const rightCreator = creators.find(c => c.user === session?.user._id)
             // Determine access: follower/subscriber or owner
             const canView =
-              session?.user?._id === post.creator || // post owner
+              rightCreator?._id.toString() === post.creator.toString() || // post owner
               session?.user?.following?.some((f) => f.creatorId === post.creator) ||
               session?.user?.subscriptions?.some((s) => s.creatorId === post.creator);
   

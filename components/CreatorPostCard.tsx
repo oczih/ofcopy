@@ -49,13 +49,19 @@ function resolveImageUrl(url: string) {
   const isViewingUserOwner = String(creator.user) === String(session?.user?._id);
   
   // Check if the post creator is the same as the viewing creator
-
-  const canView = // post owner
-  isViewingUserOwner || // creator owner
-  (!isFollowersOnly && !isSubscribersOnly) ||
-  status === "follower" ||
-  status === "subscriber";
-
+  const [canView, setCanView] = useState(false);
+  useEffect(() => {
+    const isFollowersOnly = post.viewableFor === "followers";
+    const isSubscribersOnly = post.viewableFor === "subscribers";
+    const isViewingUserOwner = String(creator.user) === String(session?.user?._id);
+    
+    setCanView(
+      isViewingUserOwner ||
+      (!isFollowersOnly && !isSubscribersOnly) ||
+      status === "follower" ||
+      status === "subscriber"
+    );
+  }, [status, session?.user?._id, creator.user, post.viewableFor]);
   // Like and comment modal state
   const [commentOpen, setCommentOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false)
@@ -186,7 +192,12 @@ function resolveImageUrl(url: string) {
       if (avatarKey) {
         try {
           setImageLoading(true);
-  
+          if (avatarKey.startsWith("http")) {
+            setUserAvatarUrl(avatarKey);
+            setUserAvatarUrl(avatarKey); // use the URL directly
+            setImageLoading(false);
+            return null;
+          }
           const key = avatarKey.replace(/^\/+/, ''); // Remove leading slash
           const res = await fetch("/api/media/download-url", {
             method: "POST",

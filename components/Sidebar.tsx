@@ -108,7 +108,14 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
       return;
     }
     const fetchAvatarUrl = async () => {
-  
+      setLoadingAvatar(true);
+      if (avatarKey.startsWith("http")) {
+        setAvatarUrl(avatarKey);
+        setAvatarUrl(avatarKey); // use the URL directly
+        lastFetchedAvatarKey.current = avatarKey;
+        setLoadingAvatar(false);
+        return;
+      }
       try {
         setAvatarError(false);
         const key = avatarKey.replace(/^\/+/, '');
