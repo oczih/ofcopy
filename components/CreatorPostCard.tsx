@@ -426,7 +426,7 @@ const isImage = (url: string) => {
   <div className="bg-white/5 rounded-2xl shadow-xl border border-white/10 p-0 overflow-hidden max-w-3xl w-full mx-auto animate-fade-in">
     {/* Header */}
     
-    <header className="flex items-center gap-4 px-5 py-4 border-b border-white/10 bg-gradient-to-r from-slate-900/80 to-purple-900/80">
+    <header className="flex flex-wrap items-center gap-3 sm:gap-4 px-5 py-4 border-b border-white/10 bg-gradient-to-r from-slate-900/80 to-purple-900/80">
     <div className="flex items-center gap-4 flex-1 min-w-0">
   {/* Avatar + link */}
   <Link href={`/${creator.username}`} className="shrink-0">
@@ -478,7 +478,7 @@ const isImage = (url: string) => {
           <MoreHorizontal className="w-5 h-5" />
         </Button>
         {modalOpen && !session?.user?.creator && !canDeletePost() && (
-  <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-100 opacity-100 animate-fade-in z-30">
+  <div className="absolute right-0 top-full mt-2 w-48 max-w-[90vw] overflow-hidden text-ellipsis bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-100 opacity-100 animate-fade-in z-30">
     <Link href={`/${creator.username}`}>
       <Button variant="ghost" className="w-full justify-start text-left cursor-pointer">
         Go to creator profile
@@ -560,7 +560,7 @@ const isImage = (url: string) => {
           />
         ) : (
           <div>
-          <video width="100%" height="auto" controls preload="metadata">
+          <video className="w-full h-auto max-w-full rounded-none" controls preload="metadata">
             <source src={resolvedUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
@@ -579,14 +579,14 @@ const isImage = (url: string) => {
           </span>
           <div className="flex gap-3">
             {isSubscribersOnly && (
-              <Button className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-full shadow cursor-pointer">
+              <Button className="bg-gradient-to-r px-3 py-1.5 sm:px-5 sm:py-2 from-pink-500 to-purple-600 text-white font-semibold rounded-full shadow cursor-pointer">
                 <Heart className="w-4 h-4 mr-2" /> Subscribe
               </Button>
             )}
             {isFollowersOnly &&  (
               <Button
                 onClick={() => handleFollow(creator)}
-                className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-semibold rounded-full shadow cursor-pointer"
+                className="bg-gradient-to-r px-3 py-1.5 sm:px-5 sm:py-2 from-blue-500 to-cyan-600 text-white font-semibold rounded-full shadow cursor-pointer"
               >
                 <UserPlus className="w-4 h-4 mr-2" /> Follow
               </Button>
@@ -609,7 +609,8 @@ const isImage = (url: string) => {
     {/* Caption */}
     {canView && (
       <div className="px-5 py-3 space-y-1">
-        <div className="text-white text-sm">{post.caption}</div>
+        <div className="text-white text-sm whitespace-pre-wrap break-words">{post.caption}</div>
+
   <span className="text-white text-sm">
     {timeAgo(post.createdAt)}
   </span>
@@ -617,7 +618,7 @@ const isImage = (url: string) => {
     )}
 
     {/* Footer */}
-    {canView ? <div className="flex items-center justify-between px-5 py-3 border-t border-white/10 bg-slate-950/80">
+    {canView ? <div className="flex flex-wrap gap-2 items-center justify-between px-5 py-3 border-t border-white/10 bg-slate-950/80">
       <div className="flex gap-2">
       <Button
             variant="ghost"
@@ -651,7 +652,7 @@ const isImage = (url: string) => {
       : ""}
     {/* Comments Section */}
     {(commentOpen) && (
-      <div className="w-full px-5 pb-4 mt-5 mb-5 space-y-4 animate-fade-in-fast">
+      <div className="w-full px-5 pb-4 mt-3 sm:mt-5 mb-3 sm:mb-5 space-y-3 sm:space-y-4 animate-fade-in-fast">
         {/* Comments List */}
         <div className="space-y-2">
           {comments && comments.length > 0 ? (
@@ -661,7 +662,7 @@ const isImage = (url: string) => {
               return (
                 <div key={comment._id || idx} className="flex items-start gap-3 bg-slate-800/60 rounded-lg p-3">
                   <div className="flex items-center gap-2 min-w-0">
-                  <Avatar className="w-8  -8">
+                  <Avatar className="w-8 h-8">
                       {avatarsLoading[userObj._id] ? (
                         <Skeleton className="w-full h-full rounded-none bg-gray-200 dark:bg-gray-700" />
                       ) : userAvatars[userObj._id] ? (
@@ -735,7 +736,7 @@ const isImage = (url: string) => {
               />
               <Button
                 size="sm"
-                className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold px-4 py-1 rounded-full shadow mt-1"
+                className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold px-3 text-sm sm:px-4 py-1 rounded-full shadow mt-1"
                 onClick={handleSendComment}
                 disabled={sending || !commentText.trim()}
               >

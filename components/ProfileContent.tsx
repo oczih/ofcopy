@@ -679,7 +679,7 @@ function ContentTabs({
           <PurchasedPostsGrid status={status} creator={creator} handleFollow={handleFollow} creators={creators} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user}/>
         )}
         {activeTab === 'media' && (
-          <MediaGrid creator={creator} status={status} postSignedUrls={postSignedUrls}  />
+          <MediaGrid creator={creator} status={status} postSignedUrls={postSignedUrls} session={session} user={user}  />
         )}
         {activeTab === 'likes' && (
           <LikedContent creator={creator} status={status} postSignedUrls={postSignedUrls} viewingUser={viewingUser} creators={creators}/>
@@ -742,8 +742,12 @@ function LikedContent({
     setLikedPosts(filtered);
   }, [creator, viewingUser?._id, creators, status]);
   if (!creator) return null;
-
-
+  console.log(creator._id)
+  console.log(creator?.posts?.filter((post) =>
+    post.likes?.some(
+      (like) => String(like.userId) === String(viewingUser?._id)
+    )
+  ))
   
 
   return (
@@ -874,22 +878,37 @@ function MediaGrid({
   creator,
   status,
   postSignedUrls,
+  user,
+  session
 }: {
   status: "subscriber" | "follower" | "none";
   creator?: Creator;
   postSignedUrls: Record<string, SignedUrls>
+  user: Creator | User;
+  session: Session | null;
 }) {
-  const allPosts = creator?.posts || [];
-
-  const visiblePosts = allPosts.filter((post) => {
-    if (status === "subscriber") return true;
-    if (status === "follower") return post.viewableFor === "followers";
-    return post.viewableFor === "followers";
-  });
+  const [visiblePosts, setVisiblePosts] = useState<Post[]>([]);
+  useEffect(() => {
+    if (creator?.posts) {
+      let filtered: Post[];
+      if (user?._id.toString() === creator.user.toString()) {
+        // Viewing own profile — show all posts
+        filtered = creator.posts;
+      } else {
+        // Viewing someone else's profile — filter by status
+        filtered = creator.posts.filter((post) => {
+          if (status === 'subscriber') return true;
+          if (status === 'follower') return post.viewableFor === 'followers';
+          return post.viewableFor === 'followers'; // treat "none" as followers-only list
+        });
+      }
+      setVisiblePosts(filtered);
+    }
+  }, [creator, status, user]);
 
   const [loadedImages, setLoadedImages] = useState<{ [key: string]: boolean }>({});
   const [activeImage, setActiveImage] = useState<string | null>(null);
-
+  
   const handleImageLoad = (postId: string) => {
     setLoadedImages((prev) => ({ ...prev, [postId]: true }));
   };
@@ -900,21 +919,19 @@ function MediaGrid({
       <div className="grid grid-cols-3 gap-1">
         {visiblePosts.map((p) => {
           const isLoaded = loadedImages[p._id];
-          const src = status === "subscriber" || status === "follower"
-  ? resolveImageUrl(postSignedUrls[p._id]?.signedUrl || "")
-  : resolveImageUrl(postSignedUrls[p._id]?.blurredUrl || "");
-
+          const urls = postSignedUrls[p._id] ?? { signedUrl: '', blurredUrl: '' };
+          console.log(status)
           return (
             <div
               key={p._id}
               className={`relative w-full aspect-square overflow-hidden ${
                 status !== "none" ? "cursor-pointer" : ""
               }`}
-              onClick={status !== "none" ? () => setActiveImage(src) : undefined}
+              onClick={(status !== "none" || creator?.user === session?.user._id) ? () => setActiveImage(urls.signedUrl) : undefined}
             >
               {/* Blurred background */}
               <img
-                src={src || ""}
+                src={urls.signedUrl || ""}
                 alt="blurred background"
                 className="absolute inset-0 w-full h-full object-cover blur-lg scale-110 brightness-50"
               />
@@ -927,7 +944,7 @@ function MediaGrid({
               {/* Foreground image (centered, keeps aspect ratio) */}
               <div className="absolute inset-0 flex items-center justify-center z-30">
                 <img
-                  src={src || ""}
+                  src={urls.signedUrl || ""}
                   alt={p.caption || "Media post"}
                   className={`max-w-full max-h-full object-contain transition-opacity duration-300 ${
                     isLoaded ? "opacity-100" : "opacity-0"

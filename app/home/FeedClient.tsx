@@ -211,7 +211,7 @@ export default function App({ creators, users, session}: AppProps) {
         <main className="relative z-10 space-y-8 max-w-3xl w-full px-4 py-8">
           {/* Toggle Buttons */}
           {session?.user?.creator && (
-            <div className="flex gap-4 justify-center mb-15 mt-15">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Button
                 className={`px-8 py-3 rounded-full font-semibold shadow-lg transition-all cursor-pointer duration-300 text-lg backdrop-blur-lg border border-white/10 ${
                   page === "Dashboard"
@@ -262,7 +262,7 @@ export default function App({ creators, users, session}: AppProps) {
           <div className="mb-4 text-center">
             <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-2" />
             <h1 className="text-base font-semibold text-white mb-1">Check Your Email</h1>
-            <p className="text-gray-300">
+            <p className="text-base sm:text-sm text-gray-300">
              We&apos;ve sent a link to <strong className="text-pink-400">{session?.user.email}</strong>
             </p>
           </div>
@@ -370,7 +370,7 @@ export default function App({ creators, users, session}: AppProps) {
       <p className="text-gray-400 text-lg">Here&apos;s what&apos;s happening in your business today:</p>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               
               {/* Payouts */}
               <div className="bg-gradient-to-br from-green-500/10 to-emerald-600/10 p-6 rounded-2xl border border-white/10">
