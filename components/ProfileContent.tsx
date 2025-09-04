@@ -379,7 +379,6 @@ export default function ProfileContent({
     // 4. Navigate to messages page
     router.push("/messages");
   };
-  console.log(userViewed)
   return (
     <div>
       <Toaster
