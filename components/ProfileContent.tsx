@@ -379,6 +379,7 @@ export default function ProfileContent({
     // 4. Navigate to messages page
     router.push("/messages");
   };
+  console.log(userViewed)
   return (
     <div>
       <Toaster
@@ -479,7 +480,7 @@ export default function ProfileContent({
               )}
               
               {/* User Stats (for non-creators) - Under profile pic and smaller */}
-              {!creator && (rightCreator?.subscribers.some(sub => sub.userId.toString() === userViewed._id) || rightCreator?.followers.some(fol => fol.userId === userViewed._id.toString())) && (
+              {!creator && (rightCreator?.subscribers?.some(sub => sub.userId.toString() === userViewed._id) || rightCreator?.followers?.some(fol => fol.userId === userViewed._id.toString())) && (
   <div className="w-full flex flex-col gap-2 text-center">
     <div className="bg-white/10 rounded-lg p-2 backdrop-blur-sm">
       <div className="text-xs text-gray-300">Status</div>

@@ -23,7 +23,15 @@ interface AppProps {
 
 export default async function App({ creators, users, session, username}: AppProps) {
   if (RESERVED_ROUTES.some(route => route.toLowerCase() === username.toLowerCase())) notFound();
-
+  function normalizeId<T extends { _id?: string; id?: string }>(doc: T | null): T | null {
+    if (!doc) return null;
+    if (doc.id && !doc._id) {
+      doc._id = doc.id;
+    }
+    delete doc.id;
+    return doc;
+  }
+  
   let creator: Creator | null = await CreatorModel
     .findOne({ username })
     .populate("posts")
@@ -32,7 +40,9 @@ export default async function App({ creators, users, session, username}: AppProp
   let user: User | null = null;
   if (!creator) {
     // Person viewed is a normal user
-    user = await UserModel.findOne({ username: username.toLowerCase() });
+    user = normalizeId(
+      await UserModel.findOne({ username: username.toLowerCase() }).lean<User>()
+    );
     if (!user) notFound();
     
     // Optionally, load linked creator if exists
