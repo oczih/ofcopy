@@ -28,12 +28,15 @@ import { Session } from "next-auth";
 
 interface SidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
-  session: Session | null
-  creators: Creator[]
-  users: User[]
+  session: Session | null;
+  creators: Creator[];
+  users: User[];
+  isSidebarOpen: boolean;            // <- add this
+  setIsSidebarOpen: (open: boolean) => void; // <- add this
 }
 
-export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) => {
+export const Sidebar = ({ onCollapseChange, session, creators, isSidebarOpen,
+  setIsSidebarOpen }: SidebarProps) => {
   const pathname = usePathname();
   const status = session ? "authenticated" : "unauthenticated";
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -191,15 +194,44 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
     );
   };
   
-  
   return (
     <aside
-  className={`${isCollapsed ? 'w-20' : 'w-72'} h-screen fixed left-0 top-0 z-30
+  className={`
+    h-screen fixed top-0 left-0 z-30
     bg-gradient-to-b from-slate-900/80 via-purple-900/70 to-slate-900/90
     backdrop-blur-xl border-r border-white/10 shadow-2xl p-4
-    flex flex-col  transition-all duration-300 ease-in-out overflow-hidden`}
->
-      
+    flex flex-col transition-transform duration-300 ease-in-out overflow-hidden
+
+    md:${isCollapsed ? 'w-20' : 'w-72'}  /* Desktop width */
+
+    /* Mobile overlay */
+    w-3/4 max-w-[75vw] md:w-auto
+    transform ${isCollapsed ? '-translate-x-full' : 'translate-x-0'}
+  `}
+>   
+{isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-20 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Mobile toggle button */}
+      <button
+        className="md:hidden absolute top-4 right-4 z-30 text-white"
+        onClick={() => setIsSidebarOpen(false)}
+      >
+        Close
+      </button>
+
+      {/* Collapse Toggle Button */}
+      <Button
+        onClick={toggleCollapse}
+        variant="ghost"
+        className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-full bg-slate-800 border border-white/20 text-white hover:bg-slate-700 transition-all duration-300 p-0 flex items-center justify-center cursor-pointer"
+      >
+        {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+      </Button>
       {/* Collapse Toggle Button */}
       <Button
         onClick={toggleCollapse}
@@ -446,5 +478,6 @@ export const Sidebar = ({ onCollapseChange, session, creators }: SidebarProps) =
         </>
       )}
     </aside>
+    
   );
 };

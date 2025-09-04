@@ -1,62 +1,90 @@
 "use client";
+
 import { useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { Creator, User } from "@/app/types";
 import { Session } from "next-auth";
+import Link from "next/link";
+import { Home, Bell, MessageCircle, UserCircle } from "lucide-react";
+import Image from "next/image";
 
 export default function AppWrapper({
   children,
   creators,
   users,
-  session
+  session,
 }: {
   children: React.ReactNode;
-  creators: Creator[]; // ideally type these
+  creators: Creator[];
   users: User[];
-  session: Session | null
+  session: Session | null;
 }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const avatarUrl = session?.user?.avatarKey || null; // Replace with your avatar fetching logic
+
   return (
     <div className="min-h-screen w-full bg-[#3b0364] relative overflow-hidden">
-      {/* Enhanced animated background elements that respond to sidebar */}
-      <div className={`fixed inset-0 -z-10 opacity-30 pointer-events-none transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-72'}`}>
-        {/* Primary animated orbs */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
-        <div className="absolute top-3/4 left-1/3 w-64 h-64 bg-gradient-to-r from-yellow-500/15 to-orange-500/15 rounded-full blur-3xl animate-pulse delay-1500"></div>
-        {/* Additional floating elements */}
-        <div className="absolute top-10 right-10 w-32 h-32 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-full blur-2xl animate-bounce duration-3000"></div>
-        <div className="absolute bottom-10 left-10 w-48 h-48 bg-gradient-to-r from-violet-500/15 to-purple-500/15 rounded-full blur-3xl animate-pulse delay-2000"></div>
-        {/* Moving gradient mesh */}
-        <div className="absolute inset-0 opacity-40">
-          <div className="absolute top-0 left-1/4 w-full h-1 bg-gradient-to-r from-transparent via-pink-500/20 to-transparent animate-pulse delay-300"></div>
-          <div className="absolute top-1/3 left-0 w-full h-1 bg-gradient-to-r from-transparent via-purple-500/20 to-transparent animate-pulse delay-700"></div>
-          <div className="absolute top-2/3 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent animate-pulse delay-1100"></div>
-        </div>
-        {/* Subtle grid pattern */}
-        <div 
-          className="absolute inset-0 opacity-5"
-          style={{
-            backgroundImage: `
-              linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
-            `,
-            backgroundSize: '50px 50px'
-          }}
-        ></div>
-      </div>
       {/* Sidebar */}
       <Sidebar
         onCollapseChange={setSidebarCollapsed}
         creators={creators}
         users={users}
         session={session}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
       />
-      {/* Main content that responds to sidebar state */}
-      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-72'}`}>
+
+      {/* Main content */}
+      <div
+        className={`transition-all duration-300 ${
+          sidebarCollapsed ? "md:ml-20" : "md:ml-72"
+        }`}
+      >
         {children}
+      </div>
+
+      {/* Mobile Bottom Hotbar */}
+      <div className="fixed bottom-0 left-0 w-full bg-slate-900/90 border-t border-white/10 
+        flex justify-around items-center py-2 md:hidden z-50">
+        
+        <Link href="/home">
+          <Home className="w-6 h-6 text-white" />
+        </Link>
+        
+        <Link href="/notifications">
+          <Bell className="w-6 h-6 text-white" />
+        </Link>
+        
+        <Link href="/upload">
+          <button className="w-12 h-12 bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500 
+            rounded-full flex items-center justify-center text-white shadow-lg -mt-8">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
+              viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+            </svg>
+          </button>
+        </Link>
+        
+        <Link href="/messages">
+          <MessageCircle className="w-6 h-6 text-white" />
+        </Link>
+        
+        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+          {avatarUrl ? (
+            <Image
+              src={avatarUrl}
+              alt="Profile"
+              width={32}
+              height={32}
+              className="rounded-full border border-pink-500/40 shadow-md"
+            />
+          ) : (
+            <UserCircle className="w-7 h-7 text-white" />
+          )}
+        </button>
       </div>
     </div>
   );
-} 
+}
