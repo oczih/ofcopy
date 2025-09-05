@@ -38,8 +38,6 @@ const getById = async (id: string): Promise<{ creator: Creator }> => {
 
 const followCreator = async (creatorId: string, followerId: string): Promise<void> => {
   try {
-    console.log(creatorId)
-    console.log(followerId)
     await axios.post(
       `${API_BASE}/api/creators/${creatorId}/follow`,
       { followerId }, // body

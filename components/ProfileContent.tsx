@@ -756,12 +756,6 @@ function LikedContent({
     setLikedPosts(filtered);
   }, [creator, viewingUser?._id, creators, status]);
   if (!creator) return null;
-  console.log(creator._id)
-  console.log(creator?.posts?.filter((post) =>
-    post.likes?.some(
-      (like) => String(like.userId) === String(viewingUser?._id)
-    )
-  ))
   
 
   return (

@@ -7,7 +7,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');
     const token = searchParams.get('token');
-    console.log("Incoming email:", email, "token:", token);
     if (!email || !token) {
       return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/login?error=invalid-verification-link`);
     }
@@ -18,7 +17,6 @@ export async function GET(request: NextRequest) {
       token,
       expiresAt: { $gt: new Date() }
     });
-    console.log("Verification record:", verificationRecord);
     if (!verificationRecord) {
       return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/login?error=invalid-or-expired-token`);
     }
