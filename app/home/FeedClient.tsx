@@ -171,13 +171,13 @@ export default function App({ creators, users, session}: AppProps) {
     try {
       const alreadyFollowing = session?.user?.following?.some(f => f.creatorId === creator._id);
       if (alreadyFollowing) return;
-  
-      await creatorservice.followCreator(creator._id);
-  
       if (!session?.user._id) {
         console.error("No user ID in session");
         return;
       }
+      await creatorservice.followCreator(creator._id, session?.user._id);
+  
+      
   
       // Only notify if we haven't before
       if (!notifiedCreators.current.has(creator._id)) {

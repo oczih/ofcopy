@@ -141,7 +141,7 @@ export default function App({ creators, users, session, posts, postId }: AppProp
       const alreadyFollowing = currentUser.following.some(f => f.creatorId === creator._id);
       if (alreadyFollowing) return;
   
-      await creatorservice.followCreator(creator._id);
+      await creatorservice.followCreator(creator._id, session.user._id);
   
       setCurrentUser({
         ...currentUser,

@@ -2,12 +2,13 @@
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { MoreHorizontal, Heart, MessageCircle, UserPlus } from "lucide-react";
+import { MoreHorizontal, Heart, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { Session } from "next-auth";
 import { Comment, Creator, Post, User} from "../app/types";
 import { Skeleton } from "@/components/ui/skeleton"
+import MediaRenderer from "./MediaRenderer";
 
 
 // Dynamically import emoji-picker-react to avoid SSR issues
@@ -394,11 +395,7 @@ useEffect(() => {
     alert('Failed to delete comment');
   }
 };
-const isImage = (url: string) => {
-  if (!url) return false;
-  const cleanUrl = url.split('?')[0].toLowerCase();
-  return /\.(jpeg|jpg|gif|png|webp|avif|svg)(\?.*)?$/.test(cleanUrl);
-};
+
   const resolvedAvatarUrl = useMemo(
     () => resolveImageUrl(avatarUrl ?? ""), // Use empty string if null
     [avatarUrl]
@@ -431,11 +428,15 @@ const isImage = (url: string) => {
   {/* Avatar + link */}
   <Link href={`/${creator.username}`} className="shrink-0">
     <Avatar className="w-12 h-12 ring-2 ring-gray-800 hover:ring-indigo-500 transition">
-      <img
+      {imageLoading ? (
+        <Skeleton className="w-full h-full rounded-full bg-gray-200 dark:bg-gray-700" />
+      ) : 
+      (<img
         src={resolvedAvatarUrl ?? undefined}
         alt={creator.name || creator.username}
+        onLoad={() => setImageLoading(false)}
         className="object-cover"
-      />
+      />)}
       <AvatarFallback>
         {creator.name?.[0]?.toUpperCase() || creator.username?.[0]?.toUpperCase()}
       </AvatarFallback>
@@ -527,74 +528,16 @@ const isImage = (url: string) => {
       <Skeleton className="w-full rounded-none bg-gray-200 dark:bg-gray-700" />
     </div>
   ) : (
-    <div className="relative w-full">
-      {/* Media (always rendered if signedUrl exists) */}
-      {resolvedUrl && resolvedBlurredUrl &&
-        (isImage(resolvedUrl) ? canView ? (
-          <img
-            src={encodeURI(resolvedUrl)}
-            alt={post.caption || ""}
-            width={post.width}
-            height={post.height}
-            onLoad={() => setImageLoading(false)}
-            onError={() => setImageLoading(false)}
-            style={{ objectFit: "contain", width: "100%", height: "auto" }}
-            sizes="(max-width: 1200px) 100vw, 1200px"
-            className={`transition-opacity duration-300 ${
-              imageLoading ? "opacity-0" : "opacity-100"
-            }`}
-          />
-        ) : (
-          <img
-            src={resolvedBlurredUrl}
-            alt={post.caption || ""}
-            width={post.width}
-            height={post.height}
-            onLoad={() => setImageLoading(false)}
-            onError={() => setImageLoading(false)}
-            style={{ objectFit: "contain", width: "100%", height: "auto" }}
-            sizes="(max-width: 1200px) 100vw, 1200px"
-            className={`transition-opacity duration-300 ${
-              imageLoading ? "opacity-0" : "opacity-100"
-            }`}
-          />
-        ) : (
-          <div>
-          <video className="w-full h-auto max-w-full rounded-none" controls preload="metadata">
-            <source src={resolvedUrl} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-          </div>
-        ))}
-
-      {/* Overlay if user cannot view */}
-      {!canView && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center space-y-3 bg-black/40">
-          <span className="text-2xl text-white drop-shadow-md">
-            {isSubscribersOnly
-              ? "Subscribe to view"
-              : isFollowersOnly
-              ? "Follow to view"
-              : "Restricted"}
-          </span>
-          <div className="flex gap-3">
-            {isSubscribersOnly && (
-              <Button className="bg-gradient-to-r px-3 py-1.5 sm:px-5 sm:py-2 from-pink-500 to-purple-600 text-white font-semibold rounded-full shadow cursor-pointer">
-                <Heart className="w-4 h-4 mr-2" /> Subscribe
-              </Button>
-            )}
-            {isFollowersOnly &&  (
-              <Button
-                onClick={() => handleFollow(creator)}
-                className="bg-gradient-to-r px-3 py-1.5 sm:px-5 sm:py-2 from-blue-500 to-cyan-600 text-white font-semibold rounded-full shadow cursor-pointer"
-              >
-                <UserPlus className="w-4 h-4 mr-2" /> Follow
-              </Button>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+   <MediaRenderer 
+    resolvedUrl={resolvedUrl ?? ""}
+    resolvedBlurredUrl={resolvedBlurredUrl ?? ""}
+    post={post}
+    canView={canView}
+    isSubscribersOnly={isSubscribersOnly}
+    isFollowersOnly={isFollowersOnly}
+    handleFollow={handleFollow}
+    creator={creator}
+   />
   )}
 
   {(isSubscribersOnly || isFollowersOnly) && (

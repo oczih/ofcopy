@@ -168,6 +168,11 @@ export default function ProfileContent({
   const [postSignedUrls, setPostSignedUrls] = useState<Record<string, SignedUrls>>({});
   const fetchedPostsRef = useRef<Set<string>>(new Set());
   const rightCreator = creators.find(c => c.user === session?.user._id)
+  type S3Key = {
+    key: string;
+    blurredKey?: string;
+    blurred_key?: string;
+  };
   useEffect(() => {
     async function fetchSignedUrls() {
       if (!creators || creators.length === 0) return;
@@ -196,14 +201,19 @@ export default function ProfileContent({
       if (postsToFetch.length === 0) return;
   
       // Mark posts as being fetched
-      postsToFetch.forEach((post) => fetchedPostsRef.current.add(post._id));
+      postsToFetch.forEach((post) => fetchedPostsRef.current.add(post._id + "-" + status));
   
       const signedUrlMap: Record<string, SignedUrls> = {};
   
       await Promise.all(
         postsToFetch.map(async (post: Post) => {
-          const fullKey = typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.key;
-          const blurredKey = typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.blurred_key;
+          const s3KeyObj: S3Key | null | undefined =
+          typeof post.s3Key === "string"
+            ? { key: post.s3Key }
+            : post.s3Key;
+          const fullKey = s3KeyObj?.key ?? "";
+          const blurredKeyNorm = s3KeyObj?.blurredKey || s3KeyObj?.blurred_key;
+          const blurredKey = blurredKeyNorm ?? fullKey;
           const rightCreator = creators.find(c => c.user === session?.user._id)
           const canView =
             rightCreator?._id.toString() === post.creator.toString() ||
@@ -267,18 +277,14 @@ export default function ProfileContent({
   const notifiedCreators = useRef<Set<string>>(new Set());
 
   const handleFollow = async (creator: Creator) => {
-    if(!session?.user) {
-      setJoinModalOpen(true)
+    if (!session?.user?._id) {
+      setJoinModalOpen(true);
       return;
     }
     if (!creator) return;
   
     try {
-      const alreadyFollowing = viewingUser?.following.some(f => f.creatorId === creator._id);
-      if (alreadyFollowing) return;
-  
-      await creatorservice.followCreator(creator._id);
-  
+      // Optimistic update
       setCurrentUser({
         ...currentUser,
         following: [
@@ -292,15 +298,15 @@ export default function ProfileContent({
         ],
       });
       setStatus("follower");
-  
-      if (!session?.user._id) {
-        console.error("No user ID in session");
-        return;
-      }
-  
-      // Only notify if we haven't before
+    
+      // Call backend
+      await creatorservice.followCreator(creator._id, session.user._id);
+      // ✅ no need to check res.ok with Axios
+    
+      // Notify once per creator
       if (!notifiedCreators.current.has(creator._id)) {
         notifiedCreators.current.add(creator._id);
+    
         const response = await fetch("/api/notifications", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -309,14 +315,14 @@ export default function ProfileContent({
             by: session.user._id,
             forUsers: [
               {
-                model: "Creator", // or "Creator" if the target is a creator
+                model: "Creator",
                 id: creator._id.toString(),
               },
             ],
             creatorId: creator._id,
           }),
         });
-  
+    
         if (!response.ok) {
           const errorData = await response.json();
           console.error("Failed to create notification:", errorData);
@@ -324,8 +330,16 @@ export default function ProfileContent({
       }
     } catch (err) {
       console.error("Error following creator:", err);
+    
+      // Rollback optimistic update
+      setCurrentUser((prev) => ({
+        ...prev,
+        following: prev.following.filter((f) => f.creatorId !== creator._id),
+      }));
+      setStatus("none");
     }
   };
+  
 
   const handleUnfollow = async (creator: Creator) => {
     if (!creator || !viewingUser) return;
@@ -679,7 +693,7 @@ function ContentTabs({
           <PurchasedPostsGrid status={status} creator={creator} handleFollow={handleFollow} creators={creators} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user}/>
         )}
         {activeTab === 'media' && (
-          <MediaGrid creator={creator} status={status} postSignedUrls={postSignedUrls} session={session} user={user}  />
+          <MediaGrid creator={creator} status={status} postSignedUrls={postSignedUrls}user={user}  />
         )}
         {activeTab === 'likes' && (
           <LikedContent creator={creator} status={status} postSignedUrls={postSignedUrls} viewingUser={viewingUser} creators={creators}/>
@@ -879,77 +893,79 @@ function MediaGrid({
   status,
   postSignedUrls,
   user,
-  session
 }: {
   status: "subscriber" | "follower" | "none";
   creator?: Creator;
-  postSignedUrls: Record<string, SignedUrls>
+  postSignedUrls: Record<string, SignedUrls>;
   user: Creator | User;
-  session: Session | null;
 }) {
   const [visiblePosts, setVisiblePosts] = useState<Post[]>([]);
+  const [loadedImages, setLoadedImages] = useState<{ [key: string]: boolean }>({});
+  const [activeImage, setActiveImage] = useState<string | null>(null);
+
   useEffect(() => {
     if (creator?.posts) {
       let filtered: Post[];
       if (user?._id.toString() === creator.user.toString()) {
-        // Viewing own profile — show all posts
-        filtered = creator.posts;
+        filtered = creator.posts; // Own profile shows all
       } else {
-        // Viewing someone else's profile — filter by status
         filtered = creator.posts.filter((post) => {
-          if (status === 'subscriber') return true;
-          if (status === 'follower') return post.viewableFor === 'followers';
-          return post.viewableFor === 'followers'; // treat "none" as followers-only list
+          if (status === "subscriber") return true; // Subscriber sees all
+          if (status === "follower") return post.viewableFor === "followers";
+          return post.viewableFor === "followers"; // Not following sees only blurred
         });
       }
       setVisiblePosts(filtered);
     }
   }, [creator, status, user]);
 
-  const [loadedImages, setLoadedImages] = useState<{ [key: string]: boolean }>({});
-  const [activeImage, setActiveImage] = useState<string | null>(null);
-  
   const handleImageLoad = (postId: string) => {
     setLoadedImages((prev) => ({ ...prev, [postId]: true }));
   };
 
+  const canView = (post: Post) => {
+    if (user?._id.toString() === creator?._id.toString()) return true;
+    if (status === "subscriber") return true;
+    if (status === "follower") return post.viewableFor === "followers";
+    return false;
+  };
   return (
     <>
-      {/* Grid */}
       <div className="grid grid-cols-3 gap-1">
-        {visiblePosts.map((p) => {
-          const isLoaded = loadedImages[p._id];
-          const urls = postSignedUrls[p._id] ?? { signedUrl: '', blurredUrl: '' };
-          console.log(status)
+        {visiblePosts.map((post) => {
+          const isLoaded = loadedImages[post._id];
+          const urls = postSignedUrls[post._id] ?? { signedUrl: '', blurredUrl: '' };
+          const showFull = canView(post);
+
           return (
             <div
-              key={p._id}
+              key={post._id}
               className={`relative w-full aspect-square overflow-hidden ${
-                status !== "none" ? "cursor-pointer" : ""
+                showFull ? "cursor-pointer" : ""
               }`}
-              onClick={(status !== "none" || creator?.user === session?.user._id) ? () => setActiveImage(urls.signedUrl) : undefined}
+              onClick={showFull ? () => setActiveImage(urls.signedUrl) : undefined}
             >
-              {/* Blurred background */}
+              {/* Background image */}
               <img
-                src={urls.signedUrl || ""}
-                alt="blurred background"
+                src={showFull ? urls.signedUrl : urls.blurredUrl || urls.signedUrl}
+                alt="background"
                 className="absolute inset-0 w-full h-full object-cover blur-lg scale-110 brightness-50"
               />
 
-              {/* Skeleton while loading */}
+              {/* Skeleton */}
               {!isLoaded && (
                 <Skeleton className="absolute inset-0 w-full h-full rounded-none bg-gray-200 dark:bg-gray-700 z-20" />
               )}
 
-              {/* Foreground image (centered, keeps aspect ratio) */}
+              {/* Foreground image */}
               <div className="absolute inset-0 flex items-center justify-center z-30">
                 <img
-                  src={urls.signedUrl || ""}
-                  alt={p.caption || "Media post"}
+                  src={showFull ? urls.signedUrl : urls.blurredUrl || urls.signedUrl}
+                  alt={post.caption || "Media post"}
                   className={`max-w-full max-h-full object-contain transition-opacity duration-300 ${
                     isLoaded ? "opacity-100" : "opacity-0"
                   }`}
-                  onLoad={() => handleImageLoad(p._id)}
+                  onLoad={() => handleImageLoad(post._id)}
                 />
               </div>
             </div>
@@ -957,7 +973,7 @@ function MediaGrid({
         })}
       </div>
 
-      {/* Fullscreen Modal */}
+      {/* Fullscreen modal */}
       {activeImage &&
         createPortal(
           <div
@@ -1005,7 +1021,6 @@ function PostsGrid({
   session: Session | null;
 }) {
   const [visiblePosts, setVisiblePosts] = useState<Post[]>([]);
-
   useEffect(() => {
     if (creator?.posts) {
       let filtered: Post[];

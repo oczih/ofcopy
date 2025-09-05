@@ -36,12 +36,18 @@ const getById = async (id: string): Promise<{ creator: Creator }> => {
   }
 };
 
-const followCreator = async (creatorId: string): Promise<void> => {
+const followCreator = async (creatorId: string, followerId: string): Promise<void> => {
   try {
-    await axios.post(`/api/creators/${creatorId}/follow`);
+    console.log(creatorId)
+    console.log(followerId)
+    await axios.post(
+      `${API_BASE}/api/creators/${creatorId}/follow`,
+      { followerId }, // body
+      { withCredentials: true } // send cookies/session if needed
+    );
   } catch (error) {
-    console.error('Error following creator:', error);
-    throw new Error('Failed to follow creator');
+    console.error("Error following creator:", error);
+    throw new Error("Failed to follow creator");
   }
 };
 

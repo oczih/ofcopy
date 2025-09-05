@@ -21,7 +21,12 @@ const transporter = nodemailer.createTransport({
     pass: process.env.MAILGUN_PASSWORD,
   },
 });
-
+function htmlToText(html: string) {
+  return html
+    .replace(/<\/?[^>]+(>|$)/g, "") // poista HTML-tagit
+    .replace(/\s+/g, " ")            // siivoa whitespace
+    .trim();
+}
 // ---- Example Mailgun API sender ----
 export async function sendWithMailgunAPI(to: string, subject: string, html: string) {
   try {
@@ -30,6 +35,7 @@ export async function sendWithMailgunAPI(to: string, subject: string, html: stri
       to,
       subject,
       html,
+      text: htmlToText(html), // oma tekstiversio
     });
 
     return data;
@@ -85,7 +91,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
 }
 
 export async function sendVerificationEmail(email: string, token: string) {
-  const verificationUrl = `https://${process.env.NEXTAUTH_URL}/api/auth/verify-email?email=${encodeURIComponent(email)}&token=${token}`;
+  const verificationUrl = `${process.env.NEXTAUTH_URL}/api/auth/verify-email?email=${encodeURIComponent(email)}&token=${token}`;
   const html = `
     <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
       <h2>Welcome! Please verify your email address</h2>
