@@ -1,14 +1,16 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SessionProviderWrapper from "./SessionProviderWrapper";
+import { fetchPageData } from "@/lib/fetchDataPage";
+import ClientAppWrapper from "@/components/ClientAppWrapper";
 
 export const metadata: Metadata = {
   title: "Fanslio",
   description: "Premium AI content platform for creators and fans.",
   icons: {
-    icon: "/fanslioIconSVG.svg", // Path to your favicon
-     // Optional Apple touch icon
+    icon: "/fanslioIconSVG.svg",
   },
 };
 
@@ -24,17 +26,18 @@ const geistMono = Geist_Mono({
 });
 
 
-
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const { creators, users, safeSession } = await fetchPageData();
 
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <SessionProviderWrapper>
-          {children}
+          <ClientAppWrapper creators={creators} users={users} session={safeSession}>
+            {children}
+          </ClientAppWrapper>
         </SessionProviderWrapper>
       </body>
     </html>
   );
 }
-

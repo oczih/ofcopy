@@ -1,6 +1,5 @@
 import React from "react";
 import { connectDB } from "@/lib/mongoose";
-import AppWrapper from "@/components/AppWrapper";
 import App from "./usernamePage"; // Your client component
 import { notFound } from "next/navigation";
 import { fetchPageData } from "@/lib/fetchDataPage";
@@ -22,8 +21,6 @@ export default async function Page(props: unknown) {
   // Sanitize your data if needed here
   
   return (
-    <AppWrapper creators={creators ?? []} users={users} session={safeSession}>
     <App creators={creators} users={users} session={safeSession} username={username.toLowerCase()} />
-    </AppWrapper>
   );
 }

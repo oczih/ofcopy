@@ -38,7 +38,6 @@ export default function LoginPageWrapper() {
       if (typeof window !== "undefined") router.replace("/home");
     }
   }, [session, router]);
-
   useEffect(() => {
     const verified = searchParams.get('verified');
     const error = searchParams.get('error');
@@ -93,7 +92,16 @@ export default function LoginPageWrapper() {
       }
     }
   }, [searchParams]);
-
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-lg font-medium text-slate-700">Loading...</span>
+        </div>
+      </div>
+    );
+  }
   const handleOAuthSignIn = async (provider: string) => {
     try {
       setLoading(true);

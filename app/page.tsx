@@ -65,7 +65,7 @@ const features = [
   {
     icon: Bot,
     title: "AI Creator Tools",
-    description: "Advanced analytics, content optimization, and automated audience engagement for AI creators."
+    description: "Advanced analytics, content optimization, and automated audience engagement for creators."
   },
   {
     icon: Heart,
@@ -299,7 +299,7 @@ function Landing() {
                     <Link href="/signup">
                       <Button 
                         size="lg" 
-                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 text-lg hover:scale-105 hover:shadow-xl transition-all duration-200 group"
+                        className="bg-gradient-to-r cursor-pointer from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 text-lg hover:scale-105 hover:shadow-xl transition-all duration-200 group"
                       >
                         Join As User
                         <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
@@ -311,7 +311,7 @@ function Landing() {
                       <Button 
                         size="lg" 
                         variant="outline" 
-                        className="border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white px-8 py-3 text-lg hover:scale-105 hover:shadow-xl transition-all duration-200 group"
+                        className="border-2 cursor-pointer border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white px-8 py-3 text-lg hover:scale-105 hover:shadow-xl transition-all duration-200 group"
                       >
                         Become Creator
                         <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-200" />

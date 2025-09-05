@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { MessageCircle,  Search, Image as MoreVertical, Phone, Video, Info, X, Package } from "lucide-react";
+import { MessageCircle,  Search, Image as MoreVertical, Phone, Video, Info, X, Package, ChevronLeft } from "lucide-react";
 import { Chat, Creator, User } from "../types";
 import { Session } from "next-auth";
 import { subscribeToMessages } from "@/lib/realtime";
@@ -46,6 +46,7 @@ export default function ChatApp({ session, users }: AppProps) {
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const CACHE_TTL = 15 * 60 * 1000;
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [mobileView, setMobileView] = useState<"list" | "chat">("list");
   //const [isPriceModalOpen, setIsPriceModalOpen] = useState(false)
   const router = useRouter();
   useEffect(() => {
@@ -295,6 +296,11 @@ export default function ChatApp({ session, users }: AppProps) {
   const handleConversationClick = (chat: Chat) => {
     setCurrentChatIdentifier(chat.id);
     localStorage.setItem("currentChatIdentifier", chat.id);
+  
+    // On mobile, switch from the conversation list to the chat view
+    if (window.innerWidth < 768) { // md breakpoint
+      setMobileView("chat");
+    }
   };
 
   const handleSendMessage = async () => {
@@ -430,7 +436,8 @@ export default function ChatApp({ session, users }: AppProps) {
           <div className="flex h-full">
   
             {/* Conversations Sidebar */}
-            <div className="w-96 border-r border-white/20 bg-gradient-to-b from-white/5 to-white/10">
+            <div className={`w-96 border-r border-white/20 bg-gradient-to-b from-white/5 to-white/10 
+                  ${mobileView === "chat" ? "hidden" : "block"} md:block`}>
               {/* Sidebar Header */}
               <div className="p-8 border-b border-white/20">
                 <div className="flex items-center gap-4 mb-6">
@@ -538,12 +545,21 @@ export default function ChatApp({ session, users }: AppProps) {
             </div>
   
             {/* Chat Area */}
-            <div className="flex-1 flex flex-col">
+            <div className={`flex-1 flex flex-col 
+                  ${mobileView === "list" ? "hidden" : "block"} md:block`}>
               {selectedChat && otherParticipant ? (
                 <>
                   {/* Chat Header */}
                   <div className="p-8 border-b border-white/20 bg-gradient-to-r from-white/5 to-white/10">
                     <div className="flex items-center justify-between">
+                    <div className="md:hidden">
+                        <button 
+                          onClick={() => setMobileView("list")} 
+                          className="flex items-center gap-2 text-white"
+                        >
+                          <ChevronLeft className="w-6 h-6"/>
+                        </button>
+                      </div>
                       <div className="flex items-center gap-4">
                       <div className="relative">
                         {otherAvatar ? (
@@ -566,7 +582,7 @@ export default function ChatApp({ session, users }: AppProps) {
                           <p className="text-green-400 text-sm font-medium">Online now</p>
                         </div>
                       </div>
-  
+                      
                       {/* Action Buttons */}
                       <div className="flex items-center gap-3">
                         <Button variant="ghost" size="sm" className="text-gray-400 hover:text-blue-400 hover:bg-white/10 transition-all duration-300 rounded-xl p-3">

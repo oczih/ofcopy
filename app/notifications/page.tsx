@@ -1,5 +1,5 @@
 import React from "react";
-import AppWrapper from "@/components/AppWrapper";
+
 import App from "./NotificationsPage";
 import { fetchPageData } from "@/lib/fetchDataPage";
 import type { Notification, Notification as NotificationType } from "../types";
@@ -12,13 +12,13 @@ export default async function Page() {
   }));
 
   return (
-    <AppWrapper creators={creators} users={users} session={safeSession}>
+    
       <App
         creators={creators}
         users={users}
         session={safeSession}
         notifications={notifications}
       />
-    </AppWrapper>
+    
   );
 }

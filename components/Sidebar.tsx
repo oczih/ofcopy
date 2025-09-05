@@ -15,7 +15,8 @@ import {
   BarChart3,
   UserCircle,
   Megaphone,
-  Wallet
+  Wallet,
+  X
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
@@ -197,50 +198,37 @@ export const Sidebar = ({ onCollapseChange, session, creators, isSidebarOpen,
   return (
     <aside
   className={`
-    h-screen fixed top-0 left-0 z-30
+    fixed top-0 left-0 h-screen z-40
     bg-gradient-to-b from-slate-900/80 via-purple-900/70 to-slate-900/90
     backdrop-blur-xl border-r border-white/10 shadow-2xl p-4
     flex flex-col transition-transform duration-300 ease-in-out overflow-hidden
 
-    md:${isCollapsed ? 'w-20' : 'w-72'}  /* Desktop width */
+    /* Desktop width */
+    md:${isCollapsed ? "w-20" : "w-72"}
 
     /* Mobile overlay */
     w-3/4 max-w-[75vw] md:w-auto
-    transform ${isCollapsed ? '-translate-x-full' : 'translate-x-0'}
+    transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
   `}
->   
-{isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-20 md:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
+> 
 
       {/* Mobile toggle button */}
       <button
-        className="md:hidden absolute top-4 right-4 z-30 text-white"
-        onClick={() => setIsSidebarOpen(false)}
-      >
-        Close
-      </button>
+      className="md:hidden absolute top-4 right-4 z-40 text-white"
+      onClick={() => setIsSidebarOpen(false)}
+    >
+      <X />
+    </button>
 
       {/* Collapse Toggle Button */}
       <Button
-        onClick={toggleCollapse}
-        variant="ghost"
-        className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-full bg-slate-800 border border-white/20 text-white hover:bg-slate-700 transition-all duration-300 p-0 flex items-center justify-center cursor-pointer"
-      >
-        {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
-      </Button>
+  onClick={toggleCollapse}
+  variant="ghost"
+  className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-full bg-slate-800 border border-white/20 text-white hover:bg-slate-700 transition-all duration-300 p-0 flex items-center justify-center cursor-pointer hidden md:flex"
+>
+  {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+</Button>
       {/* Collapse Toggle Button */}
-      <Button
-        onClick={toggleCollapse}
-        variant="ghost"
-        className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-full bg-slate-800 border border-white/20 text-white hover:bg-slate-700 transition-all duration-300 p-0 flex items-center justify-center cursor-pointer"
-      >
-        {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
-      </Button>
-      
       {/* User Profile Section */}
       {session ? (
         <>
