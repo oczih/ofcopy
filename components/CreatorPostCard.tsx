@@ -559,10 +559,11 @@ useEffect(() => {
     <div className="w-full max-w-xl mx-auto" onClick={(e) => e.stopPropagation()}>
       <PaymentForm
         creator={creator}
-        avatarUrl={avatarUrl}
+        avatarUrl={avatarUrl || ""}
         onClose={() => setPaymentModal(false)}
         open={paymentModal}
         price={post.price}
+        session={session}
         type="post"
       />
     </div>

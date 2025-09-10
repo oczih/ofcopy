@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -16,6 +16,7 @@ import {
 import toast from "react-hot-toast";
 import Link from "next/link";
 import { Creator } from "@/app/types";
+import { Session } from "next-auth";
 
 // -------------------
 // Schema (for non-US cards)
@@ -44,6 +45,7 @@ interface PaymentFormProps {
   creator: Creator;
   avatarUrl: string;
   price: number | null;
+  session: Session | null
 }
 
 const PLATFORM_FEE_RATE = 0.05;
@@ -55,11 +57,12 @@ export default function PaymentForm({
   creator,
   avatarUrl,
   price,
+  session
 }: PaymentFormProps) {
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedCurrency, setSelectedCurrency] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
-
+  
   const form = useForm<CreditCardFormData>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -85,7 +88,7 @@ export default function PaymentForm({
 
   // LuxFin handlers (wallets)
   const handleWalletPayment = async (method: "paypal" | "venmo" | "applepay") => {
-    if (!user?.email) return toast.error("User email required for payment");
+    if (!session?.user?.email) return toast.error("User email required for payment");
   
     const res = await fetch("/api/luxfin/wallet", {
       method: "POST",
@@ -93,7 +96,7 @@ export default function PaymentForm({
       body: JSON.stringify({
         method,
         amount: total,
-        customer: user.email,        // unique customer identifier
+        customer: session.user.email,        // unique customer identifier
         product: `${creator.name} - ${type}`,
         redirect_url: `${window.location.origin}/payment/success`,
       }),

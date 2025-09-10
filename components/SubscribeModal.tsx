@@ -2,9 +2,10 @@ import { Creator } from '@/app/types';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import PaymentForm from './PaymentForm';
+import { Session } from 'next-auth';
 
-export default function SubscribeModal({ open, onClose, creator, avatarUrl }: {open: boolean,
-  onClose: () => void, creator: Creator | null, avatarUrl: string | null
+export default function SubscribeModal({ open, onClose, creator, session, avatarUrl }: {open: boolean,
+  onClose: () => void, creator: Creator | null, avatarUrl: string | null, session: Session | null
 }) {
   const [step, setStep] = useState('select');
   const [showExitConfirm, setShowExitConfirm] = useState(false);
@@ -145,6 +146,7 @@ export default function SubscribeModal({ open, onClose, creator, avatarUrl }: {o
                 creator={creator!}
                 avatarUrl={avatarUrl ?? ""}
                 price={creator?.price ?? 0}
+                session={session}
               />
               )}
             </div>

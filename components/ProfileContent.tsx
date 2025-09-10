@@ -603,6 +603,7 @@ export default function ProfileContent({
             open={modalOpen} 
             onClose={() => setModalOpen(false)} 
             creator={creator}
+            session={session}
             avatarUrl={avatarUrl} 
           />
         )}
