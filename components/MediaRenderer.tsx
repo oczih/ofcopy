@@ -13,6 +13,7 @@ type MediaRenderProps = {
     isSubscribersOnly: boolean 
     isFollowersOnly: boolean
     handleFollow: (creator: Creator) => void;
+    setPaymentModal: (open: boolean) => void;
 }
 
 export default function MediaRenderer({
@@ -24,10 +25,10 @@ export default function MediaRenderer({
   isFollowersOnly,
   handleFollow,
   creator,
+  setPaymentModal
 }: MediaRenderProps) {
   const [imageLoading, setImageLoading] = useState(true);
   const [currentSrc, setCurrentSrc] = useState<string | null>(null);
-
   // React to canView changes
   useEffect(() => {
     if (!resolvedUrl) return;
@@ -74,20 +75,29 @@ export default function MediaRenderer({
       {/* Overlay if user cannot view */}
       {!canView && (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center space-y-3">
-          <span className="text-2xl text-white drop-shadow-md">
-            {isSubscribersOnly
+         <span className="text-2xl text-white drop-shadow-md">
+            {post.price && post.price > 0
+              ? `Unlock for $${post.price}`
+              : isSubscribersOnly
               ? "Subscribe to view"
               : isFollowersOnly
               ? "Follow to view"
               : "Restricted"}
-          </span>
+            </span>
           <div className="flex gap-3">
+            {post.price && post.price > 0 && (
+              <button 
+               onClick={() => setPaymentModal(true)}
+              className="bg-gradient-to-r px-3 py-1.5 sm:px-5 sm:py-2 from-pink-500 to-purple-600 text-white font-semibold rounded-full shadow cursor-pointer">
+                Unlock for ${post.price}
+              </button>
+            )}
             {isSubscribersOnly && (
               <Button className="bg-gradient-to-r px-3 py-1.5 sm:px-5 sm:py-2 from-pink-500 to-purple-600 text-white font-semibold rounded-full shadow cursor-pointer">
                 <Heart className="w-4 h-4 mr-2" /> Subscribe
               </Button>
             )}
-            {isFollowersOnly && (
+            {isFollowersOnly && !post.price && (
               <Button
                 onClick={() => handleFollow(creator)}
                 className="bg-gradient-to-r px-3 py-1.5 sm:px-5 sm:py-2 from-blue-500 to-cyan-600 text-white font-semibold rounded-full shadow cursor-pointer"

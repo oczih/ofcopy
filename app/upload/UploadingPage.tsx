@@ -507,14 +507,22 @@ export default function App({creators, session}: AppProps) {
                         <span className="text-gray-400 text-lg">$</span>
                       </div>
                       <input
-                        type="number"
-                        value={tempPrice}
-                        onChange={(e) => setTempPrice(e.target.value)}
-                        placeholder="0.00"
-                        min="0"
-                        step="0.01"
-                        className="w-full pl-8 pr-4 py-3 bg-white/10 border border-white/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200"
-                      />
+  type="number"
+  value={tempPrice}
+  onChange={(e) => {
+    // Strip leading zeros but keep empty allowed
+    const val = e.target.value;
+    if (val === "") {
+      setTempPrice("");
+    } else {
+      setTempPrice(String(parseFloat(val)));
+    }
+  }}
+  placeholder="0.00"
+  min="0"
+  step="0.01"
+  className="w-full pl-8 pr-4 py-3 bg-white/10 border border-white/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200"
+/>
                     </div>
                     <p className="text-sm text-gray-400">Minimum price is $0.99</p>
                   </div>

@@ -57,6 +57,8 @@ export interface CreatorDocument extends mongoose.Document {
   currentBalance: number, // Available for payout
   following: Following[];
   purchases: Purchase[];
+  creatorCreatedAt: Date;
+  country: string;
 }
 
 const creatorSchema = new Schema<CreatorDocument>({
@@ -74,7 +76,9 @@ const creatorSchema = new Schema<CreatorDocument>({
   oauthProvider: { type: String },
   oauthId: { type: String },
   lastUsernameChange: { type: Date, default: null },
+  creatorCreatedAt: { type: Date, default: null },
   price: { type: Number, default: 9.99 },
+  country: { type: String, default: '' },
   bio: {type: String, default: ''},
   gender: { type: String, enum: Object.values(Gender) },
   category: { type: String, default: 'General' },

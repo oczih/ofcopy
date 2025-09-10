@@ -1,30 +1,14 @@
 'use client'
 
 import { Button } from "./ui/button";
-import {
-  Home,
-  Compass,
-  MessageCircle,
-  Settings,
-  Bell,
-  ChevronLeft,
-  ChevronRight, 
-  UserCheck,
-  LogOut,
-  DollarSign,
-  BarChart3,
-  UserCircle,
-  Megaphone,
-  Wallet,
-  X
-} from "lucide-react";
+import { Home, Compass, MessageCircle, Settings, Bell, ChevronLeft, ChevronRight, UserCheck, LogOut, DollarSign, BarChart3, UserCircle, Megaphone, Wallet, X } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname} from "next/navigation";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { Creator, User } from "../app/types";
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from "@/components/ui/skeleton";
 import { Session } from "next-auth";
 
 interface SidebarProps {
@@ -32,12 +16,11 @@ interface SidebarProps {
   session: Session | null;
   creators: Creator[];
   users: User[];
-  isSidebarOpen: boolean;            // <- add this
-  setIsSidebarOpen: (open: boolean) => void; // <- add this
+  isSidebarOpen: boolean;
+  setIsSidebarOpen: (open: boolean) => void;
 }
 
-export const Sidebar = ({ onCollapseChange, session, creators, isSidebarOpen,
-  setIsSidebarOpen }: SidebarProps) => {
+export const Sidebar = ({ onCollapseChange, session, creators, isSidebarOpen, setIsSidebarOpen }: SidebarProps) => {
   const pathname = usePathname();
   const status = session ? "authenticated" : "unauthenticated";
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -47,291 +30,149 @@ export const Sidebar = ({ onCollapseChange, session, creators, isSidebarOpen,
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
   const user = session?.user as User | undefined;
-  const isCreator = !!user?.creator; 
-  const baseMenu = [
-    { id: "feed", label: "Home Feed", icon: Home, color: "pink", href: "/home" },
-    { id: "discover", label: "Discover", icon: Compass, color: "purple", href: "/discover" },
-    { id: "notifications", label: "Notifications", icon: Bell, color: "red", href: "/notifications" },
-    { id: "messages", label: "Messages (Coming Soon!)", icon: MessageCircle, color: "blue", href: "/messages" },
-    { id: "settings", label: "Settings", icon: Settings, color: "green", href: "/settings" },
-    { id: "wallet", label: "Wallet", icon: Wallet, color: "orange", href: "/wallet" },
-  ];
-
-  // Menu for non-creators only
-  const userOnlyMenu = [
-    { id: "following", label: "Following", icon: UserCheck, color: "blue", href: "/following" },
-    { id: "promotions", label: "Promotions", icon: Megaphone, color: "pink", href: "/promotions" },
-    { id: "profile", label: "Profile", icon: UserCircle, color: "cyan", href: `/${user?.username}` },
-  ];
-
-  // Menu for creators only
-  const creatorOnlyMenu = [
-    { id: "insights", label: "Insights", icon: BarChart3, color: "indigo", href: "/insights" },
-    { id: "earnings", label: "Earnings", icon: DollarSign, color: "emerald", href: "/earnings" },
-  ];
-
-  const menuItems = isCreator
-    ? [...baseMenu, ...creatorOnlyMenu]
-    : [...baseMenu, ...userOnlyMenu]; 
+  const isCreator = !!user?.creator;
 
   const [creator, setCreator] = useState<Creator | null>(null);
+  const lastFetchedAvatarKey = useRef<string | null>(null);
+
+  // Fetch creator
+  useEffect(() => {
+    if (session?.user?._id && creators) {
+      const found = creators.find(c => c.user === session.user._id);
+      setCreator(found || null);
+    }
+  }, [session?.user?._id, creators]);
+
+  const avatarKey = creator?.avatarKey || session?.user?.avatarKey;
 
   useEffect(() => {
-    const fetchCreator = async () => {
-      if (session?.user?._id) {
-        try {
-          if (creators) {
-            const found = creators.find((c: Creator) => c.user === session.user._id);
-            setCreator(found || null);
-          }
-          
-        } catch (error) {
-          setCreator(null);
-          throw error
-        }
-      }
-    };
-    fetchCreator();
-  }, [session?.user?._id, creators]);
-  useEffect(() => {
-    if (status === 'authenticated') {
-      setLoadingSession(false);
-    }
-  }, [status]);
-  const avatarKey = creator?.avatarKey || session?.user?.avatarKey;
-  const lastFetchedAvatarKey = useRef<string | null>(null);
-  useEffect(() => {
-    if (!avatarKey) {
-      setAvatarUrl(null);
-      setLoadingAvatar(false); // ✅ Prevent skeleton forever
-      return;
-    }
-    if (avatarKey === lastFetchedAvatarKey.current) {
-      // Already fetched this key, no need to fetch again
-      setLoadingAvatar(false);
-      return;
-    }
-    const fetchAvatarUrl = async () => {
+    if (!avatarKey) return setLoadingAvatar(false);
+
+    if (avatarKey === lastFetchedAvatarKey.current) return setLoadingAvatar(false);
+
+    const fetchAvatar = async () => {
       setLoadingAvatar(true);
       if (avatarKey.startsWith("http")) {
         setAvatarUrl(avatarKey);
-        setAvatarUrl(avatarKey); // use the URL directly
         lastFetchedAvatarKey.current = avatarKey;
         setLoadingAvatar(false);
         return;
       }
+
       try {
-        setAvatarError(false);
         const key = avatarKey.replace(/^\/+/, '');
         const res = await fetch("/api/media/download-url", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ s3Key: key }),
         });
-  
         const data = await res.json();
-
-  
-        if (data.downloadUrl?.startsWith('http')) {
-          setAvatarUrl(data.downloadUrl);
-        } else {
-
-          setAvatarError(true);
-        }
+        if (data.downloadUrl?.startsWith("http")) setAvatarUrl(data.downloadUrl);
+        else setAvatarError(true);
       } catch {
-        
         setAvatarError(true);
       } finally {
         setLoadingAvatar(false);
       }
     };
-  
-    fetchAvatarUrl();
+
+    fetchAvatar();
   }, [avatarKey]);
 
+  useEffect(() => {
+    if (status === 'authenticated') setLoadingSession(false);
+  }, [status]);
+  const toggleCollapse = () => {
+    const newState = !isCollapsed;
+    setIsCollapsed(newState);
+    // schedule parent update after render
+    requestAnimationFrame(() => onCollapseChange?.(newState));
+  };
+
+  const handleSignOut = async () => {
+    localStorage.removeItem('user');
+    await signOut({ callbackUrl: '/login' });
+  };
+
+  const renderAvatar = () => {
+    if (loadingSession || loadingAvatar) return <Skeleton className="w-12 h-12 rounded-full" />;
+
+    if (avatarUrl && !avatarError) {
+      return <Image src={avatarUrl} alt={user?.name || "User"} width={48} height={48} className="w-12 h-12 rounded-full border-2 border-pink-500/40 shadow-lg" onError={() => setAvatarError(true)} unoptimized />;
+    }
+
+    return <div className="w-12 h-12 rounded-full bg-gray-700 text-white flex items-center justify-center text-xl border-2 border-pink-500/40 shadow-lg">{user?.name?.charAt(0).toUpperCase() || "U"}</div>;
+  };
+
+  // Menu items
+  const baseMenu = [
+    { id: "feed", label: "Home Feed", icon: Home, href: "/home" },
+    { id: "discover", label: "Discover", icon: Compass, href: "/discover" },
+    { id: "notifications", label: "Notifications", icon: Bell, href: "/notifications" },
+    { id: "messages", label: "Messages", icon: MessageCircle, href: "/messages" },
+    { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
+    { id: "wallet", label: "Wallet", icon: Wallet, href: "/wallet" },
+  ];
+  const userOnlyMenu = [
+    { id: "following", label: "Following", icon: UserCheck, href: "/following" },
+    { id: "promotions", label: "Promotions", icon: Megaphone, href: "/promotions" },
+    { id: "profile", label: "Profile", icon: UserCircle, href: `/${user?.username}` },
+  ];
+  const creatorOnlyMenu = [
+    { id: "insights", label: "Insights", icon: BarChart3, href: "/insights" },
+    { id: "earnings", label: "Earnings", icon: DollarSign, href: "/earnings" },
+  ];
+  const menuItems = isCreator ? [...baseMenu, ...creatorOnlyMenu] : [...baseMenu, ...userOnlyMenu];
   const getButtonStyles = (isActive: boolean) => {
     if (isActive) {
       return `bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg hover:shadow-xl`;
     }
     return `text-gray-300 hover:text-white hover:bg-white/10 cursor-pointer`;
   };
-
-  const handleSignOut = async () => {
-    localStorage.removeItem('user');
-    await signOut({ callbackUrl: '/login' }); 
-  };
-
-
-  const toggleCollapse = () => {
-    const newCollapsedState = !isCollapsed;
-    setIsCollapsed(newCollapsedState);
-    onCollapseChange?.(newCollapsedState);
-  };
-
-  const renderAvatar = () => {
-    if (loadingSession || loadingAvatar) {
-      return <Skeleton className="w-12 h-12 rounded-full" />;
-    }
-  
-    if (avatarUrl && !avatarError) {
-      return (
-        <Image
-          src={avatarUrl}
-          alt={session?.user.name || session?.user.username || "User profile image"}
-          width={48}
-          height={48}
-          className="w-12 h-12 rounded-full border-2 border-pink-500/40 shadow-lg"
-          onError={() => setAvatarError(true)}
-          unoptimized
-        />
-      );
-    }
-  
-    // fallback to first letter of name if no avatar
-    return (
-      <div className="w-12 h-12 rounded-full bg-gray-700 text-white flex items-center justify-center text-xl border-2 border-pink-500/40 shadow-lg">
-        {session?.user?.name?.charAt(0).toUpperCase() || "U"}
-      </div>
-    );
-  };
-  
-  return (
-    <aside
-  className={`
-    fixed top-0 left-0 h-screen z-40
-    bg-gradient-to-b from-slate-900/80 via-purple-900/70 to-slate-900/90
-    backdrop-blur-xl border-r border-white/10 shadow-2xl p-4
-    flex flex-col transition-transform duration-300 ease-in-out overflow-hidden
-
-    /* Desktop width */
-    md:${isCollapsed ? "w-20" : "w-72"}
-
-    /* Mobile overlay */
-    w-3/4 max-w-[75vw] md:w-auto
-    transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
-  `}
-> 
-
-      {/* Mobile toggle button */}
-      <button
-      className="md:hidden absolute top-4 right-4 z-40 text-white"
-      onClick={() => setIsSidebarOpen(false)}
-    >
-      <X />
-    </button>
-
-      {/* Collapse Toggle Button */}
-      <Button
-  onClick={toggleCollapse}
-  variant="ghost"
-  className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-full bg-slate-800 border border-white/20 text-white hover:bg-slate-700 transition-all duration-300 p-0 flex items-center justify-center cursor-pointer hidden md:flex"
->
-  {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
-</Button>
-      {/* Collapse Toggle Button */}
-      {/* User Profile Section */}
-      {session ? (
-        <>
-        <div
-  className={`flex flex-col items-center relative transition-all duration-300 ${
-    isCollapsed ? 'mt-6' : 'mt-1'
-  } ${isCreator && creator && !isCollapsed ? 'mb-3' : 'mb-1'}`}
->
-          <div className="relative group">
-            {/* Clickable Avatar and Name Container */}
-            <Link 
-              href={`/${creator?.username || session.user.username}`}
-              className={`flex flex-col items-center cursor-pointer transition-all duration-300 ${
-                isCollapsed 
-                  ? 'hover:bg-white/10 rounded-full p-2 hover:opacity-100' 
-                  : 'hover:opacity-80'
-              }`}
-            >
-              {/* Avatar */}
-              <div className="mb-3">
-                {renderAvatar()}
-              </div>
-
-              {/* Name and Username - Only show when not collapsed */}
-              {!isCollapsed && (
-                <div className="text-center">
-                  <div className="text-lg font-semibold text-white truncate max-w-[12rem]">
-                    {creator?.name || user?.name}
-                  </div>
-                  <div className="text-sm text-pink-400 truncate max-w-[12rem]">
-                    @{creator?.username || user?.username}
-                  </div>
-                </div>
-              )}
-            </Link>
-
-            {/* Tooltip for collapsed state */}
-            {isCollapsed && session?.user && (
-              <div className="absolute left-16 top-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-sm rounded-lg px-3 py-2 whitespace-nowrap shadow-lg z-50 pointer-events-none">
-                <div className="font-semibold">{session.user.name}</div>
-                <div className="text-pink-400 text-xs">@{session.user.username}</div>
-              </div>
-            )}
-          </div>
-
-          {/* Followers/Subscribers if creator */}
-          {isCreator && creator && session?.user && !isCollapsed && (
-  <div className="flex gap-8 mt-4 justify-center items-center">
-    <div className="flex flex-col items-center">
-      <span className="text-white font-bold text-lg">{creator?.followers?.length ?? 0}</span>
-      <span className="text-xs text-gray-400">Followers</span>
-    </div>
-    <div className="flex flex-col items-center">
-      <span className="text-pink-400 font-bold text-lg">{creator?.subscribers?.length ?? 0}</span>
-      <span className="text-xs text-gray-400">Subscribers</span>
-    </div>
-  </div>
-)}
+  const renderSidebarContent = () => (
+    <>
+     <Button
+    onClick={toggleCollapse}
+    variant="ghost"
+    className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-full bg-slate-800 border border-white/20 text-white hover:bg-slate-700 hidden md:flex items-center justify-center"
+  >
+    {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+  </Button>
+      {/* Avatar and name */}
+      <div className={`flex flex-col items-center transition-all duration-300 ${isCollapsed ? 'mt-6' : 'mt-1'} mb-4`}>
+    <Link href={`/${creator?.username || user?.username}`} className="flex flex-col items-center">
+      {renderAvatar()}
+      {!isCollapsed && (
+        <div className="text-center mt-2">
+          <div className="text-white font-semibold">{creator?.name || user?.name}</div>
+          <div className="text-pink-400">@{creator?.username || user?.username}</div>
         </div>
+      )}
+    </Link>
+  </div>
 
-
-        <nav className="space-y-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <div 
-                key={item.id} 
-                className="relative"
-                onMouseEnter={() => setHoveredItem(item.id)}
-                onMouseLeave={() => setHoveredItem(null)}
-              >
-                <Link href={item.href}>
-                  <button
-                   
-                    className={`w-full ${isCollapsed ? 'justify-center px-2' : 'justify-start px-4'} py-3 rounded-2xl text-center flex flex-row transition-all duration-300 ${getButtonStyles(isActive)}`}
-                  >
-                    <Icon className={`w-5 h-5 ${isCollapsed ? 'mr-0' : 'mr-3'} transition-all duration-300`} />
-                    {!isCollapsed && (
-                      <>
-                        <span className="font-medium opacity-100 transition-opacity duration-300">{item.label}</span>
-                        {isActive && (
-                          <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                        )}
-                      </>
-                    )}
-                    {isCollapsed && isActive && (
-                      <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                    )}
-                  </button>
-                </Link>
-                
-                {/* Hover tooltip for collapsed state */}
-                {isCollapsed && hoveredItem === item.id && (
-                  <div className="absolute left-16 top-1/2 transform -translate-y-1/2 opacity-100 bg-gray-800 text-white text-sm rounded-lg px-3 py-2 whitespace-nowrap shadow-lg z-50 pointer-events-none">
-                    {item.label}
-                  </div>
-                )}
-                
-              </div>
-            );
-          })}
-          {session?.user?.creator && (
+      {/* Menu */}
+      <nav className="flex-1 flex flex-col space-y-1">
+    {menuItems.map(item => {
+      const Icon = item.icon;
+      const isActive = pathname === item.href;
+      return (
+        <Link key={item.id} href={item.href}>
+        <button
+         
+          className={`w-full ${isCollapsed ? 'justify-center px-2' : 'justify-start px-4'} py-3 rounded-2xl text-center flex flex-row transition-all duration-300 ${getButtonStyles(isActive)}`}
+        >
+          <Icon className={`w-5 h-5 ${isCollapsed ? 'mr-0' : 'mr-3'} transition-all duration-300`} />
+          {!isCollapsed && (
+            <>
+              <span className="font-medium opacity-100 transition-opacity duration-300">{item.label}</span>
+            </>
+          )}
+        </button>
+      </Link>
+      );
+    })}
+    {session?.user?.creator && (
           <div className="relative mt-2 mb-20"
             onMouseEnter={() => setHoveredItem('upload')}
             onMouseLeave={() => setHoveredItem(null)}
@@ -375,97 +216,43 @@ export const Sidebar = ({ onCollapseChange, session, creators, isSidebarOpen,
             )}
           </div>
         )}
-        <div
-  className={`border-t border-gray-700 ${isCollapsed ? 'mt-auto' : ''} `}
-  onMouseEnter={() => setHoveredItem('signout')}
-  onMouseLeave={() => setHoveredItem(null)}
+  </nav>
+
+      {/* Sign out */}
+      <button
+    onClick={handleSignOut}
+    className={`flex items-center gap-2 mt-4 w-full cursor-pointer ${isCollapsed ? 'justify-center px-2 py-2' : 'justify-start px-4 py-3'} rounded-full text-white hover:bg-red-500/40 transition duration-200`}
+  >
+    <LogOut className="w-5 h-5" />
+    {!isCollapsed && <span>Sign Out</span>}
+  </button>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile sidebar */}
+      <aside
+  className={`fixed top-0 right-0 h-screen z-40 w-3/4 max-w-[75vw]
+    bg-gradient-to-b from-slate-900/80 via-purple-900/70 to-slate-900/90
+    backdrop-blur-xl border-l border-white/10 shadow-2xl p-4
+    transform transition-transform
+    ${isSidebarOpen ? "translate-x-0" : "translate-x-full"} md:hidden`}
 >
-          <button
-            onClick={handleSignOut}
-            className={`flex items-center gap-2 mt-2 w-full cursor-pointer ${
-              isCollapsed ? 'justify-center px-2 py-2' : 'justify-start px-4 py-3'
-            } rounded-full text-white hover:bg-red-500/40 transition duration-200`}
-          >
-            <LogOut className="w-5 h-5" />
-            {!isCollapsed && <span className="ml-1">Sign Out</span>}
-          </button>
+  <button className="absolute top-4 left-4" onClick={() => setIsSidebarOpen(false)}>
+    <X />
+  </button>
+  {renderSidebarContent()}
+</aside>
 
-          {/* Tooltip when collapsed */}
-          {isCollapsed && hoveredItem === 'signout' && (
-            <div className="absolute left-14 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-sm px-3 py-1 rounded-md shadow-md z-50 pointer-events-none whitespace-nowrap">
-              Sign Out
-            </div>
-          )}
-        </div>
-          
-          {/* Lisää myöhemmin tämä testaa eka influenssereilla
-          {session?.user && !session.user.creator && (
-            <div 
-              className="relative"
-              onMouseEnter={() => setHoveredItem('apply-creator')}
-              onMouseLeave={() => setHoveredItem(null)}
-            >
-              <Link href="/apply-creator">
-                <Button
-                  variant="ghost"
-                  className={`w-full ${isCollapsed ? 'justify-center px-2' : 'justify-start px-4'} py-3 rounded-2xl transition-all duration-300 ${getButtonStyles(pathname === "/apply-creator")}`}
-                >
-                  <UserCheck className={`w-5 h-5 ${isCollapsed ? 'mr-0' : 'mr-3'} transition-all duration-300`} />
-                  {!isCollapsed && (
-                    <>
-                      <span className="font-medium opacity-100 transition-opacity duration-300">Apply Creator</span>
-                      {pathname === "/apply-creator" && (
-                        <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                      )}
-                    </>
-                  )}
-                  {isCollapsed && pathname === "/apply-creator" && (
-                    <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                  )}
-                </Button>
-              </Link>
-              
-              
-              {isCollapsed && hoveredItem === 'apply-creator' && (
-                <div className="absolute left-16 top-1/2 transform -translate-y-1/2 opacity-100 bg-gray-800 text-white text-sm rounded-lg px-3 py-2 whitespace-nowrap shadow-lg z-50 pointer-events-none">
-                  Apply Creator
-                </div>
-              )}
-            </div>
-          )}
-          */}
-        </nav>
-
-        {/* Upload Content Button */}
-        
-        {/* Sign Out Button */}
-        
-        </>
-      ) : (
-        <>
-        {/* Home link for non-authenticated users */}
-        <Link href="/home">
-          <Button
-            variant="ghost"
-            className={`w-full ${isCollapsed ? 'justify-center px-2' : 'justify-start px-4'} py-3 rounded-2xl transition-all duration-300 ${getButtonStyles(pathname === "/home")}`}
-          >
-            <Home className={`w-5 h-5 ${isCollapsed ? 'mr-0' : 'mr-3'} transition-all duration-300`} />
-            {!isCollapsed && (
-              <>
-                <span className="font-medium opacity-100 transition-opacity duration-300">Home</span>
-                {pathname === "/home" && (
-                  <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                )}
-              </>
-            )}
-            {isCollapsed && pathname === "/home" && (
-              <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            )}
-          </Button>
-        </Link>
-        </>
-      )}
-    </aside>
-    
+      {/* Desktop sidebar */}
+      <aside className={`hidden md:flex flex-col fixed top-0 left-0 h-screen z-40 bg-gradient-to-b from-slate-900/80 via-purple-900/70 to-slate-900/90
+    backdrop-blur-xl border-r border-white/10 shadow-2xl p-4 transition-all ${isCollapsed ? "w-20" : "w-72"}`}>
+        <Button onClick={toggleCollapse} className="absolute -right-3 top-6 md:flex hidden w-6 h-6">
+          {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+        </Button>
+        {renderSidebarContent()}
+      </aside>
+    </>
   );
 };

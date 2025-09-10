@@ -8,6 +8,7 @@ import { useEffect, useState, useRef } from "react";
 import creatorservice from "@/app/services/creatorservice";
 import { Skeleton } from "@/components/ui/skeleton";
 import SignUpModal from "@/components/SignupModal";
+import { ChevronLeft } from "lucide-react";
 
 interface AppProps {
   creators: Creator[];
@@ -206,6 +207,14 @@ export default function App({ creators, users, session, posts, postId }: AppProp
   const viewingUser = session?.user
   return (
     <div className="max-w-4xl mx-auto py-8">
+       <div className="md:hidden">
+        <button 
+          onClick={() => window.history.back()} 
+          className="flex items-center gap-2 text-white"
+        >
+          <ChevronLeft className="w-6 h-6"/>
+        </button>
+      </div>
       {!loading ? (
         <>
           {joinModalOpen && creator && (

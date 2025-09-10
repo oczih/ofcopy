@@ -1,8 +1,13 @@
+import React from "react";
 
-export default function Insights() {
-    return (
-        <div>
+import  App from "./InsightsPage"
+import { fetchPageData } from "@/lib/fetchDataPage";
 
-        </div>
-    )
+export default async function Page() {
+  const { creators, users, safeSession } = await fetchPageData();
+
+  return (
+      <App creators={creators} users={users} session={safeSession} />
+    
+  );
 }

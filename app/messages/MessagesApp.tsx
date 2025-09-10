@@ -47,6 +47,7 @@ export default function ChatApp({ session, users }: AppProps) {
   const CACHE_TTL = 15 * 60 * 1000;
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
+  const [chatsLoading, setChatsLoading] = useState(true)
   //const [isPriceModalOpen, setIsPriceModalOpen] = useState(false)
   const router = useRouter();
   useEffect(() => {
@@ -65,6 +66,8 @@ export default function ChatApp({ session, users }: AppProps) {
         setChats(userChats);
       } catch (err) {
         console.error(err);
+      }finally {
+        setChatsLoading(false)
       }
     };
   
@@ -113,7 +116,6 @@ export default function ChatApp({ session, users }: AppProps) {
   
     void loadMessages();
   }, [currentChatIdentifier]);
-
   const resolveAvatarUrl = useCallback(
     async (avatarKey: string | null | undefined): Promise<string> => {
       if (!avatarKey) return "/default-avatar.png";
@@ -122,6 +124,7 @@ export default function ChatApp({ session, users }: AppProps) {
         return avatarKey;
       }
   
+      // Access the cache once directly
       const cached = urlCache[avatarKey];
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
         return cached.url;
@@ -148,8 +151,9 @@ export default function ChatApp({ session, users }: AppProps) {
   
       return "/default-avatar.png";
     },
-    [urlCache, CACHE_TTL]
+    [CACHE_TTL] // ✅ only depends on stable TTL
   );
+  
   const [mediaUrlCache, setMediaUrlCache] = useState<Record<string, { url: string; timestamp: number }>>({});
   const [messageMediaUrls, setMessageMediaUrls] = useState<Record<string, string>>({});
   const resolveMediaUrl = useCallback(
@@ -477,7 +481,28 @@ export default function ChatApp({ session, users }: AppProps) {
   
               {/* Conversations List */}
               <div className="overflow-y-auto flex-1 p-4">
-                {chats.length > 0 ? (
+                {chatsLoading ? (<div className="space-y-4">
+    {Array.from({ length: 6 }).map((_, index) => (
+      <div
+        key={index}
+        className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4"
+      >
+        {/* Avatar Skeleton */}
+        <Skeleton className="w-14 h-14 rounded-full bg-gray-300/20" />
+
+        {/* Text Skeletons */}
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-4 w-32 rounded bg-gray-300/20" /> {/* Name */}
+            <Skeleton className="h-3 w-10 rounded bg-gray-300/20" /> {/* Time */}
+          </div>
+          <Skeleton className="h-3 w-48 rounded bg-gray-300/20" /> {/* Last message */}
+        </div>
+      </div>
+    ))}
+  </div>) 
+                :
+                chats.length > 0 ? (
                   <div className="space-y-2">
                     {chats.map(chat => {
                       const lastMessage = messages

@@ -61,6 +61,7 @@ export async function POST(request: NextRequest, context: unknown) {
             googleId: user.googleId || null,
             avatarKey: application.profilePic || undefined,
             oauthProvider: user.oauthProvider,
+            creatorCreatedAt: new Date(),    // set creation date to now
             oauthId: user.oauthId || undefined,
             gender: application.gender,    // make sure your application has this field
             lastUsernameChange: user.lastUsernameChange || undefined,
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest, context: unknown) {
             user: user._id,
             totalEarnings: 0,
             currentBalance: 0,
+            country: application.country
           });
         }
       }

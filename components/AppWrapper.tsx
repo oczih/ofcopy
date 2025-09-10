@@ -89,39 +89,64 @@ export default function AppWrapper({
 
     fetchAvatarUrl();
   }, [avatarKey]);
-
+  const PUBLIC_ROUTES = [
+    'tos',
+    'privacy',
+    'child-protection',
+    'anti-slavery',
+    'guidelines',
+    'dmca',
+    'cookiepolicy',
+    'login',
+    'signup',
+    'verify',
+    'forgot-password',
+    '/', // homepage
+    'about', // add any other public pages you might have
+  ];
+  const currentRoute = pathname === "/" ? "/" : pathname.split("/")[1];
+  const isPublicRoute = PUBLIC_ROUTES.includes(currentRoute);
   return (
     <div className="min-h-screen w-full bg-[#3b0364] relative overflow-hidden">
       {/* Sidebar Overlay for Mobile */}
       
       {/* Sidebar */}
-      <Sidebar
-        onCollapseChange={setSidebarCollapsed}
-        creators={creators}
-        users={users}
-        session={session}
-        isSidebarOpen={isSidebarOpen}
-        setIsSidebarOpen={setIsSidebarOpen}
-      />
-        {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-20 md:hidden"
-          onClick={() => setIsSidebarOpen(false)}
+      {!isPublicRoute && (
+      <>
+        <Sidebar
+          onCollapseChange={setSidebarCollapsed}
+          creators={creators}
+          users={users}
+          session={session}
+          isSidebarOpen={isSidebarOpen}
+          setIsSidebarOpen={setIsSidebarOpen}
         />
-      )}
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-20 md:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+      </>
+    )}
 
       {/* Main content */}
       <div
-        className={`transition-all duration-300 ${
-          sidebarCollapsed ? "md:ml-20" : "md:ml-72"
-        }`}
-      >
+  className={`transition-all duration-300 ${
+    isPublicRoute
+      ? "md:ml-0"      // no margin on homepage
+      : sidebarCollapsed
+      ? "md:ml-20"
+      : "md:ml-72"
+  }`}
+>
         {/* Mobile Bottom Hotbar */}
-        <div
-    className={`fixed bottom-0 left-0 w-full bg-slate-900/90 border-t border-white/10 
-      flex justify-around items-center py-2 md:hidden z-30
-      ${isSidebarOpen || hideHotbar ? "hidden" : "flex"}`} // hide when chat open
-  >
+        {!isPublicRoute && (
+         <div
+         className={`fixed bottom-0 left-0 w-full bg-slate-900/90 border-t border-white/10 
+           flex justify-around items-center py-2 md:hidden z-30
+           ${isSidebarOpen || hideHotbar ? "hidden" : "flex"}`}
+       >
           <Link href="/home">
             <Home className="w-6 h-6 text-white" />
           </Link>
@@ -172,7 +197,7 @@ export default function AppWrapper({
             )}
           </button>
         </div>
-
+        )}
         {children}
       </div>
     </div>

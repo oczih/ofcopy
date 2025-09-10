@@ -7,28 +7,17 @@ export default {
     "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
   ],
+  
   theme: {
     extend: {
       colors: {
-        // Using CSS custom properties for Tailwind 4
         background: "var(--color-background)",
         foreground: "var(--color-foreground)",
         primary: "var(--color-primary)",
-        
         "primary-glow": "var(--color-primary-glow)",
         accent: "var(--color-accent)",
         "muted-foreground": "var(--color-muted-foreground)",
         border: "var(--color-border)",
-      },
-      animation: {
-        float: "float 6s ease-in-out infinite",
-        scaleIn: "caleIn 0.6s ease-out",
-        glow: "glow 2s ease-in-out infinite alternate",
-        "slide-in-left": "slideInLeft 0.8s ease-out forwards",
-        "slide-in-right": "slideInRight 0.8s ease-out forwards",
-        "slide-up": "slideUp 0.8s ease-out forwards",
-        "scale-in": "scaleIn 0.6s ease-out forwards",
-        "floating-animation": "float 8s ease-in-out infinite",
       },
       keyframes: {
         float: {
@@ -55,6 +44,26 @@ export default {
           from: { opacity: "0", transform: "scale(0.8)" },
           to: { opacity: "1", transform: "scale(1)" },
         },
+"accordion-down": {
+  from: { maxHeight: "0", opacity: 0, transform: "translateY(-10px)" },
+  to: { maxHeight: "1000px", opacity: 1, transform: "translateY(0)" },
+},
+"accordion-up": {
+  from: { maxHeight: "1000px", opacity: 1, transform: "translateY(0)" },
+  to: { maxHeight: "0", opacity: 0, transform: "translateY(-10px)" },
+}
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.3s ease-out",
+  "accordion-up": "accordion-up 0.3s ease-out",
+        float: "float 6s ease-in-out infinite",
+        scaleIn: "scaleIn 0.6s ease-out",
+        glow: "glow 2s ease-in-out infinite alternate",
+        "slide-in-left": "slideInLeft 0.8s ease-out forwards",
+        "slide-in-right": "slideInRight 0.8s ease-out forwards",
+        "slide-up": "slideUp 0.8s ease-out forwards",
+        "scale-in": "scaleIn 0.6s ease-out forwards",
+        "floating-animation": "float 8s ease-in-out infinite",
       },
     },
   },

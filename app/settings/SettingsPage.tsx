@@ -1,7 +1,7 @@
 'use client';
 
 import { FC, SVGProps, useEffect, useState } from "react";
-import {CreditCard, ChevronRight, Calendar, Mail, Trash2, Wallet, ExternalLink, AlertCircle, UserCog, Shield, Settings, Star } from "lucide-react";
+import {CreditCard, ChevronRight, Calendar, Mail, Trash2, Wallet, ExternalLink, AlertCircle, UserCog, Shield, Settings, Star, ChevronLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SubscriptionManagement from "@/components/SubscriptionManagement";
 import PaymentHistory from "@/components/PaymentHistory";
@@ -342,66 +342,80 @@ const validate = () => {
       return (
         <div className="space-y-8">
           {/* Sub Navigation */}
-          <div className="flex items-center space-x-2 mb-8 bg-white/5 rounded-2xl p-2 border border-white/10">
-            {accountSubTabs.map((subTab) => (
-              <button
-                key={subTab.id}
-                onClick={() => handleSubTabClick(subTab.id)}
-                className={`flex-1 px-6 py-3 rounded-xl cursor-pointer transition-all duration-300 font-medium text-sm cursor-pointer ${
-                  activeSubTab === subTab.id
-                    ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg scale-105"
-                    : "text-gray-400 hover:text-white hover:bg-white/10"
-                }`}
-              >
-                {subTab.label}
-              </button>
-            ))}
-          </div>
+          <div className="flex gap-2 overflow-x-auto md:overflow-x-visible mb-8 bg-white/5 rounded-2xl p-1 md:p-2 border border-white/10 scrollbar-hide">
+  {accountSubTabs.map((subTab) => (
+    <button
+      key={subTab.id}
+      onClick={() => handleSubTabClick(subTab.id)}
+      className={`flex-shrink-0 px-4 sm:px-6 py-2 sm:py-3 rounded-xl cursor-pointer transition-all duration-300 font-medium text-xs sm:text-sm whitespace-nowrap
+        ${
+          activeSubTab === subTab.id
+            ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg scale-105"
+            : "text-gray-400 hover:text-white hover:bg-white/10"
+        }`}
+    >
+      {subTab.label}
+    </button>
+  ))}
+</div>
 
           {activeSubTab === "info" && (
-            <div className="space-y-8">
-              <div className="text-center">
-                <h3 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-3">
-                  Account Information
-                </h3>
-                <p className="text-gray-400 text-lg">View and update your account details</p>
-              </div>
+  <div className="space-y-6 md:space-y-8 px-4 md:px-0">
+    {/* Header */}
+    <div className="text-center">
+      <h3 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-2 md:mb-3">
+        Account Information
+      </h3>
+      <p className="text-gray-400 text-sm md:text-lg">
+        View and update your account details
+      </p>
+    </div>
 
-              <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-3xl p-8 border border-white/20 shadow-2xl backdrop-blur-xl">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="group p-6 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 -105">
-                    <div className="flex items-center space-x-4">
-                      <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
-                        <Mail className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-gray-400 text-sm font-medium mb-1">Email Address</p>
-                        <p className="text-white font-semibold text-lg">{session?.user.email}</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="group p-6 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 -105">
-                    <div className="flex items-center space-x-4">
-                      <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl shadow-lg">
-                        <Calendar className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-gray-400 text-sm font-medium mb-1">Member Since</p>
-                        <p className="text-white font-semibold text-lg">
-                          {new Date(session?.user?.createdAt ?? '').toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+    {/* Info Cards */}
+    <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-2xl md:rounded-3xl p-4 md:p-8 border border-white/20 shadow-2xl backdrop-blur-xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+        {/* Email Card */}
+        <div className="group p-4 md:p-6 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300">
+  <div className="flex items-center space-x-3 md:space-x-4">
+    <div className="p-2 md:p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg flex-shrink-0">
+      <Mail className="w-5 h-5 md:w-6 md:h-6 text-white" />
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="text-gray-400 text-xs md:text-sm font-medium mb-1 truncate">
+        Email Address
+      </p>
+      <p className="text-white font-semibold text-sm md:text-lg break-words truncate">
+        {session?.user.email}
+      </p>
+    </div>
+  </div>
+</div>
+
+        {/* Member Since Card */}
+        <div className="group p-4 md:p-6 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300">
+  <div className="flex items-center space-x-3 md:space-x-4">
+    <div className="p-2 md:p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl shadow-lg flex-shrink-0">
+      <Calendar className="w-5 h-5 md:w-6 md:h-6 text-white" />
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="text-gray-400 text-xs md:text-sm font-medium mb-1 truncate">
+        Member Since
+      </p>
+      <p className="text-white font-semibold text-sm md:text-lg truncate">
+        {new Date(session?.user?.createdAt ?? '').toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })}
+      </p>
+    </div>
+  </div>
+</div>
+      </div>
+    </div>
+  </div>
+)}
+
 
 {activeSubTab === "password" && !(session?.user as User).password && (
   <div className="space-y-8">
@@ -813,13 +827,15 @@ const validate = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
       {/* Animated Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
-      </div>
+      
 
       <main className="flex-1 max-w-7xl mx-auto px-6 py-12 relative z-10">
+      <button 
+          onClick={() => window.history.back()} 
+          className="flex items-center gap-2 text-white"
+        >
+          <ChevronLeft className="w-6 h-6"/>
+        </button>
         <div className="bg-white/5 backdrop-blur-2xl rounded-[2rem] border border-white/20 shadow-2xl p-10 relative overflow-hidden">
           {/* Subtle inner glow */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-[2rem] pointer-events-none"></div>

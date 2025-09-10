@@ -16,7 +16,7 @@ export type User = {
     oauthProvider: string;
     subscriptions?: Subscription[]
     notifications?: Notification[]
-    location?: string;
+    location?: UserLocation;
     creator?: boolean
     following: Following[];
     comments: Comment[];
@@ -31,6 +31,17 @@ export type User = {
     wallet: number;
     paymentmethods?: PaymentMethod[];
     creatorApplication?: CreatorApplicationType[];
+  }
+  export type UserLocation = {
+    ip: string;
+    country: string;
+    region: string;
+    city: string;
+    latitude: string| null;
+    longitude: string| null;
+    utcOffset: number; 
+    timezone: string;
+    currency: string;
   }
   export type PaymentMethod = {
     provider: string;
@@ -84,6 +95,8 @@ export type Creator = {
     currentBalance: number;
     following: Following[];
     purchases: Purchase[];
+    creatorCreatedAt: Date;
+    country: string;
   }
 
   export type NotificationType = 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comment' | 'like' | 'newfollower'| 'promotion' | 'purchase';

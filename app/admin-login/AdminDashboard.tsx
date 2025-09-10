@@ -92,7 +92,7 @@ useEffect(() => {
   
       if (reason) body.reason = reason;
   
-      const response = await fetch(`/api/admin/applications/${id}`, {
+      const response = await fetch(`/api/creators/apply/${id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

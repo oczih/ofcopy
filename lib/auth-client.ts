@@ -5,6 +5,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import OFUser from "@/app/models/usermodel";
 import { connectDB } from "@/lib/mongoose";
 import bcrypt from "bcryptjs";
+import { geolocation } from "@vercel/functions";
+import { headers } from "next/headers";
 
 async function generateUniqueUsername(baseUsername: string): Promise<string> {
   let username = baseUsername.toLowerCase().replace(/\s+/g, "_");
@@ -170,6 +172,29 @@ export const authOptions: NextAuthOptions = {
           oauthProvider: user.oauthProvider,
         };
       }
+      try {
+        const geo = geolocation(new Request("http://dummy", { headers: await headers() }));
+
+        const countryToCurrency: Record<string, string> = {
+          US: "USD",
+          GB: "GBP",
+          DE: "EUR",
+          IN: "INR",
+          JP: "JPY",
+        };
+
+        token.geo = {
+          country: geo.country ?? "",
+          region: geo.region ?? "",
+          city: geo.city ?? "",
+          latitude: geo.latitude ?? null,
+          longitude: geo.longitude ?? null,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          currency: geo.country ? countryToCurrency[geo.country] ?? "" : "",
+        };
+      } catch (e) {
+        console.error("Geolocation failed:", e);
+      }
       return token;
     },
 
@@ -210,7 +235,45 @@ export const authOptions: NextAuthOptions = {
           session.user.paymentmethods = user.paymentmethods ?? [];
           session.user.oauthProvider = token.oauthProvider as string;
         }
-        
+        try {
+          const geo = geolocation(new Request("http://dummy", { headers: await headers() }));
+          const reqHeaders = await headers(); // ✅ headers() is synchronous
+const ip =
+  reqHeaders.get("x-forwarded-for")?.split(",")[0] ||
+  reqHeaders.get("x-real-ip") ||
+  "unknown";
+          const countryToCurrency: Record<string, string> = {
+            US: "USD",
+            GB: "GBP",
+            DE: "EUR",
+            IN: "INR",
+            JP: "JPY",
+          };
+
+          session.user.location = {
+            ip,
+            country: geo.country ?? "",
+            region: geo.region ?? "",
+            city: geo.city ?? "",
+            latitude: geo.latitude ?? null,
+            longitude: geo.longitude ?? null,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            utcOffset: -new Date().getTimezoneOffset() / 60, 
+            currency: geo.country ? countryToCurrency[geo.country] ?? "" : "",
+          };
+        } catch (err) {
+          console.error("Geolocation failed:", err);
+          session.user.location = {
+            ip: "unknown",
+            country: "",
+            region: "",
+            city: "",
+            latitude: null,
+            longitude: null,
+            timezone: "",
+            currency: "",
+          };
+        }
         session.accessToken = token.accessToken as string | undefined;
         return session;
       } catch (err) {

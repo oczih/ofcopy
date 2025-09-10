@@ -2,13 +2,15 @@
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { MoreHorizontal, Heart, MessageCircle } from "lucide-react";
+import { MoreHorizontal, Heart, MessageCircle, LockKeyhole } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { Session } from "next-auth";
 import { Comment, Creator, Post, User} from "../app/types";
 import { Skeleton } from "@/components/ui/skeleton"
 import MediaRenderer from "./MediaRenderer";
+import PaymentForm from "./PaymentForm";
+import { createPortal } from "react-dom";
 
 
 // Dynamically import emoji-picker-react to avoid SSR issues
@@ -39,7 +41,7 @@ export function CreatorPostCard({
   // Restriction logic
   const isFollowersOnly = post.viewableFor === "followers";
 const isSubscribersOnly = post.viewableFor === "subscribers";
-
+const [paymentModal, setPaymentModal] = useState(false)
 function resolveImageUrl(url: string) {
   if (!url) return null;
   if (url.startsWith("http")) return url; // signed URL is absolute
@@ -51,19 +53,44 @@ function resolveImageUrl(url: string) {
   
   // Check if the post creator is the same as the viewing creator
   const [canView, setCanView] = useState(false);
+  const PortalModal = ({ children, open }: { children: React.ReactNode; open: boolean }) => {
+    if (!open || typeof document === "undefined") return null;
+    return createPortal(children, document.body);
+  };
   useEffect(() => {
     const isFollowersOnly = post.viewableFor === "followers";
     const isSubscribersOnly = post.viewableFor === "subscribers";
     const isViewingUserOwner = String(creator.user) === String(session?.user?._id);
-    
-    setCanView(
+  
+    // Default visibility rules
+    let canUserView =
       isViewingUserOwner ||
       (!isFollowersOnly && !isSubscribersOnly) ||
       status === "follower" ||
-      status === "subscriber"
-    );
-  }, [status, session?.user?._id, creator.user, post.viewableFor]);
+      status === "subscriber";
+  
+    // If post has a price, restrict unless owner (or later: unlocked)
+    if (post.price && post.price > 0 && !isViewingUserOwner) {
+      canUserView = false; // or check against a `hasPurchased(post)` function
+    }
+  
+    setCanView(canUserView);
+  }, [status, session?.user?._id, creator.user, post.viewableFor, post.price]);
   // Like and comment modal state
+  useEffect(() => {
+    if (!paymentModal) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, [paymentModal]);
+  
+  // close on Escape
+  useEffect(() => {
+    if (!paymentModal) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setPaymentModal(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [paymentModal]);
   const [commentOpen, setCommentOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false)
   const [commentText, setCommentText] = useState("");
@@ -71,7 +98,7 @@ function resolveImageUrl(url: string) {
   const [commentModalOpen, setCommentModalOpen] = useState<string | null>(null);
   const [likes, setLikes] = useState(post.likes ?? []);
   const [comments, setComments] = useState(post.comments ?? []);
-
+  
   const [imageLoading, setImageLoading] = useState(true);
 
   const handleLike = async (post: Post) => {
@@ -426,6 +453,8 @@ useEffect(() => {
     <header className="flex flex-wrap items-center gap-3 sm:gap-4 px-5 py-4 border-b border-white/10 bg-gradient-to-r from-slate-900/80 to-purple-900/80">
     <div className="flex items-center gap-4 flex-1 min-w-0">
   {/* Avatar + link */}
+  <div className="flex flex-col">
+    <div className="flex flex-row gap-5">
   <Link href={`/${creator.username}`} className="shrink-0">
     <Avatar className="w-12 h-12 ring-2 ring-gray-800 hover:ring-indigo-500 transition">
       {imageLoading ? (
@@ -454,7 +483,11 @@ useEffect(() => {
       @{creator.username}
     </span>
   </div>
-
+  </div>
+  <div className="mt-5">
+        <div className="text-white text-sm whitespace-pre-wrap break-words">{post.caption}</div>
+      </div> 
+      </div>
   {/* Repost info */}
   {session?.user?.following?.some(f => f.creatorId === post.creator) && post.isRepost && post.originalContentId && (
     <div className="ml-auto text-xs text-gray-400 flex items-center space-x-1 truncate">
@@ -465,25 +498,25 @@ useEffect(() => {
     </div>
   )}
 </div>
-      
+<span className="text-white text-sm">
+    {timeAgo(post.createdAt)}
+  </span>
       <div className="flex flex-col items-end gap-1 text-xs text-gray-400">
         
         
         <div className="relative">
-        <Button
-          variant="ghost"
+        <button
           onClick={handleModalOpen}
-          size="icon"
-          className="text-gray-400 hover:text-pink-400 cursor-pointer"
+          className="text-white rounded-full p-3 transition-all duration-200 hover:bg-white/10 cursor-pointer"
         >
           <MoreHorizontal className="w-5 h-5" />
-        </Button>
+        </button>
         {modalOpen && !session?.user?.creator && !canDeletePost() && (
   <div className="absolute right-0 top-full mt-2 w-48 max-w-[90vw] overflow-hidden text-ellipsis bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-100 opacity-100 animate-fade-in z-30">
     <Link href={`/${creator.username}`}>
-      <Button variant="ghost" className="w-full justify-start text-left cursor-pointer">
+      <button className="w-full justify-start text-left cursor-pointer">
         Go to creator profile
-      </Button>
+      </button>
     </Link>
   </div>
 )}
@@ -516,7 +549,25 @@ useEffect(() => {
     </Button>
   </div>
 )}
-
+<PortalModal open={paymentModal}>
+  <div
+    className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+    onClick={() => setPaymentModal(false)} // click backdrop to close
+    aria-modal="true"
+    role="dialog"
+  >
+    <div className="w-full max-w-xl mx-auto" onClick={(e) => e.stopPropagation()}>
+      <PaymentForm
+        creator={creator}
+        avatarUrl={avatarUrl}
+        onClose={() => setPaymentModal(false)}
+        open={paymentModal}
+        price={post.price}
+        type="post"
+      />
+    </div>
+  </div>
+</PortalModal>
       </div>
       </div>
     </header>
@@ -537,6 +588,7 @@ useEffect(() => {
     isFollowersOnly={isFollowersOnly}
     handleFollow={handleFollow}
     creator={creator}
+    setPaymentModal={setPaymentModal}
    />
   )}
 
@@ -545,54 +597,58 @@ useEffect(() => {
       {isSubscribersOnly ? "Subscribers only" : "Followers only"}
     </Badge>
   )}
-</div>
-
-
-
-    {/* Caption */}
-    {canView && (
-      <div className="px-5 py-3 space-y-1">
-        <div className="text-white text-sm whitespace-pre-wrap break-words">{post.caption}</div>
-
-  <span className="text-white text-sm">
-    {timeAgo(post.createdAt)}
-  </span>
-      </div>
-    )}
+</div> 
 
     {/* Footer */}
-    {canView ? <div className="flex flex-wrap gap-2 items-center justify-between px-5 py-3 border-t border-white/10 bg-slate-950/80">
-      <div className="flex gap-2">
-      <Button
-            variant="ghost"
-            size="icon"
-            className="text-gray-400 hover:text-pink-400 cursor-pointer"
-            onClick={() => !isLikedByCurrentUser ? handleLike(post) : handleUnlike(post)}
-          >
-            <Heart
+    {canView ? (
+  <div className="flex flex-row justify-between">
+    {/* Left side: Likes + Comments */}
+    <div className="flex flex-col gap-2 items-left px-5 py-3 border-t border-white/10">
+      <div className="flex flex-row gap-5">
+        {/* Like button */}
+        <button
+          className="text-gray-400 hover:text-pink-400 cursor-pointer"
+          onClick={() =>
+            !isLikedByCurrentUser ? handleLike(post) : handleUnlike(post)
+          }
+        >
+          <Heart
             className={`w-5 h-5 ${
-              
               isLikedByCurrentUser
                 ? "text-pink-400 fill-pink-400"
                 : "text-gray-400"
             }`}
           />
-          </Button>
-        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-blue-400 hover:bg-grey cursor-pointer" onClick={handleToggleComment}>
-          <MessageCircle className="w-5 h-5" />
-        </Button>
-      </div>
-      <div className="flex gap-3 text-xs text-gray-400 items-center">
-        <span>{likes.length} Likes</span>
+        </button>
+
+        {/* Comment button */}
         <button
-         onClick={handleToggleComment}
-          className="hover:underline cursor-pointer"
+          className="text-gray-400 hover:text-blue-400 hover:bg-grey/10 transition-all duration-200 cursor-pointer"
+          onClick={handleToggleComment}
         >
-          {comments.length} Comments
+          <MessageCircle className="w-5 h-5" />
         </button>
       </div>
+
+      {/* Counts */}
+      <div className="flex gap-3 text-xs text-gray-400 flex-row">
+        <span>{likes.length > 0 && `${likes.length} Likes`}</span>
+        <span>{comments.length > 0 && `${comments.length} Comments`}</span>
+      </div>
     </div>
-      : ""}
+
+    {/* Right side: Price */}
+    <div className="flex flex-row items-center gap-1 px-4">
+      {post.price > 0 ? (
+        <>
+          <LockKeyhole className="w-4 h-4 text-gray-400" />
+          <span className="text-white text-sm">${post.price}</span>
+        </>
+      ) : null}
+    </div>
+  </div>
+) : null}
+
     {/* Comments Section */}
     {(commentOpen) && (
       <div className="w-full px-5 pb-4 mt-3 sm:mt-5 mb-3 sm:mb-5 space-y-3 sm:space-y-4 animate-fade-in-fast">

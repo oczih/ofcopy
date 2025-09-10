@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { CreatorPostCard } from './CreatorPostCard';
 import { useSession } from 'next-auth/react';
 import { resolveImageUrl } from './resolveImageUrl';
-import { Heart, Lock, Video, X } from 'lucide-react';
+import { ChevronLeft, Heart, Lock, Video, X } from 'lucide-react';
 import SignUpModal from './SignupModal';
 import { Session } from 'next-auth';
 import { createPortal } from 'react-dom';
@@ -401,6 +401,14 @@ export default function ProfileContent({
     />
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Profile Header */}
+        <div className="md:hidden">
+        <button 
+          onClick={() => window.history.back()} 
+          className="flex items-center gap-2 text-white"
+        >
+          <ChevronLeft className="w-6 h-6"/>
+        </button>
+      </div>
         <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 mb-8 border border-white/20">
           <div className="flex flex-col lg:flex-row lg:items-start gap-8">
             {/* Left Column - Profile Image, Stats, and Subscribe Button */}

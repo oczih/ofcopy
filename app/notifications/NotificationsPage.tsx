@@ -5,6 +5,7 @@ import { Creator, Notification, User } from "../types";
 import { Session } from "next-auth";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Chip } from "@mui/material";
 
 // Utility to format relative time
 function timeAgo(date: Date) {
@@ -109,6 +110,7 @@ export default function App({ session, notifications, users, creators }: AppProp
   const categories = isCreator
     ? [
         { key: 'all', label: 'All' },
+        { key: 'sub', label: 'Subscriptions' },
         { key: 'newfollower', label: 'New Followers' },
         { key: 'tip', label: 'Tips' },
         { key: 'purchase', label: 'Purchases' },
@@ -172,19 +174,24 @@ const sortedNotifications = [...filteredNotifications].sort(
         </header>
 
         {/* Categories */}
-        <div className="flex flex-wrap gap-3">
-          {categories.map((cat) => (
-            <button
-              key={cat.key}
-              onClick={() => setSelectedCategory(cat.key)}
-              className={`px-5 py-2 rounded-full border transition-colors duration-200 cursor-pointer
-                ${selectedCategory === cat.key ? 'bg-white text-black border-white' : 'bg-white/5 text-white border-white/20 hover:border-white/40'}
-              `}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
+        <div className="flex gap-3 overflow-x-auto md:overflow-x-visible flex-nowrap md:flex-row scrollbar-hide">
+  {categories.map((cat) => (
+    <button
+      key={cat.key}
+      onClick={() => setSelectedCategory(cat.key)}
+      className={`
+        text-xs md:text-xl mb-2 text-white rounded-full border transition-colors duration-200 cursor-pointer
+        text-sm md:text-base
+        ${selectedCategory === cat.key 
+          ? 'bg-white/30 text-black border-white' 
+          : 'bg-white/5 text-white border-white/20 hover:border-white/40'
+        }
+      `}
+    >
+<Chip label={<span className="text-white">{cat.label}</span>} />
+    </button>
+  ))}
+</div>
 
         {/* Notifications */}
         <section className="w-full min-h-100 bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 shadow-lg">

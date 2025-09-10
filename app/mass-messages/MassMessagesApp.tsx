@@ -244,7 +244,7 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
     if (massMessages.length === 0) return;
   
     const loadMassMediaUrls = async () => {
-      const updatedUrls: Record<string, string> = { ...massMessageMediaUrls };
+      const updates: Record<string, string> = {};
   
       for (const msg of massMessages) {
         const keys = [
@@ -252,22 +252,33 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
           msg.video_key,
           msg.voice_key,
           msg.file_key,
-          msg.blurred_key
+          msg.blurred_key,
         ];
   
         for (const key of keys) {
-          if (key && !updatedUrls[key]) {
-            const url = await resolveMassMediaUrl(key);
-            if (url) updatedUrls[key] = url;
+          if (!key) continue;
+  
+          // ✅ check against prev cache, not current state
+          if (!massMessageMediaUrls[key] && !updates[key]) {
+            try {
+              const url = await resolveMassMediaUrl(key);
+              if (url) updates[key] = url;
+            } catch (err) {
+              console.error("Error resolving media key:", key, err);
+            }
           }
         }
       }
   
-      setMassMessageMediaUrls(updatedUrls);
+      // ✅ only update state if we got something new
+      if (Object.keys(updates).length > 0) {
+        setMassMessageMediaUrls(prev => ({ ...prev, ...updates }));
+      }
     };
   
     void loadMassMediaUrls();
-  }, [massMessages, resolveMassMediaUrl, massMessageMediaUrls]);
+  }, [massMessages, resolveMassMediaUrl]);
+  
   async function getChats({
     selectedCategories,
     users,

@@ -230,6 +230,7 @@ export default function App({creators }: AppProps ) {
                           alt={creator.name}
                           width={48}
                           height={48}
+                          onLoad={() => setLoading(false)}
                           className="w-12 h-12 rounded-full object-cover"
                         />
                         <div className="flex-1">

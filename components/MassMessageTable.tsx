@@ -111,59 +111,59 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls, setMassM
   return (
     <div className="w-full">
       {/* Enhanced Table Container */}
-      <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl shadow-2xl overflow-hidden border border-slate-200">
+      <div className="bg-white/10 rounded-xl shadow-2xl overflow-hidden border border-slate-200">
 
         {/* Table Container with Scroll */}
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gradient-to-r from-slate-100 to-slate-200">
+            <thead className="bg-white/10">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider border-b border-slate-300">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider border-b border-slate-300">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
                     Date
                   </div>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider border-b border-slate-300">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider border-b border-slate-300">
                   <div className="flex items-center gap-2">
                     <MessageSquare className="w-4 h-4" />
                     Message
                   </div>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider border-b border-slate-300">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider border-b border-slate-300">
                   <div className="flex items-center gap-2">
                     <Paperclip className="w-4 h-4" />
                     Media
                   </div>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider border-b border-slate-300">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider border-b border-slate-300">
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4" />
                     Price
                   </div>
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider border-b border-slate-300">
+                <th className="px-4 py-3 text-center text-xs font-semibold text-white uppercase tracking-wider border-b border-slate-300">
                   <div className="flex items-center justify-center gap-2">
                     <Send className="w-4 h-4" />
                     Sent
                   </div>
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider border-b border-slate-300">
+                <th className="px-4 py-3 text-center text-xs font-semibold text-white uppercase tracking-wider border-b border-slate-300">
                   <div className="flex items-center justify-center gap-2">
                     <Eye className="w-4 h-4" />
                     Viewed
                   </div>
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider border-b border-slate-300">
+                <th className="px-4 py-3 text-center text-xs font-semibold text-white uppercase tracking-wider border-b border-slate-300">
                   <div className="flex items-center justify-center gap-2">
                     <ShoppingCart className="w-4 h-4" />
                     Purchased
                   </div>
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider border-b border-slate-300">
+                <th className="px-4 py-3 text-center text-xs font-semibold text-white uppercase tracking-wider border-b border-slate-300">
                   Revenue
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider border-b border-slate-300">
+                <th className="px-4 py-3 text-center text-xs font-semibold text-white uppercase tracking-wider border-b border-slate-300">
                   Actions
                 </th>
               </tr>
@@ -175,14 +175,14 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls, setMassM
                 }`}>
                   {/* Date */}
                   <td className="px-4 py-3 border-b border-slate-200">
-                    <span className="text-sm font-medium text-slate-700">
+                    <span className="text-sm font-medium text-white">
                       {formatDate(msg.date)}
                     </span>
                   </td>
 
                   {/* Message Text */}
                   <td className="px-4 py-3 border-b border-slate-200 max-w-xs">
-                    <p className="text-sm text-slate-700 leading-relaxed break-words line-clamp-3">
+                    <p className="text-sm text-white leading-relaxed break-words line-clamp-3">
                       {msg.text}
                     </p>
                   </td>
@@ -230,7 +230,7 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls, setMassM
                   {/* Stats with Progress Bars */}
                   <td className="px-4 py-3 border-b border-slate-200 text-center">
                     <div className="flex flex-col items-center gap-1">
-                      <span className="text-sm font-semibold text-slate-700">{msg.sent}</span>
+                      <span className="text-sm font-semibold text-white">{msg.sent}</span>
                       <div className="w-full bg-slate-200 rounded-full h-1.5">
                         <div className="bg-blue-500 h-1.5 rounded-full" style={{width: '100%'}}></div>
                       </div>
@@ -239,7 +239,7 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls, setMassM
 
                   <td className="px-4 py-3 border-b border-slate-200 text-center">
                     <div className="flex flex-col items-center gap-1">
-                      <span className="text-sm font-semibold text-slate-700">{msg?.viewed.length}</span>
+                      <span className="text-sm font-semibold text-white">{msg?.viewed.length}</span>
                       <div className="w-full bg-slate-200 rounded-full h-1.5">
                         <div className="bg-orange-500 h-1.5 rounded-full" style={{width: `${(msg.viewed.length / msg.sent) * 100}%`}}></div>
                       </div>
@@ -249,7 +249,7 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls, setMassM
 
                   <td className="px-4 py-3 border-b border-slate-200 text-center">
                     <div className="flex flex-col items-center gap-1">
-                      <span className="text-sm font-semibold text-slate-700">{msg.purchased}</span>
+                      <span className="text-sm font-semibold text-white">{msg.purchased}</span>
                       <div className="w-full bg-slate-200 rounded-full h-1.5">
                         <div className="bg-green-500 h-1.5 rounded-full" style={{width: `${(msg.purchased.length / msg.sent) * 100}%`}}></div>
                       </div>
