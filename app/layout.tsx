@@ -45,7 +45,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SessionProviderWrapper>
           <ClientAppWrapper creators={creators} users={users} session={safeSession}>
             {children}
-            <Analytics />
+            {process.env.NODE_ENV === "production" && <Analytics />}
           </ClientAppWrapper>
         </SessionProviderWrapper>
       </body>
