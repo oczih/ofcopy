@@ -33,15 +33,15 @@ export type User = {
     creatorApplication?: CreatorApplicationType[];
   }
   export type UserLocation = {
-    ip: string;
-    country: string;
-    region: string;
-    city: string;
-    latitude: string| null;
-    longitude: string| null;
-    utcOffset: number; 
-    timezone: string;
-    currency: string;
+    ip?: string;
+    country?: string;
+    region?: string;
+    city?: string;
+    latitude?: string| null;
+    longitude?: string| null;
+    utcOffset?: number; 
+    timezone?: string;
+    currency?: string;
   }
   export type PaymentMethod = {
     provider: string;
@@ -278,6 +278,7 @@ export type SafeUser = Partial<
 export type MessageType = {
   id?: string; // optional if you want to store per-message IDs
   type: "text" | "photo" | "video" | "file" | "voice";
+  chat_id: string;
   sender_id: string | ObjectId;
   content?: string;             // plain text OR caption
   created_at: string;           // ISO string

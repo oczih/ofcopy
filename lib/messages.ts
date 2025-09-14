@@ -127,6 +127,7 @@ export async function sendMessage({
     video_key: data.video_key ?? undefined,
     voice_key: data.voice_key ?? undefined,
     price: data.price ?? undefined,
+    chat_id: data.chat_id ?? undefined,
     file_key: data.file_key ?? undefined,
     blurred_key: data.blurred_key ?? undefined,
     duration: data.duration ?? undefined,

@@ -25,6 +25,7 @@ export function subscribeToMessages(
             sender_id: row.sender_id,
             content: row.content,
             created_at: row.created_at,
+            chat_id: row.chat_id,
             type: row.image_key
               ? "photo"
               : row.video_key

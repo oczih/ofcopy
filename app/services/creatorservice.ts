@@ -58,6 +58,18 @@ const unfollowCreator = async (creatorId: string): Promise<void> => {
   }
 };
 
+const unSubscribe = async (creatorId: string): Promise<void> => {
+  try {
+    // Include API_BASE for consistency, with credentials if you need auth
+    await axios.delete(`${API_BASE}/api/creators/${creatorId}/subscribe`, {
+      withCredentials: true,
+    });
+  } catch (error) {
+    console.error('Error unsubscribing creator:', error);
+    throw new Error('Failed to unsubscribe creator');
+  }
+};
+
 const update = async (id: string, newData: Partial<Creator>): Promise<{ creator: Creator }> => {
   try {
     const response = await axios.put(`${PUBLIC_CREATORS_ENDPOINT}/${id}`, newData);
@@ -74,7 +86,8 @@ const creatorservice = {
   followCreator,
   unfollowCreator,
   update,
-  getCombined
+  getCombined,
+  unSubscribe
 };
 
 export default creatorservice

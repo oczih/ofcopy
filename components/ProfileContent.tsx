@@ -4,7 +4,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { Creator, MediaPost, Post, User } from '@/app/types';
-import SubscribeModal from '@/components/SubscribeModal';
 import creatorservice from '@/app/services/creatorservice';
 import { Skeleton } from "@/components/ui/skeleton"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -21,6 +20,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from "uuid";
 import { getChatsBetween } from '@/lib/messages';
+import PaymentForm from './PaymentForm';
 
 // Bio Modal Component
 const BioModal = ({ bio, creatorName }: { bio: string; creatorName: string }) => {
@@ -84,6 +84,8 @@ export default function ProfileContent({
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | Creator>(viewingUser);
   const [status, setStatus] = useState<'subscriber' | 'follower' | 'none'>(relationshipStatus);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'cancelled' | 'expired' | null>(null);
+  const [StopSubscribeModalOpen, SetStopSubscribeModal] = useState(false)
   // Cache for signed URLs with timestamps
   const [urlCache, setUrlCache] = useState<Record<string, { url: string; timestamp: number }>>({});
   const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
@@ -159,7 +161,17 @@ export default function ProfileContent({
   
     fetchAvatarUrl();
   }, [avatarKey, getSignedUrl]);
-
+  useEffect(() => {
+    if (!session?.user.subscriptions?.some(s => s.creatorId === creator?._id)) return;
+    
+    const subscription = session.user.subscriptions.find(
+      s => s.creatorId === creator?._id
+    );
+    if (!subscription) return;
+  
+    // Save status in state (active, cancelled, expired…)
+    setSubscriptionStatus(subscription.status);
+  }, [session, creator?._id]);
   // Post signed URLs - batch fetch and cache
   type SignedUrls = {
     signedUrl: string;
@@ -393,6 +405,107 @@ export default function ProfileContent({
     // 4. Navigate to messages page
     router.push("/messages");
   };
+  const handleStopSubscribe = async (creator: Creator) => {
+    if(!creator) return;
+    SetStopSubscribeModal(true)
+  }
+
+  type StopSubscribeProps= {
+    avatarUrl: string | null;
+    onClose: () => void;
+    creator: Creator | null;
+  }
+  function StopSubscribeModal({ creator, avatarUrl, onClose }: StopSubscribeProps
+  ) {
+    const [loading, setLoading] = useState(false);
+  
+    const handleConfirm = async () => {
+      try {
+        setLoading(true);
+        // 🔑 Call your unsubscribe API here
+        // await api.unsubscribe(creator._id);
+        if(!creator?._id) return null;
+        await creatorservice.unSubscribe(creator?._id)
+        onClose();
+      } catch (error) {
+        console.error("Failed to unsubscribe:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    const rightSubscription = session?.user.subscriptions?.find(s => s.creatorId === creator?._id)
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="relative w-full max-w-sm bg-white/10 border border-white/20 backdrop-blur-xl rounded-2xl p-6 text-center shadow-2xl">
+  
+          {/* Avatar */}
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={creator?.name || creator?.username || "Creator"}
+              className="w-20 h-20 mx-auto rounded-full border border-white/20 object-cover mb-4"
+            />
+          ) : (
+            <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center rounded-full bg-gray-400 text-white font-bold text-3xl">
+              {creator?.name?.charAt(0).toUpperCase() ||
+                creator?.username?.charAt(0).toUpperCase() ||
+                "U"}
+            </div>
+          )}
+  
+          <h2 className="text-xl font-bold text-white mb-2">Cancel Subscription</h2>
+          <p className="text-gray-300 mb-6">
+            Your subscription won&apos;t continue after 
+            <span className="font-semibold text-pink-400">
+            {rightSubscription?.nextBillingDate
+                ? new Date(rightSubscription.nextBillingDate).toLocaleDateString()
+                : "the next billing date"}
+
+          </span>
+          ?
+        </p>
+          <p className="text-gray-300 mb-6">
+            Are you sure you want to unsubscribe from 
+            <span className="font-semibold text-pink-400">
+             {" " + creator?.name || creator?.username || "this creator"}
+          </span>
+          ?
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <button
+            onClick={onClose}
+            className="flex-1 bg-gradient-to-r from-pink-500 cursor-pointer to-red-500 hover:from-pink-600 hover:to-red-600 text-white  px-4 py-2 rounded-xl font-semibold transition-colors duration-300"
+            disabled={loading}
+          >
+            Cancel
+          </button>
+
+          <button
+            onClick={handleConfirm}
+            disabled={loading}
+            className="flex-1  cursor-pointer  border-gray-400 text-gray-300  px-4 py-2 rounded-xl font-semibold hover:bg-gray-400/20 transition-colors duration-300"
+          >
+            {loading ? "Unsubscribing..." : "Confirm Unsubscribe"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+const subscription = session?.user?.subscriptions?.find(
+  s => s.creatorId === creator?._id
+);
+
+const daysLeft = subscription?.nextBillingDate
+  ? Math.ceil(
+      (new Date(subscription.nextBillingDate).getTime() - Date.now()) /
+      (1000 * 60 * 60 * 24)
+    )
+  : 0;
+  console.log(daysLeft)
   return (
     <div>
       <Toaster
@@ -409,6 +522,20 @@ export default function ProfileContent({
           <ChevronLeft className="w-6 h-6"/>
         </button>
       </div>
+      {subscriptionStatus === "cancelled" && daysLeft !== null && (
+  <div className="my-4 p-4 bg-yellow-500/10 border border-yellow-400/40 text-yellow-200 rounded-xl text-center">
+    Your subscription has been <span className="font-semibold">cancelled</span> from this creator.{" "}
+    Your access to subscriber-only content will end
+    {daysLeft > 0 ? (
+      <> in <span className="font-semibold">{daysLeft}</span> {daysLeft === 1 ? "day" : "days"}.</>
+    ) : daysLeft === 0 ? (
+      <> today.</>
+    ) : (
+      <> (access has already ended).</>
+    )}
+    {" "}Don&apos;t miss out on exclusive content—consider re-subscribing to stay connected!
+  </div>
+)}
         <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 mb-8 border border-white/20">
           <div className="flex flex-col lg:flex-row lg:items-start gap-8">
             {/* Left Column - Profile Image, Stats, and Subscribe Button */}
@@ -470,6 +597,22 @@ export default function ProfileContent({
                       className="border border-white text-white hover:bg-white/10 px-4 py-1 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer whitespace-nowrap"
                     >
                       Following
+                    </button>
+                  )}
+                  {status === 'subscriber' && creator && (subscription?.status === "active") && (
+                    <button
+                      onClick={() => handleStopSubscribe(creator)}
+                      className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-full font-bold transition-colors duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
+                    >
+                      Unsubscribe
+                    </button>
+                  )}
+                  {status === 'subscriber' && creator && (subscription?.status === "cancelled" ||  subscription?.status === "expired") && (
+                    <button
+                      onClick={() => setModalOpen(true)}
+                      className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-full font-bold transition-colors duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
+                    >
+                      Resubscribe
                     </button>
                   )}
                 </div>
@@ -599,15 +742,23 @@ export default function ProfileContent({
         )}
         
         {modalOpen && creator && (
-          <SubscribeModal 
-            open={modalOpen} 
-            onClose={() => setModalOpen(false)} 
+          <PaymentForm 
+            type="subscription"
+            onClose={() => setModalOpen(false)}
+            open={modalOpen}
             creator={creator}
+            avatarUrl={avatarUrl || ""}
+            price={creator.price}
             session={session}
-            avatarUrl={avatarUrl} 
           />
         )}
-        
+        {StopSubscribeModalOpen && creator && (
+          <StopSubscribeModal
+            onClose={() => SetStopSubscribeModal(false)}
+            creator={creator}
+            avatarUrl={avatarUrl}
+          />
+        )}
         {/* Content Tabs */}
         {creator && (
           <ContentTabs

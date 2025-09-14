@@ -99,15 +99,12 @@ function groupByTime(transactions: Transaction[]): { time: string; avg: number }
 export default function CreatorInsights({ session, users, creators }: AppProps) {
   const [mounted, setMounted] = useState(false);
   const correctCreator = creators.find((c: Creator) => c.user === session?.user._id);
-  const [avatarsLoading, setAvatarsLoading] = useState<Record<string, boolean>>({});
   const [userAvatars, setUserAvatars] = useState<Record<string, string>>({});
-  const [openMonth, setOpenMonth] = useState<string | null>(null);
   const [selectedGraphs, setSelectedGraphs] = useState<Record<string, GraphType>>({});
   const [mediaType, setMediaType] = useState<"solo" | "bundle">("solo")
   const fetchUserAvatarUrl = async (user: User) => {
     if (!user.avatarKey) return;
   
-    setAvatarsLoading(prev => ({ ...prev, [user._id]: true }));
   
     try {
       const key = user.avatarKey.replace(/^\/+/, '');
@@ -129,7 +126,6 @@ export default function CreatorInsights({ session, users, creators }: AppProps) 
     } catch (err) {
       console.error(err);
     } finally {
-      setAvatarsLoading(prev => ({ ...prev, [user._id]: false }));
     }
   };
   useEffect(() => {
@@ -239,7 +235,7 @@ const monthlyRevenueData: MonthlyRevenue[] = monthLabels.reverse().map(label => 
 });
 
   // 🔹 Key Stats
-  const totalEarnings = correctCreator.totalEarnings ?? 0;
+  /*const totalEarnings = correctCreator.totalEarnings ?? 0;
   const activeSubscribers = correctCreator.subscribers.filter(s => s.status === "active").length;
   const allPurchases = users.flatMap(u => {
     // Filter purchases for this creator
@@ -259,26 +255,9 @@ const monthlyRevenueData: MonthlyRevenue[] = monthLabels.reverse().map(label => 
       // create a pseudo purchase object for subscriptions if you want uniformity
       { date: new Date(), price: creatorSubsTotal, type: "subscription" }
     ];
-  });
+  }); */
 
-  const avgEarningsPerFan = activeSubscribers > 0 ? totalEarnings / activeSubscribers : 0;
   
-const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-const thisMonthRevenueData = Array.from({ length: daysInMonth }, (_, i) => {
-  const day = i + 1;
-  const dayRevenue = allPurchases
-    .filter(p => {
-      const d = new Date(p.date);
-      return (
-        d.getMonth() === today.getMonth() &&
-        d.getFullYear() === today.getFullYear() &&
-        d.getDate() === day
-      );
-    })
-    .reduce((sum, p) => sum + p.price, 0);
-
-  return { day: day.toString(), revenue: dayRevenue };
-});
   // 🔹 Revenue Trend (12 months, just for this creator)
   const revenueData = monthlyRevenueData.map(m => ({
     month: m.month,
@@ -287,8 +266,8 @@ const thisMonthRevenueData = Array.from({ length: daysInMonth }, (_, i) => {
     // Inside your component
 const weekdayData = groupByWeekday(allTransactions);
 const timeData = groupByTime(allTransactions);
-  const currentMonthLabel = today.toLocaleString("default", { month: "long", year: "numeric" });
-  const thisMonth = monthlyRevenueData.find(m => m.month === currentMonthLabel);
+   /* const currentMonthLabel = today.toLocaleString("default", { month: "long", year: "numeric" });
+ const thisMonth = monthlyRevenueData.find(m => m.month === currentMonthLabel);
   // 🔹 Top Fans (spending)
   const topFans = correctCreator.followers
     .map(f => {
@@ -311,7 +290,7 @@ const timeData = groupByTime(allTransactions);
     })
     .filter(Boolean)
     .sort((a, b) => (b?.totalSpent ?? 0) - (a?.totalSpent ?? 0))
-    .slice(0, 10);
+    .slice(0, 10); */
 
   // 🔹 Recent Subscribers (last 30 days)
   const thirtyDaysAgo = new Date();

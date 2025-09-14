@@ -41,7 +41,10 @@ export default function App({users, session}: AppProps) {
             name: session.user.name || "",
             handle: session.user.username || "",
             bio: session.user.bio || "",
-            location: session.user.location || "",
+            location:
+              typeof session.user.location === "string"
+                ? session.user.location
+                :  "",
           };
           setFormData(initialData);
           setOriginalFormData(initialData);
@@ -76,7 +79,7 @@ export default function App({users, session}: AppProps) {
             name: formData.name,
             username: formData.handle,
             bio: formData.bio,
-            location: formData.location,
+            location: { country: formData.location },
           });
       
           router.push('/myprofile/edit');

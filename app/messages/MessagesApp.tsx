@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { MessageCircle,  Search, Image as MoreVertical, Phone, Video, Info, X, Package, ChevronLeft } from "lucide-react";
+import { MessageCircle,  Search, Image as MoreVertical, Phone, Video, Info, X, Package, ChevronLeft, Funnel } from "lucide-react";
 import { Chat, Creator, User } from "../types";
 import { Session } from "next-auth";
 import { subscribeToMessages } from "@/lib/realtime";
@@ -17,6 +17,8 @@ import uploadmediaservice from "../services/uploadmediaservice";
 import {MessageType }from "@/app/types"
 import { useRouter } from "next/navigation";
 import { ChatInput } from "@/components/ChatInput";
+import { Box, Chip } from "@mui/material";
+import PaymentForm from "@/components/PaymentForm";
 //import SetPriceModal from "@/components/SetPriceModal";
 interface AppProps {
   creators: Creator[];
@@ -25,7 +27,7 @@ interface AppProps {
 }
 
 
-export default function ChatApp({ session, users }: AppProps) {
+export default function ChatApp({ session, users, creators }: AppProps) {
   const [currentChatIdentifier, setCurrentChatIdentifier] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("currentChatIdentifier");
@@ -33,7 +35,7 @@ export default function ChatApp({ session, users }: AppProps) {
     return null;
   });
   const [chats, setChats] = useState<Chat[]>([]);
-  const [messages, setMessages] = useState<MessageType[]>([]);
+  const [messagesByChat, setMessagesByChat] = useState<Record<string, MessageType[]>>({});
   const [messageText, setMessageText] = useState("");
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const [urlCache, setUrlCache] = useState<Record<string, { url: string; timestamp: number }>>({});
@@ -48,8 +50,57 @@ export default function ChatApp({ session, users }: AppProps) {
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
   const [chatsLoading, setChatsLoading] = useState(true)
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [filteredChats, setFilteredChats] = useState<Chat[]>([]);
+  const [payPostOpen, setPaypostOpen] = useState(false)
+  const [currentMessagePrice, setCurrentMessagePrice] = useState<number | null>(null);
+  const [showClear, setShowClear] = useState(false)
   //const [isPriceModalOpen, setIsPriceModalOpen] = useState(false)
+  const messages = messagesByChat[currentChatIdentifier ?? ""] || [];
   const router = useRouter();
+  useEffect(() => {
+    const result = chats.filter(chat => {
+      if (!activeFilter) return true; // no filter = show all
+  
+      const chatMessages = messagesByChat[chat.id] ?? [];
+      const participant = users.find(
+        u => chat.participants.includes(u._id) && u._id !== session?.user?._id
+      );
+      const creator = creators.find(
+        (c: Creator) => c.user.toString() === session?.user._id.toString()
+      );
+  
+      switch (activeFilter) {
+        case "Not Answered":
+          return (
+            chatMessages.some(m => m.sender_id !== session?.user._id) &&
+            !chatMessages.some(m => m.sender_id === session?.user._id)
+          );
+        case "Subscribers":
+          return participant?.subscriptions?.some(
+            s => s.creatorId.toString() === session?.user?._id.toString()
+          );
+        case "Followers":
+          return participant?.following?.some(
+            f => f.creatorId.toString() === creator?._id.toString()
+          );
+        case "Spent more than $25":
+          return (participant?.purchases || []).reduce(
+            (sum, p) => sum + (p.price || 0),
+            0
+          ) > 25;
+        case "Has Tipped":
+          return participant?.purchases?.some(p => p.price > 0);
+        case "Long Conversations (Over 25 messages)":
+          return chatMessages.length > 25;
+        default:
+          return true;
+      }
+    });
+  
+    setFilteredChats(result);
+  }, [chats, messagesByChat, users, session?.user?._id, creators, activeFilter]);
   useEffect(() => {
     const storedIdentifier = localStorage.getItem("currentChatIdentifier");
     if (storedIdentifier) {
@@ -75,51 +126,55 @@ export default function ChatApp({ session, users }: AppProps) {
   }, [session?.user?._id]);
 
   useEffect(() => {
-    if (!currentChatIdentifier) return;
-  
-    const loadMessages = async () => {
+    const loadAllMessages = async () => {
       try {
-        const rows = await getMessages(currentChatIdentifier); 
-        const mapped: MessageType[] = rows.map(row => ({
-          id: String(row.id),            // coerce number → string
-          sender_id: row.sender_id,      // string | ObjectId is compatible
-          content: row.content,
-          created_at: row.created_at,
-          type: row.image_key
-            ? "photo"
-            : row.video_key
-            ? "video"
-            : row.voice_key
-            ? "voice"
-            : row.file_key
-            ? "file"
-            : "text",
-          image_key: row.image_key ?? undefined,
-          video_key: row.video_key ?? undefined,
-          file_key: row.file_key ?? undefined,
-          voice_key: row.voice_key ?? undefined,
-          blurred_key: row.blurred_key ?? undefined,
-          duration: row.duration ?? undefined,
-          size: row.size ?? undefined,
-          price: row.price ?? undefined,
-          viewed: row.viewed ?? [],       // always array
-          purchased: row.purchased ?? [], // always array
-          ismassmessage: row.ismassmessage ?? false,
-          requires_payment: row.price ? true : false,
-        }));
+        const allMessagesByChat: Record<string, MessageType[]> = {};
   
-        setMessages(mapped);
+        for (const chat of chats) {
+          const rows = await getMessages(chat.id);
+          const mapped: MessageType[] = rows.map(row => ({
+            id: String(row.id),
+            sender_id: row.sender_id,
+            content: row.content,
+            created_at: row.created_at,
+            chat_id: row.chat_id,
+            type: row.image_key
+              ? "photo"
+              : row.video_key
+              ? "video"
+              : row.voice_key
+              ? "voice"
+              : row.file_key
+              ? "file"
+              : "text",
+            image_key: row.image_key,
+            video_key: row.video_key,
+            voice_key: row.voice_key,
+            price: row.price,
+            fileKey: row.file_key,
+            blurred_key: row.blurred_key,
+            duration: row.duration,
+            size: row.size,
+            viewed: row.viewed ?? [],
+            purchased: row.purchased ?? [],
+          }));
+  
+          allMessagesByChat[chat.id] = mapped;
+        }
+  
+        setMessagesByChat(allMessagesByChat);
       } catch (err) {
-        console.error(err);
+        console.error("Error loading all messages:", err);
       }
     };
   
-    void loadMessages();
-  }, [currentChatIdentifier]);
+    if (chats.length > 0) {
+      void loadAllMessages();
+    }
+  }, [chats]);
   const resolveAvatarUrl = useCallback(
     async (avatarKey: string | null | undefined): Promise<string> => {
-      if (!avatarKey) return "/default-avatar.png";
-  
+      if (!avatarKey) return "";
       if (avatarKey.startsWith("http")) {
         return avatarKey;
       }
@@ -129,7 +184,7 @@ export default function ChatApp({ session, users }: AppProps) {
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
         return cached.url;
       }
-  
+      console.log(urlCache)
       try {
         const res = await fetch("/api/media/download-url", {
           method: "POST",
@@ -154,7 +209,15 @@ export default function ChatApp({ session, users }: AppProps) {
     [CACHE_TTL] // ✅ only depends on stable TTL
   );
   
-  const [mediaUrlCache, setMediaUrlCache] = useState<Record<string, { url: string; timestamp: number }>>({});
+  const [mediaUrlCache, setMediaUrlCache] = useState<Record<string, { url: string; timestamp: number }>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const stored = localStorage.getItem("mediaUrlCache");
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
   const [messageMediaUrls, setMessageMediaUrls] = useState<Record<string, string>>({});
   const resolveMediaUrl = useCallback(
     async (key: string | undefined | null): Promise<string | undefined> => {
@@ -173,10 +236,12 @@ export default function ChatApp({ session, users }: AppProps) {
         });
         const data = await res.json();
         if (res.ok && data.downloadUrl?.startsWith("https://")) {
-          setMediaUrlCache(prev => ({
-            ...prev,
+          const updatedCache = {
+            ...mediaUrlCache,
             [key]: { url: data.downloadUrl, timestamp: Date.now() },
-          }));
+          };
+          setMediaUrlCache(updatedCache);
+          localStorage.setItem("mediaUrlCache", JSON.stringify(updatedCache)); // persist
           return data.downloadUrl;
         }
       } catch (err) {
@@ -191,16 +256,33 @@ export default function ChatApp({ session, users }: AppProps) {
       setImageLoading(true);
       try {
         const map: Record<string, string | null> = {}; // allow null
+  
         for (const chat of chats) {
           const otherParticipant = users.find(
             u => chat.participants.includes(u._id) && u._id !== session?.user?._id
           );
-          if (otherParticipant?.avatarKey) {
-            map[chat.id] = await resolveAvatarUrl(otherParticipant.avatarKey);
+  
+          let avatarKey: string | null | undefined;
+  
+          if (!otherParticipant) {
+            map[chat.id] = null;
+            continue;
+          }
+  
+          if (otherParticipant.creator) {
+            const creatorObj = creators.find(c => c.user === otherParticipant._id);
+            avatarKey = creatorObj?.avatarKey;
           } else {
-            map[chat.id] = null; // no avatar
+            avatarKey = otherParticipant.avatarKey;
+          }
+  
+          if (avatarKey) {
+            map[chat.id] = await resolveAvatarUrl(avatarKey);
+          } else {
+            map[chat.id] = null; // fallback
           }
         }
+  
         setChatAvatars(map);
       } finally {
         setImageLoading(false);
@@ -208,14 +290,16 @@ export default function ChatApp({ session, users }: AppProps) {
     };
   
     if (chats.length > 0) void loadAvatars();
-  }, [chats, users, session?.user?._id, resolveAvatarUrl]);
+  }, [chats, users, creators, session?.user?._id, resolveAvatarUrl]);
   useEffect(() => {
-    if (messages.length === 0) return;
+    if (!currentChatIdentifier) return;
+    const chatMessages = messagesByChat[currentChatIdentifier] || [];
+    if (chatMessages.length === 0) return;
   
     const loadMediaUrls = async () => {
       const updatedUrls: Record<string, string> = { ...messageMediaUrls };
   
-      for (const msg of messages) {
+      for (const msg of chatMessages) {
         const keys = [msg.blurred_key, msg.image_key, msg.video_key, msg.voice_key, msg.file_key];
         for (const key of keys) {
           if (!key) continue;
@@ -252,6 +336,7 @@ export default function ChatApp({ session, users }: AppProps) {
           sender_id: row.sender_id,
           content: row.content,
           created_at: row.created_at,
+          chat_id: row.chat_id,
           type: row.image_key
             ? "photo"
             : row.video_key
@@ -272,7 +357,10 @@ export default function ChatApp({ session, users }: AppProps) {
           viewed: row.viewed ?? [],
           purchased: row.purchased ?? [],
         }));
-        setMessages(mapped);
+        setMessagesByChat(prev => ({
+          ...prev,
+          [selectedChat.id]: mapped,
+        }));
       } catch (err) {
         console.error(err);
       }
@@ -281,7 +369,10 @@ export default function ChatApp({ session, users }: AppProps) {
     void loadMessages();
   
     const subscription = subscribeToMessages(selectedChat.id, (msg: MessageType) => {
-      setMessages(prev => [...prev, msg]);
+      setMessagesByChat(prev => ({
+        ...prev,
+        [selectedChat.id]: [...(prev[selectedChat.id] || []), msg],
+      }));
     });
   
     return () => {
@@ -295,7 +386,7 @@ export default function ChatApp({ session, users }: AppProps) {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messagesByChat]);
  
   const handleConversationClick = (chat: Chat) => {
     setCurrentChatIdentifier(chat.id);
@@ -345,8 +436,11 @@ export default function ChatApp({ session, users }: AppProps) {
         });
       }
   
-      setMessages((prev) => [...prev, newMessage]);
-  
+      setMessagesByChat(prev => ({
+        ...prev,
+        [currentChatIdentifier]: [...(prev[currentChatIdentifier] || []), newMessage],
+      }));
+
       // Reset inputs
       setMessageText("");
       setFiles([]);
@@ -405,7 +499,6 @@ export default function ChatApp({ session, users }: AppProps) {
   };
 
 
-
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(e.target.files ?? []);
     
@@ -430,7 +523,6 @@ export default function ChatApp({ session, users }: AppProps) {
     ]);
     
   }
-  
   const isVoiceFile = (file: File) => file.type.startsWith("audio");
   return (
     <div className="min-h-screen">
@@ -466,17 +558,102 @@ export default function ChatApp({ session, users }: AppProps) {
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                 </div>
   
-                {session?.user.creator && <div className="p-2 flex flex-row justify-between">
-                  <button
-                    onClick={() => router.push("/mass-messages")}
-                    className="rounded-full items-center flex flex-row p-3 gap-3 w-full bg-white/30 disabled:hover:bg-transparent hover:bg-white/50 disabled:cursor-default disabled:text-gray-500 cursor-pointer transition"
-                    disabled={files.length > 0}
-                  >
-                    <Package />
-                    Send A Mass Message
-                  </button>
-                </div>
-                }
+                {session?.user.creator && (
+                  <div className="p-2 flex flex-row justify-between gap-2">
+  {/* Mass Message Button */}
+  <button
+    onClick={() => router.push("/mass-messages")}
+    className="rounded-full bg-white/30 hover:bg-white/50 cursor-pointer transition-colors"
+    disabled={files.length > 0}
+  >
+    <Chip
+      label={
+        <span className="flex items-center gap-2 text-white">
+          <Package className="w-5 h-5" />
+          Send a mass message
+        </span>
+      }
+    />
+  </button>
+
+  {/* Filter Button */}
+  <button
+    onClick={() => setIsFilterModalOpen(true)}
+    className="rounded-full bg-white/30 hover:bg-white/50 cursor-pointer transition-colors"
+  >
+    <Chip
+      label={
+        <span className="flex items-center gap-2 text-white">
+          <Funnel className="w-5 h-5" />
+          Filters
+        </span>
+      }
+    />
+  </button>
+</div>
+)}
+{isFilterModalOpen && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+    <div className="bg-white/10 rounded-2xl p-6 shadow-xl max-w-md w-full">
+      <h2 className="text-lg font-semibold mb-4">Filter Conversations</h2>
+
+      {/* Example filter options */}
+      <div className="space-y-3">
+  {[
+    "Not Answered",
+    "Subscribers",
+    "Followers",
+    "Spent more than $25",
+    "Has Tipped",
+    "Long Conversations (Over 25 messages)",
+  ].map((label, idx) => (
+    <label
+      key={idx}
+      className="flex items-center gap-2 cursor-pointer hover:text-white transition-colors duration-200"
+    >
+      <input
+        type="radio"
+        name="chatFilter"
+        checked={activeFilter === label}
+        onChange={() => setActiveFilter(label)}
+        className="appearance-none w-4 h-4 rounded-full border border-gray-400 checked:bg-white hover:border-white transition-colors duration-200"
+      />
+      {label}
+    </label>
+  ))}
+</div>
+
+      <div className="flex justify-end gap-2 mt-6">
+        <button
+          onClick={() => setIsFilterModalOpen(false)}
+          className="px-4 py-2 rounded-xl text-white bg-white/10 cursor-pointer hover:bg-white/20 transition-colors duration-200"
+        >
+          Cancel
+        </button>
+        {activeFilter && (
+          <button
+            onClick={() => {
+              setActiveFilter(null);
+              setIsFilterModalOpen(false);
+            }}
+            className="px-4 py-2 rounded-xl text-white bg-white/10 cursor-pointer hover:bg-white/20 transition-colors duration-200"
+          >
+            Clear Filters
+          </button>
+        )}
+        <button
+          onClick={() => {
+            // TODO: apply filters here
+            setIsFilterModalOpen(false);
+          }}
+          className="px-4 py-2 rounded-xl cursor-pointer bg-blue-500 text-white hover:bg-blue-600"
+        >
+          Apply
+        </button>
+      </div>
+    </div>
+  </div>
+)}
               </div>
   
               {/* Conversations List */}
@@ -488,7 +665,8 @@ export default function ChatApp({ session, users }: AppProps) {
         className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4"
       >
         {/* Avatar Skeleton */}
-        <Skeleton className="w-14 h-14 rounded-full bg-gray-300/20" />
+        {imageLoading &&
+          <Skeleton className="w-14 h-14 rounded-full bg-gray-300/20" />}
 
         {/* Text Skeletons */}
         <div className="flex-1 min-w-0 space-y-2">
@@ -504,58 +682,47 @@ export default function ChatApp({ session, users }: AppProps) {
                 :
                 chats.length > 0 ? (
                   <div className="space-y-2">
-                    {chats.map(chat => {
-                      const lastMessage = messages
-                      .filter(msg => msg.id === chat.id) // match on chatId not msg.id
-                      .slice(-1)[0];
-                      const participant = users.find(
-                        u => chat.participants.includes(u._id) && u._id !== session?.user?._id
-                      );
-  
-                      return (
-                        <div
-                          key={chat.id}
-                          className={`p-4 rounded-2xl cursor-pointer transition-all duration-300 hover:bg-white/15 hover:shadow-lg hover:scale-[1.02] group ${
-                            currentChatIdentifier === chat.id
-                              ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 shadow-lg"
-                              : "bg-white/5 border border-white/10"
-                          }`}
-                          onClick={() => handleConversationClick(chat)}
-                        >
-                          <div className="flex items-center gap-4">
-                          <div className="relative w-14 h-14">
-                                {imageLoading ? (
-                                  <Skeleton className="w-14 h-14 rounded-full bg-gray-300/20" />
-                                ) : chatAvatars[chat.id] ? (
-                                  <img
-                                    src={chatAvatars[chat.id]!}
-                                    alt="Chat Avatar"
-                                    className="w-14 h-14 rounded-full object-cover border-2 border-white/20 shadow-lg"
-                                  />
-                                ) : (
-                                  <div className="w-14 h-14 rounded-full bg-gray-700 text-white flex items-center justify-center text-xl border-2 border-pink-500/40 shadow-lg">
-                                    {participant?.name?.charAt(0).toUpperCase() || "U"}
-                                  </div>
-                                )}
-                                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white/20 shadow-lg"></div>
-                              </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-1">
-                                <h3 className="text-white font-semibold text-base truncate group-hover:text-blue-200 transition-colors">
-                                  {participant?.name || participant?.username}
-                                </h3>
-                                <span className="text-gray-400 text-xs">
-                                  {new Date(chat.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                              </div>
-                              <p className="text-gray-400 text-sm truncate group-hover:text-gray-300 transition-colors">
-                                {lastMessage?.content || "No messages yet"}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {filteredChats.map(chat => {
+  const chatMessages = messagesByChat[chat.id] ?? [];
+  const lastMessage = chatMessages[chatMessages.length - 1];
+  const participant = users.find(
+    u => chat.participants.includes(u._id) && u._id !== session?.user?._id
+  );
+
+  return (
+    <div
+      key={chat.id}
+      className={`p-4 rounded-2xl cursor-pointer transition-all duration-300 hover:bg-white/15 hover:shadow-lg hover:scale-[1.02] group ${
+        currentChatIdentifier === chat.id
+          ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 shadow-lg"
+          : "bg-white/5 border border-white/10"
+      }`}
+      onClick={() => handleConversationClick(chat)}
+    >
+      <div className="flex items-center gap-3">
+        {chatAvatars[chat.id] ? <img
+          src={chatAvatars[chat.id] || ""}
+          alt="avatar"
+          className="w-12 h-12 rounded-full object-cover"
+        />
+         : <div className="w-12 h-12 rounded-full bg-gray-700 text-white flex items-center justify-center text-xl border-2 border-pink-500/40 shadow-lg">
+         {participant?.name?.charAt(0).toUpperCase() || "U"}
+       </div>}
+        <div className="flex-1">
+          <div className="font-semibold text-white">
+            {participant?.name || "Unknown"}
+          </div>
+          {lastMessage && (
+            <div className="text-sm text-gray-400 truncate">
+              {lastMessage.content || lastMessage.type}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+})}
+
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-center">
@@ -570,8 +737,7 @@ export default function ChatApp({ session, users }: AppProps) {
             </div>
   
             {/* Chat Area */}
-            <div className={`flex-1 flex flex-col 
-                  ${mobileView === "list" ? "hidden" : "block"} md:block`}>
+            <div className="flex flex-col flex-1">
               {selectedChat && otherParticipant ? (
                 <>
                   {/* Chat Header */}
@@ -627,120 +793,236 @@ export default function ChatApp({ session, users }: AppProps) {
                   </div>
   
                   {/* Messages Area */}
-                  <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4">
-                    {messages.map((message, index) => {
-                      const previousMessage = index > 0 ? messages[index - 1] : undefined;
-                      const showDateDivider = shouldShowDateDivider(message, previousMessage);
-                      const isOwn = message.sender_id === session?.user?._id;
-                      return (
-                        <div key={message.id}>
-                          {showDateDivider && (
-                            <div className="flex items-center justify-center my-6">
-                              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-                              <div className="px-4 py-2">
-                                <span className="text-xs font-medium text-gray-300">
-                                  {formatDate(message.created_at)}
-                                </span>
-                              </div>
-                              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-                            </div>
-                          )}
-  
-                          {/* Message Bubble */}
-                          <div className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
-                              <div
-                                className={`relative max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-sm transition-all duration-200 hover:shadow-md ${
-                                  isOwn
-                                    ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
-                                    : "bg-gradient-to-br from-white/15 to-white/10 text-white border border-white/10"
-                                }`}
-                              >
-                               {(message.type === "photo" || message.type === "video") && (
-  <div className="relative">
-    {/* 🖼️ Image */}
-    {message.type === "photo" && message.image_key && (
-      <img
-        src={
-          message.price && message.blurred_key
-            ? messageMediaUrls[message.blurred_key]
-            : messageMediaUrls[message.image_key]
-        }
-        alt="Sent image"
-        className="max-w-full max-h-64 rounded-xl object-cover cursor-pointer"
-        onClick={() =>
-          !message.price && message.image_key
-            ? setActiveImage(messageMediaUrls[message.image_key])
-            : null
-        }
-      />
+                  <Box
+  ref={chatContainerRef}
+  className="flex-1 p-6 space-y-4 overflow-y-auto"
+  sx={{
+    '&::-webkit-scrollbar': {
+      width: '6px',
+    },
+    '&::-webkit-scrollbar-track': {
+      background: 'transparent',
+    },
+    '&::-webkit-scrollbar-thumb': {
+      backgroundColor: 'rgba(255,255,255,0.3)',
+      borderRadius: '8px',
+    },
+    '&::-webkit-scrollbar-thumb:hover': {
+      backgroundColor: 'rgba(255,255,255,0.5)',
+    },
+    scrollbarWidth: 'thin',                // Firefox
+    scrollbarColor: 'rgba(255,255,255,0.3) transparent',
+  }}
+>
+{messages.map((message, index) => {
+  const isOwn = message.sender_id === session?.user?._id;
+  const previousMessage = index > 0 ? messages[index - 1] : undefined;
+  const showDateDivider = shouldShowDateDivider(message, previousMessage);
+
+  return (
+    <div key={message.id} className="flex flex-col">
+      {/* Date divider */}
+      {showDateDivider && (
+        <div className="flex items-center justify-center my-4">
+          <span className="text-xs font-medium text-gray-300">
+            {formatDate(message.created_at)}
+          </span>
+        </div>
+      )}
+
+      {/* Message row */}
+      <div className={`flex items-end ${isOwn ? "justify-end" : "justify-start"} space-x-2`}>
+        {/* Avatar for other participant */}
+        {!isOwn && (
+          <div className="flex-shrink-0">
+            {otherAvatar ? (
+              <img
+                src={otherAvatar}
+                alt={otherParticipant?.username || "User Avatar"}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-gray-700 text-white flex items-center justify-center text-xl border-2 border-pink-500/40 shadow-lg">
+                {otherParticipant?.name?.charAt(0).toUpperCase() || "U"}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Message bubble */}
+        <div className="flex flex-col max-w-xl lg:max-w-md">
+  <div
+    className={`relative rounded-2xl shadow-sm transition-all duration-200 hover:shadow-md inline-block ${
+      isOwn
+        ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
+        : "bg-gradient-to-br from-white/15 to-white/10 text-white border border-white/10"
+    }`}
+  >
+    {/* Photo / Video */}
+    {(message.type === "photo" || message.type === "video") && message.image_key && (
+      <div className="relative">
+        {/* Select source */}
+        {message.type === "photo" && !message.price && (
+          <img
+            src={
+              // ✅ RULE: Other participant's photo with *no price* → show blurred
+              (!isOwn && !message.price && message.blurred_key && !showClear)
+                ? messageMediaUrls[message.blurred_key]
+                : messageMediaUrls[message.image_key]
+            }
+            alt="Sent image"
+            className={`rounded-2xl object-cover ${
+              message.content ? "max-w-full max-h-64" : "max-w-[250px] max-h-[250px]"
+            }`}
+            onClick={() =>
+              // ✅ Only allow full-screen if media is already revealed
+              (!message.price && (isOwn || showClear)) &&
+              message.image_key && setActiveImage(messageMediaUrls[message.image_key])
+            }
+          />
+        )}
+      {message.type === "photo" && message.price && (
+              <img
+                src={
+                  // ✅ RULE: Other participant's photo with *no price* → show blurred
+                  (!isOwn && message.price && message.blurred_key && !showClear)
+                    ? messageMediaUrls[message.blurred_key]
+                    : messageMediaUrls[message.image_key]
+                }
+                alt="Sent image"
+                className={`rounded-2xl object-cover ${
+                  message.content ? "max-w-full max-h-64" : "max-w-[250px] max-h-[250px]"
+                }`}
+                onClick={() =>
+                  // ✅ Only allow full-screen if media is already revealed
+                  (!message.price && (isOwn || showClear)) &&
+                  message.image_key && setActiveImage(messageMediaUrls[message.image_key])
+                }
+              />
+            )}
+        {message.type === "video" && message.video_key && (
+          <video
+            src={
+              (!isOwn && !message.price && message.blurred_key && !showClear)
+                ? messageMediaUrls[message.blurred_key]
+                : messageMediaUrls[message.video_key]
+            }
+            controls={(!message.price && (isOwn || showClear))}
+            className={`rounded-2xl ${
+              message.content ? "max-w-full max-h-64" : "w-full h-auto"
+            }`}
+          />
+        )}
+
+        {/* ✅ Overlay timestamp when NO caption */}
+        {!message.content && (
+          <span className="absolute bottom-2 right-3 text-xs bg-black/50 text-white px-2 py-1 rounded-full">
+            {new Date(message.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+        )}
+
+        {/* ✅ Paywall overlay */}
+        {message.price && !isOwn && (
+          <button
+            className="absolute inset-0 flex items-center justify-center bg-black/60 text-white text-sm font-semibold rounded-2xl hover:bg-black/70"
+            onClick={() => {
+              setCurrentMessagePrice(message.price || null);
+              setPaypostOpen(true);
+            }}
+          >
+            ${message.price} to view
+          </button>
+        )}
+
+        {/* ✅ “Show media” button for blurred non-paid images */}
+        {!isOwn &&
+          !message.price &&
+          message.blurred_key &&
+          !showClear && (
+            <button
+              className="absolute cursor-pointer bottom-2 left-2 px-3 py-1 bg-black/60 hover:bg-black/80 text-white text-sm rounded-xl"
+              onClick={() => {
+                // you can manage local state or a DB flag; here we mutate in-place
+                setShowClear(true)
+                setMessagesByChat((prev) => ({ ...prev }))
+              }
+              }
+            >
+              Show media
+            </button>
+          )}
+      </div>
     )}
 
-    {/* 🎥 Video */}
-    {message.type === "video" && message.video_key && (
-      <video
-        src={
-          message.price && message.blurred_key
-            ? messageMediaUrls[message.blurred_key]
-            : messageMediaUrls[message.video_key]
-        }
-        controls={!message.price}
-        className="max-w-full max-h-64 rounded-xl"
-      />
-    )}
-    {/* 🔒 Paywall Overlay */}
-    {message.price && (
-      <div>
-      <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-xl text-white text-sm font-semibold">
-        🔒 Pay to view
+    {/* Voice */}
+    {message.type === "voice" && message.voice_key && (
+      <div className="w-48 relative">
+        <audio
+          controls={!message.price}
+          src={messageMediaUrls[message.voice_key]}
+          className="w-full"
+        />
+        {message.price && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-xl text-white text-sm font-semibold">
+            🔒 Pay to listen
+          </div>
+        )}
       </div>
-      <button className="absolute inset-0 px-3 py-2 hover:bg-white/60 transition-colors duration-200 flex items-center justify-center rounded-xl bg-black/60 cursor-pointer rounded-xl text-white text-sm font-semibold">
-      ${message.price} to view
-      </button>
+    )}
+
+    {/* Text caption */}
+    {message.content && (
+      <div className="p-2">
+        <p className="text-sm leading-relaxed break-words">{message.content}</p>
+
+        {/* Regular timestamp if there *is* a caption */}
+        <span
+          className={`block mt-1 text-xs text-right ${
+            isOwn ? "text-blue-100/70" : "text-gray-400/70"
+          }`}
+        >
+          {new Date(message.created_at).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </span>
       </div>
     )}
   </div>
-)}
 
-                                {/* Voice */}
-                                {message.type === "voice" && message.voice_key && (
-                                  <div className="w-48 relative">
-                                    <audio
-                                      controls={!message.price}
-                                      src={messageMediaUrls[message.voice_key]}
-                                      className="w-full"
-                                    />
-                                    {message.price && (
-                                      <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-xl text-white text-sm font-semibold">
-                                        🔒 Pay to listen
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
+  {/* ✅ Price status (sender only) */}
+  {isOwn && message.price && (
+    <span className="text-gray-400 text-sm mt-1">
+      ${message.price.toFixed(2)} not paid yet
+    </span>
+  )}
+</div>
 
-                                {/* Text */}
-                                {message.content && (
-                                  <p className="text-sm leading-relaxed break-words mt-2">{message.content}</p>
-                                )}
+      </div>
+    </div>
+  );
+})}
 
-                                {/* Timestamp */}
-                                <div
-                                  className={`text-xs mt-2 ${
-                                    isOwn ? "text-blue-100/70" : "text-gray-400/70"
-                                  }`}
-                                >
-                                  {new Date(message.created_at).toLocaleTimeString([], {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </div>
-                              </div>
-                            </div>
-
-                        </div>
-                      );
-                    })}
-                  </div>
-  
+                  </Box >
+                    {payPostOpen && otherParticipant.creator && (
+                      <PaymentForm 
+                      type="message"
+                      onClose={() => {
+                        setPaypostOpen(false)
+                        setCurrentMessagePrice(null)
+                      }}
+                      open={payPostOpen}
+                      creator={creators?.find(c => c.user === otherParticipant._id) || null}
+                      avatarUrl={
+                        currentChatIdentifier ? chatAvatars[currentChatIdentifier] ?? null : null
+                      }
+                      price={currentMessagePrice}
+                      session={session}
+                    />
+                    )}
                   {/* Active Image Portal */}
                   {activeImage &&
                     createPortal(
