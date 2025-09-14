@@ -6,7 +6,7 @@ import SessionProviderWrapper from "./SessionProviderWrapper";
 import { fetchPageData } from "@/lib/fetchDataPage";
 import ClientAppWrapper from "@/components/ClientAppWrapper";
 import Script from "next/script"; // 👈 import Script
-
+import { Analytics } from "@vercel/analytics/next"
 export const metadata: Metadata = {
   title: "Fanslio",
   description: "Premium AI content platform for creators and fans.",
@@ -45,6 +45,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SessionProviderWrapper>
           <ClientAppWrapper creators={creators} users={users} session={safeSession}>
             {children}
+            <Analytics />
           </ClientAppWrapper>
         </SessionProviderWrapper>
       </body>
