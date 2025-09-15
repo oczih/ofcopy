@@ -56,10 +56,10 @@ export async function GET(request: NextRequest, context: unknown) {
   }
 }
   
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, context: unknown) {
+  // Cast context as unknown then extract params carefully
+  // OR just treat as any but keep the cast local and limited
+  const { params } = context as { params: { id: string } };
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
