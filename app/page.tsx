@@ -557,7 +557,7 @@ function Landing() {
       <Link href="/signup">
         <Button 
           size="lg" 
-          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 text-lg hover:scale-105 hover:shadow-xl transition-all duration-200 group"
+          className="bg-gradient-to-r cursor-pointer from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 text-lg hover:scale-105 hover:shadow-xl transition-all duration-200 group"
         >
           Start Your Creator Journey
           <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
@@ -593,6 +593,17 @@ function Landing() {
       Need help? Contact us at{" "}
       <a href="mailto:support@fanslio.com" className="text-blue-600 hover:underline">
         support@fanslio.com
+      </a>
+    </motion.p>
+    <motion.p 
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{ delay: 0.6 }}
+      className="text-gray-500 text-sm"
+    >
+      <a>
+        Monara Club 3497877-9 Miestentie 2 B 51, 02150 Espoo
       </a>
     </motion.p>
   </div>
