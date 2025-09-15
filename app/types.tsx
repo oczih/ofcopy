@@ -77,7 +77,7 @@ export type User = {
     PreferNotToSay = 'PreferNotToSay'
   }
 export type Creator = {
-    _id: string;
+_id: string;
     name: string;
     username: string;
     avatarKey?: string;  
@@ -88,6 +88,7 @@ export type Creator = {
     isSubscribed: boolean;
     gender: Gender;
     price: number;
+    lastUsernameChange?: Date;
     category: string;
     posts?: Post[];
     user: string;

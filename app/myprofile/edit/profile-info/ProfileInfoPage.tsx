@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import toast, { Toaster } from "react-hot-toast";
 
 
 interface AppProps {
@@ -16,8 +17,33 @@ interface AppProps {
     users: User[];
   }
 
+  function AutoResizeTextarea({
+    value,
+    onChange,
+    ...props
+  }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+    useEffect(() => {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        textarea.style.height = "auto"; // Reset height
+        textarea.style.height = textarea.scrollHeight + "px"; // Adjust to content
+      }
+    }, [value]);
+  
+    return (
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={onChange}
+        {...props}
+        className={`resize-none overflow-hidden min-h-50 ${props.className || ""}`}
+      />
+    );
+  }
 
-export default function App({users, session}: AppProps) {
+export default function App({users, session, creators}: AppProps) {
     const { status } = useSession()
     const router = useRouter()
     const [saving, setSaving] = useState(false);
@@ -35,8 +61,24 @@ export default function App({users, session}: AppProps) {
         if (status !== 'loading') {
         }
     }, [status]);
+
     useEffect(() => {
-        if (status === "authenticated" && session?.user) {
+      if (status === "authenticated" && session?.user) {
+        const rightCreator = creators.find(c => c.user === session.user._id);
+        
+        if (rightCreator) {
+          const initialData = {
+            name: rightCreator.name || "",
+            handle: rightCreator.username || "",
+            bio: rightCreator.bio || "",
+            location:
+              typeof session.user.location === "string"
+                ? session.user.location
+                :  "",
+          };
+          setFormData(initialData);
+          setOriginalFormData(initialData);
+        } else if (session.user) {  // only fallback if no creator
           const initialData = {
             name: session.user.name || "",
             handle: session.user.username || "",
@@ -49,7 +91,9 @@ export default function App({users, session}: AppProps) {
           setFormData(initialData);
           setOriginalFormData(initialData);
         }
-      }, [status, session?.user]);
+      }
+    }, [status, session?.user, creators]);
+    
     useEffect(() => {
         const checkUsername = async () => {
           if (!formData.handle) return;
@@ -67,29 +111,69 @@ export default function App({users, session}: AppProps) {
       
         checkUsername();
       }, [formData.handle, users]);
-
-    const handleSave = async () => {
+      const handleSave = async () => {
         if (!session?.user?._id) return;
-      
         if (!validateForm()) return;
       
         setSaving(true);
-        try {
-          await userservice.update(session.user._id, {
-            name: formData.name,
-            username: formData.handle,
-            bio: formData.bio,
-            location: { country: formData.location },
-          });
       
+        const rightCreator = creators.find(c => c.user === session.user._id);
+        interface UpdateProfilePayload {
+          name?: string;
+          username?: string;
+          bio?: string;
+          location?: { country: string };
+        }
+        const payload: UpdateProfilePayload = {
+          name: formData.name,
+          bio: formData.bio,
+          location: { country: formData.location },
+        };
+      
+        // Only include username if it changed
+        let usernameChanging = false;
+        if (rightCreator) {
+          if (formData.handle !== rightCreator.username) {
+            usernameChanging = true;
+            payload.username = formData.handle;
+          }
+        } else {
+          if (formData.handle !== session.user.username) {
+            usernameChanging = true;
+            payload.username = formData.handle;
+          }
+        }
+      
+        // Frontend 7-day check for creators
+        if (usernameChanging && rightCreator) {
+          const lastChange = rightCreator.lastUsernameChange || new Date(0);
+          const now = new Date();
+          const diffMs = now.getTime() - new Date(lastChange).getTime();
+          const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+        
+          if (diffMs < SEVEN_DAYS) {
+            toast.error("Username can only be changed once every 7 days.", {
+              duration: 5000, // 5 seconds
+            });
+            setSaving(false);
+            return;
+          }
+        }
+      
+        try {
+          await userservice.update(
+            rightCreator ? rightCreator._id : session.user._id,
+            payload
+          );
           router.push('/myprofile/edit');
         } catch (err) {
           console.error("Failed to update profile info:", err);
-          setError("Failed to save changes.");
+          toast.error("Failed to save changes.", { duration: 5000 });
         } finally {
           setSaving(false);
         }
       };
+
       const handleInputChange = (field: string, value: string) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
         setError("");
@@ -107,16 +191,6 @@ export default function App({users, session}: AppProps) {
       
         if (!usernameAvailable) {
           setError("Handle is already taken");
-          return false;
-        }
-      
-        if (!formData.bio || formData.bio.trim().length < 10) {
-          setError("Bio must be at least 10 characters long");
-          return false;
-        }
-      
-        if (!formData.location || formData.location.trim().length < 2) {
-          setError("Please enter a valid location");
           return false;
         }
       
@@ -142,33 +216,13 @@ export default function App({users, session}: AppProps) {
     }
     const hasChanged = JSON.stringify(formData) !== JSON.stringify(originalFormData);
 
-    function AutoResizeTextarea({
-        value,
-        onChange,
-        ...props
-      }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-        const textareaRef = useRef<HTMLTextAreaElement>(null);
-      
-        useEffect(() => {
-          const textarea = textareaRef.current;
-          if (textarea) {
-            textarea.style.height = "auto"; // Reset height
-            textarea.style.height = textarea.scrollHeight + "px"; // Adjust to content
-          }
-        }, [value]);
-      
-        return (
-          <textarea
-            ref={textareaRef}
-            value={value}
-            onChange={onChange}
-            {...props}
-            className={`resize-none overflow-hidden min-h-50 ${props.className || ""}`}
-          />
-        );
-      }
+
     return (
         <div className="max-w-md mx-auto p-6">
+      <Toaster
+      position="top-center"
+      reverseOrder={false}
+    />
             <h1 className="text-2xl font-bold text-white mb-6">Profile Info</h1>
             <div className="flex items-center justify-between gap-4 pb-10">
                 <div className="flex items-center gap-3 text-white font-medium">
@@ -189,17 +243,21 @@ export default function App({users, session}: AppProps) {
                     </button>
             </div>
             <div className="space-y-6">
-              <h2 className="text-red font-bold">{error}</h2>
+              {error && (
+  <div className="fixed top-5 right-5 bg-red-600 text-white px-4 py-2 rounded shadow-lg animate-fade-in-out">
+    {error}
+  </div>
+)}
               <div>
                 <label className="block mb-2 text-white font-medium">Name</label>
                 <input
-                  type="text"
-                  name="displayName"
-                  placeholder="John Doe"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange("displayName", e.target.value)}
-                  className="w-full px-4 py-2 text-white bg-[#200940] hover:outline hover:outline-white rounded-md cursor-text placeholder-gray-400 transition text-sm"
-                />
+  type="text"
+  name="name"
+  placeholder="John Doe"
+  value={formData.name}
+  onChange={(e) => handleInputChange("name", e.target.value)}
+  className="w-full px-4 py-2 text-white bg-[#200940] hover:outline hover:outline-white rounded-md cursor-text placeholder-gray-400 transition text-sm"
+/>
               </div>
               <div>
                 <label className="block mb-2 text-white font-medium">Handle (@username)</label>
@@ -239,6 +297,7 @@ export default function App({users, session}: AppProps) {
                     className="w-full pl-4 pr-4 py-2 text-white bg-[#200940] hover:outline hover:outline-white rounded-md cursor-text placeholder-gray-400 transition text-sm"
                     onChange={(e) => handleInputChange("location", e.target.value)}
                     />
+                  <label className="text-sm mb-2 text-gray-500 font-medium">Enter your current location, this will be shown on your profile</label>
               </div>
             </div>
         </div>
