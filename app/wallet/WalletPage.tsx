@@ -8,7 +8,8 @@ import { CryptoPaymentModal } from "@/components/CryptoModal";
 interface PayPanelProps {
   onCancel: () => void;
   topUpAmount: string | null;
-  showAlternativeMethods?: boolean; // NEW
+  showAlternativeMethods?: boolean; // NEse
+  session: Session | null
 }
 
 const amounts = ["$10", "$25", "$50", "$100", "$200", "$500"];
@@ -57,7 +58,7 @@ function TopUpPanel({
   );
 }
 
-function PayPanel({ topUpAmount, showAlternativeMethods = true, onCancel }: PayPanelProps) {
+function PayPanel({ topUpAmount, showAlternativeMethods = true, onCancel, session }: PayPanelProps) {
   const [showCryptoModal, setShowCryptoModal] = useState(false);
 
   return (
@@ -91,10 +92,12 @@ function PayPanel({ topUpAmount, showAlternativeMethods = true, onCancel }: PayP
           </button>
 
           {showCryptoModal && (
-            <CryptoPaymentModal
-              amountUsd={Number(topUpAmount) || 0}
-              onClose={() => setShowCryptoModal(false)}
-            />
+      <CryptoPaymentModal 
+      type="topup"
+      session={session}
+      amountUsd={Number(topUpAmount)}
+      onClose={onCancel}
+      />
           )}
 
           <button className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 cursor-pointer text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-colors duration-200">
@@ -105,52 +108,7 @@ function PayPanel({ topUpAmount, showAlternativeMethods = true, onCancel }: PayP
 
 
       {/* Card Payment */}
-      {/* <div className="space-y-4 pt-4 border-t border-white/10">
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Card Number
-          </label>
-          <input
-            type="text"
-            placeholder="1234 5678 9012 3456"
-            className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-white/40 transition-all duration-200"
-          />
-        </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Expiry Date
-            </label>
-            <input
-              type="text"
-              placeholder="MM/YY"
-              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-white/40 transition-all duration-200"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              CVC
-            </label>
-            <input
-              type="text"
-              placeholder="123"
-              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent hover:border-white/40 transition-all duration-200"
-            />
-          </div>
-        </div>
-
-        <button className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 cursor-pointer text-white px-6 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transform transition-all duration-300 text-lg">
-          <CreditCard size={20} /> Add Payment / Top Up
-        </button>
-
-        <button
-          className="w-full text-sm text-gray-400 cursor-pointer hover:text-gray-200 transition-colors py-2 hover:underline"
-          onClick={onCancel}
-        >
-          ← Back
-        </button>
-      </div>  */}
 
       <div className="text-xs text-gray-500 text-center pt-4 border-t border-white/10">
         By subscribing, you agree to our Terms of Service and Privacy Policy
@@ -188,7 +146,7 @@ export default function App({session}: AppProps) {
         {/* Top Up Button */}
         <div>
           <button
-            className="w-full bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 cursor-pointer text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300"
+            className="w-full bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 cursor-pointer text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-colors duration-300"
             onClick={() => setShowTopUpPanel(true)}
           >
             Top Up
@@ -203,7 +161,7 @@ export default function App({session}: AppProps) {
               {session.user.paymentmethods.map((method, index) => (
                 <div
                   key={index}
-                  className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 px-6 py-4 text-white flex justify-between items-center hover:bg-white/10 transition-all duration-300 shadow-2xl"
+                  className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 px-6 py-4 text-white flex justify-between items-center hover:bg-white/10 transition-colors duration-300 shadow-2xl"
                   style={{
                     animationDelay: `${index * 100}ms`,
                     animation: 'fadeInUp 0.6s ease-out forwards'
@@ -237,6 +195,7 @@ export default function App({session}: AppProps) {
     <div className="w-full max-w-md">
       <PayPanel
         topUpAmount={topUpAmount}
+        session={session}
         showAlternativeMethods={!!topUpAmount} // only show when topping up
         onCancel={() => {
           setShowPayPanel(false);

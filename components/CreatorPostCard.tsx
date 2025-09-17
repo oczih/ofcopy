@@ -565,6 +565,7 @@ useEffect(() => {
         price={post.price}
         session={session}
         type="post"
+        post={post}
       />
     </div>
   </div>
