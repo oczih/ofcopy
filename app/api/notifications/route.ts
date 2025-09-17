@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: '`type`, `by`, and non-empty `forUsers` array are required' }, { status: 400 });
     }
 
-    const validTypes = ['newsub', 'resub', 'tip', 'subcancel', 'comment', 'like', 'newfollower', 'promotion', 'purchase'];
+    const validTypes = ['newsub', 'resub', 'tip', 'subcancel', 'comment', 'like', 'newfollower', 'promotion','message' ,'post'];
     if (!validTypes.includes(type)) {
       return NextResponse.json({ message: 'Invalid notification type' }, { status: 400 });
     }

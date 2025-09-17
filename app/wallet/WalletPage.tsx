@@ -105,11 +105,6 @@ function PayPanel({ topUpAmount, showAlternativeMethods = true, onCancel, sessio
           </button>
         </div>
       )}
-
-
-      {/* Card Payment */}
-
-
       <div className="text-xs text-gray-500 text-center pt-4 border-t border-white/10">
         By subscribing, you agree to our Terms of Service and Privacy Policy
       </div>

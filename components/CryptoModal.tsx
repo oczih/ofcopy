@@ -1,7 +1,7 @@
 'use client'
 
 /* eslint-disable @next/next/no-img-element */
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Copy, CheckCircle, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Session } from "next-auth";
 import { Creator, Post } from "@/app/types";
@@ -35,9 +35,15 @@ export function CryptoPaymentModal({ amountUsd, onClose, type, creator, session,
   const [confirmed, setConfirmed] = useState(false);
   const [timer, setTimer] = useState(60);
   const [showTutorial, setShowTutorial] = useState(false);
-
+  const notifiedCreators = useRef<Set<string>>(new Set());
   const walletAddress: string = process.env.NEXT_PUBLIC_LTCWALLETADDRESS!;
-
+  const paymentToNotificationMap: Record<PaymentType, string> = {
+    subscription: "newsub",
+    post: "post",
+    tip: "tip",
+    message: "message",
+    topup: "promotion", 
+  };
   const handleCopy = () => {
     navigator.clipboard.writeText(walletAddress);
     setCopied(true);
@@ -79,6 +85,33 @@ export function CryptoPaymentModal({ amountUsd, onClose, type, creator, session,
   
       const data = await res.json();
       if (data.confirmed) setConfirmed(true);
+      if (creator?._id && !notifiedCreators.current.has(creator._id) && ["subscription","post","tip","message"].includes(type)) {
+        notifiedCreators.current.add(creator._id);
+      
+        const notificationType = paymentToNotificationMap[type];
+      
+        if (notificationType) {
+          try {
+            const response = await fetch("/api/notifications", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                type: notificationType,  // mapped to valid type
+                by: session?.user._id,
+                forUsers: [creator._id],
+                creatorId: creator._id
+              }),
+            });
+      
+            if (!response.ok) {
+              const errorData = await response.json();
+              console.error("Failed to create notification:", errorData);
+            }
+          } catch (err) {
+            console.error("Notification request failed:", err);
+          }
+        }
+      }
     } catch (err) {
       console.error("Payment check failed:", err);
     } finally {
