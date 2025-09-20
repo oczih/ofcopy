@@ -46,6 +46,12 @@ export interface CreatorDocument extends mongoose.Document {
   oauthId?: string;
   gender: Gender;
   lastUsernameChange?: Date;
+  twitter?: string;     // Twitter/X URL or handle
+  bluesky?: string;     // Bluesky URL or handle
+  tiktok?: string;      // TikTok profile link
+  instagram?: string;   // Instagram profile link
+  facebook?: string;    // Facebook profile link
+  youtube?: string;     // YouTube channel link
   price?: number;
   category?: string;
   subscriptions?: Subscriber[];
@@ -77,6 +83,12 @@ const creatorSchema = new Schema<CreatorDocument>({
   oauthId: { type: String },
   lastUsernameChange: { type: Date, default: null },
   creatorCreatedAt: { type: Date, default: null },
+  twitter:   { type: String, trim: true, default: "" },  // Twitter/X
+  bluesky:   { type: String, trim: true, default: "" },  // Bluesky
+  tiktok:    { type: String, trim: true, default: "" },  // TikTok
+  instagram: { type: String, trim: true, default: "" },  // Instagram
+  facebook:  { type: String, trim: true, default: "" },  // Facebook
+  youtube:   { type: String, trim: true, default: "" },  // YouTube
   price: { type: Number, default: 9.99 },
   country: { type: String, default: '' },
   bio: {type: String, default: ''},

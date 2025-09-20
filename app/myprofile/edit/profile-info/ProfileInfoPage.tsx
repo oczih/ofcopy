@@ -1,5 +1,6 @@
 'use client'
 
+import creatorservice from "@/app/services/creatorservice";
 import userservice from "@/app/services/userservice";
 import { Creator, User } from "@/app/types";
 import { ArrowLeft } from "lucide-react";
@@ -111,73 +112,6 @@ export default function App({users, session, creators}: AppProps) {
       
         checkUsername();
       }, [formData.handle, users]);
-      const handleSave = async () => {
-        if (!session?.user?._id) return;
-        if (!validateForm()) return;
-      
-        setSaving(true);
-      
-        const rightCreator = creators.find(c => c.user === session.user._id);
-        interface UpdateProfilePayload {
-          name?: string;
-          username?: string;
-          bio?: string;
-          location?: { country: string };
-        }
-        const payload: UpdateProfilePayload = {
-          name: formData.name,
-          bio: formData.bio,
-          location: { country: formData.location },
-        };
-      
-        // Only include username if it changed
-        let usernameChanging = false;
-        if (rightCreator) {
-          if (formData.handle !== rightCreator.username) {
-            usernameChanging = true;
-            payload.username = formData.handle;
-          }
-        } else {
-          if (formData.handle !== session.user.username) {
-            usernameChanging = true;
-            payload.username = formData.handle;
-          }
-        }
-      
-        // Frontend 7-day check for creators
-        if (usernameChanging && rightCreator) {
-          const lastChange = rightCreator.lastUsernameChange || new Date(0);
-          const now = new Date();
-          const diffMs = now.getTime() - new Date(lastChange).getTime();
-          const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-        
-          if (diffMs < SEVEN_DAYS) {
-            toast.error("Username can only be changed once every 7 days.", {
-              duration: 5000, // 5 seconds
-            });
-            setSaving(false);
-            return;
-          }
-        }
-      
-        try {
-          await userservice.update(
-            rightCreator ? rightCreator._id : session.user._id,
-            payload
-          );
-          router.push('/myprofile/edit');
-        } catch (err) {
-          console.error("Failed to update profile info:", err);
-          toast.error("Failed to save changes.", { duration: 5000 });
-        } finally {
-          setSaving(false);
-        }
-      };
-
-      const handleInputChange = (field: string, value: string) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
-        setError("");
-      };
       const validateForm = () => {
         if (!formData.name || formData.name.trim().length < 2) {
           setError("Name must be at least 2 characters long");
@@ -195,6 +129,85 @@ export default function App({users, session, creators}: AppProps) {
         }
       
         return true;
+      };
+const handleSave = async () => {
+  if (!session?.user?._id) return;
+  if (!validateForm()) return;
+
+  setSaving(true);
+
+  const rightCreator = creators.find(c => c.user === session.user._id);
+
+  interface UpdateProfilePayload {
+    name?: string;
+    username?: string;
+    bio?: string;
+    location?: { country: string };
+  }
+
+  const payload: UpdateProfilePayload = {
+    name: formData.name,
+    bio: formData.bio,
+    location: { country: formData.location },
+  };
+
+  // Determine if username is changing
+  let usernameChanging = false;
+  if (rightCreator) {
+    if (formData.handle !== rightCreator.username) {
+      usernameChanging = true;
+      payload.username = formData.handle;
+    }
+  } else {
+    if (formData.handle !== session.user.username) {
+      usernameChanging = true;
+      payload.username = formData.handle;
+    }
+  }
+
+  // 7-day rule for creators
+  if (usernameChanging && rightCreator) {
+    const lastChange = rightCreator.lastUsernameChange || new Date(0);
+    const now = new Date();
+    const diffMs = now.getTime() - new Date(lastChange).getTime();
+    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+
+    if (diffMs < SEVEN_DAYS) {
+      toast.error("Username can only be changed once every 7 days.", {
+        duration: 5000,
+      });
+      setSaving(false);
+      return;
+    }
+  }
+
+  try {
+    // ✅ Always update the User document
+    await userservice.update(
+      session.user._id,
+      payload
+    );
+
+    // ✅ If this person is a creator, also update the Creator doc
+    if (rightCreator) {
+      await creatorservice.update(
+        rightCreator._id,
+        payload
+      );
+    }
+
+    router.push("/myprofile/edit");
+  } catch (err) {
+    console.error("Failed to update profile info:", err);
+    toast.error("Failed to save changes.", { duration: 5000 });
+  } finally {
+    setSaving(false);
+  }
+}
+
+      const handleInputChange = (field: string, value: string) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+        setError("");
       };
       if (!session) {
         // Show a fallback or redirect or login prompt if session not passed

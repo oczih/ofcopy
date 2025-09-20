@@ -21,6 +21,54 @@ import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from "uuid";
 import { getChatsBetween } from '@/lib/messages';
 import PaymentForm from './PaymentForm';
+import { Box} from '@mui/material';
+
+const SocialMediaChips = ({ creator }: {creator: Creator}) => {
+  const platforms = [
+    { name: 'Twitter/X', url: creator.twitter, icon: "/TwitterLogo.png" },
+    { name: 'Bluesky', url: creator.bluesky, icon: "/Bluesky_Logo.svg" },
+    { name: 'TikTok', url: creator.tiktok , icon: "/TikTok_icon.svg"},
+    { name: 'Instagram', url: creator.instagram, icon: "/Instagram_logo_2016.svg" },
+    { name: 'Facebook', url: creator.facebook , icon: "/FacebookLogo.png"},
+    { name: 'YouTube', url: creator.youtube , icon: "/YoutubeLogo.svg"},
+  ];
+
+  // Filter only platforms that have a URL
+  const activePlatforms = platforms.filter(platform => platform.url);
+
+  if (!activePlatforms.length) return null;
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        gap: 1,
+        overflowX: 'auto',
+        py: 1,
+        '&::-webkit-scrollbar': { display: 'none' }, // hide scrollbar on webkit
+      }}
+    >
+      {activePlatforms.map(platform => (
+        <a
+          key={platform.name}
+          href={platform.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`
+            flex items-center gap-2 w-full justify-center
+            rounded-full font-bold cursor-pointer px-4 py-2
+            text-white border border-transparent
+            transition-colors transition-border duration-200
+            "bg-[#3c0d6c] hover:bg-[#4d138a] hover:border-white"
+          `}
+        >
+          <img src={platform.icon} alt={platform.name} width={18} height={18} />
+          {platform.name}
+        </a>
+      ))}
+    </Box>
+  );
+}
 
 // Bio Modal Component
 const BioModal = ({ bio, creatorName }: { bio: string; creatorName: string }) => {
@@ -505,7 +553,6 @@ const daysLeft = subscription?.nextBillingDate
       (1000 * 60 * 60 * 24)
     )
   : 0;
-  console.log(daysLeft)
   return (
     <div>
       <Toaster
@@ -642,6 +689,7 @@ const daysLeft = subscription?.nextBillingDate
                   creatorName={creator?.name || creator?.username || userViewed.name || userViewed.username} 
                 />
               )}
+              {creator && <SocialMediaChips creator={creator} />}
               
               {/* User Stats (for non-creators) - Under profile pic and smaller */}
               {!creator && (rightCreator?.subscribers?.some(sub => sub.userId.toString() === userViewed._id) || rightCreator?.followers?.some(fol => fol.userId === userViewed._id.toString())) && (

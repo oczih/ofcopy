@@ -72,7 +72,7 @@ const unSubscribe = async (creatorId: string): Promise<void> => {
 
 const update = async (id: string, newData: Partial<Creator>): Promise<{ creator: Creator }> => {
   try {
-    const response = await axios.put(`${PUBLIC_CREATORS_ENDPOINT}/${id}`, newData);
+    const response = await axios.put(`${API_BASE}/api/creators/${id}`, newData);
     return response.data;
   } catch (error) {
     console.error('Error updating creator:', error);

@@ -56,7 +56,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       const body = await request.json();
       const {
         name, username, password, email,
-        age, image, gender
+        age, image, gender, instagram, bluesky, youtube, tiktok, facebook, twitter
       } = body;
   
       const user = await Creator.findById(id);
@@ -88,6 +88,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       if (age !== undefined) user.age = age;
       if (image !== undefined) user.image = image;
       if (gender !== undefined) user.gender = gender;
+      if (instagram !== undefined) user.instagram = instagram;
+      if (bluesky   !== undefined) user.bluesky   = bluesky;
+      if (youtube   !== undefined) user.youtube   = youtube;
+      if (tiktok    !== undefined) user.tiktok    = tiktok;
+      if (facebook  !== undefined) user.facebook  = facebook;
+      if (twitter   !== undefined) user.twitter   = twitter;
       await user.save();
   
       return NextResponse.json({ user });

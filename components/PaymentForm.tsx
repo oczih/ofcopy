@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import Link from "next/link";
 import { Creator, Post } from "@/app/types";
 import { Session } from "next-auth";
-import { X } from "lucide-react";
+import { Bitcoin, X } from "lucide-react";
 import { Chip } from "@mui/material";
 import Image from "next/image";
 import { CryptoPaymentModal } from "./CryptoModal";
@@ -39,13 +39,13 @@ export default function PaymentForm({
   const [selectedCurrency, setSelectedCurrency] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showCryptoModal, setShowCryptoModal] = useState(false);
-
+  const [loading, setLoading] = useState(false)
   const total = useMemo(() => {
     const basePrice = price ?? 0;
     const fee = basePrice * PLATFORM_FEE_RATE;
     return basePrice + fee;
   }, [price]);
-
+  
   if (!open) return null;
 
   // LuxFin handlers (wallets)
@@ -73,6 +73,31 @@ export default function PaymentForm({
       window.location.href = data.redirectUrl;
     } else {
       toast.error("Could not start wallet payment");
+    }
+  };
+  const handlePay = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/plisio/create-invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: Number(total),
+          type,
+          creatorId: creator?._id,
+          postId: post?._id ?? null,
+          userId: session?.user?._id
+        }),
+      });
+      const data = await res.json();
+
+      if (data.url) window.open(data.url, "_blank");
+      else alert("Failed to create Plisio invoice");
+    } catch (err) {
+      console.error(err);
+      alert("Payment error, please try again");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -115,8 +140,7 @@ export default function PaymentForm({
   ];
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="relative w-full max-w-md bg-gradient-to-br from-[#3c0d6c] to-[#1a0133] border border-white/10 rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] p-6 text-white backdrop-blur-xl space-y-6">
-
+    <div className="relative w-full max-w-md bg-gradient-to-br from-[#3c0d6c] to-[#1a0133] border border-white/10 rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] p-6 text-white backdrop-blur-xl space-y-6">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -233,18 +257,38 @@ export default function PaymentForm({
           flex items-center gap-2 w-full justify-center
           rounded-full font-bold cursor-pointer px-4 py-2
           text-white border border-transparent
-          transition-colors transition-border duration-200
+          transition-colors transition-border duration-300
           ${termsAccepted
-            ? "bg-[#3c0d6c] hover:bg-[#4d138a] hover:border-white"
+            ? "bg-white/10 hover:bg-[#4d138a] hover:border-white"
             : "bg-[#1a0133] cursor-not-allowed opacity-60"
           }
         `}
       >
-        <Image src={icon} alt={label} width={18} height={18} />
+        <Image src={icon} alt={label} width={20} height={20} />
         {label}
       </button>
     </div>
   ))}
+  <div>
+
+    <button
+     onClick={handlePay}
+     className={`
+      flex items-center gap-4 mt-2 w-full justify-center
+      rounded-full font-bold cursor-pointer px-4 py-2
+      text-white border border-transparent
+      transition-colors transition-border duration-300
+      ${termsAccepted
+        ? "bg-white/10  hover:bg-[#4d138a] hover:border-white"
+        : "bg-[#1a0133] cursor-not-allowed opacity-60"
+      }
+    `}
+    >
+      <Bitcoin/>
+        Pay with Crypto
+
+    </button>
+    </div>
 </div>
           ) : (
             <p className="text-gray-300 text-sm">
@@ -296,6 +340,13 @@ export default function PaymentForm({
     document.body
   )
 }
+{loading && (
+    <div className="absolute inset-0 z-50 flex items-center justify-center
+                    bg-black/70 rounded-2xl">
+      <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent
+                      rounded-full animate-spin" />
+    </div>
+  )}
       </div>
     </div>
   );

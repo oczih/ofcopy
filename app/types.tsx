@@ -87,6 +87,12 @@ _id: string;
     followers: Follower[]
     isSubscribed: boolean;
     gender: Gender;
+    twitter: string, // Twitter/X
+    bluesky: string, // Bluesky
+    tiktok: string, // TikTok
+    instagram: string, // Instagram
+    facebook: string, // Facebook
+    youtube: string, // YouTube
     price: number;
     lastUsernameChange?: Date;
     category: string;
@@ -315,6 +321,19 @@ export type SupabaseMessageRealtime = {
   price: number;
   ismassmessage: boolean;
 };
+export interface ReportType {
+  _id: string;
+  reporter: string | ObjectId;      // user ID of the reporter
+  reporterName?: string;            // optional, resolved name for display
+  creator: string | ObjectId;     // reported creator ID
+  creatorName?: string;             // optional, resolved name for display
+  post?: string | ObjectId | null; // optional if reporting a specific post
+  reason: string;                   // e.g. "harassment", "spam", "other"
+  details?: string;                 // optional additional details
+  status?: "pending" | "reviewed";  // optional, could track moderation
+  createdAt: string | Date;
+  updatedAt?: string | Date;
+}
 export type Chat = {
   id: string;              // text, can store Mongo ObjectId
   participants: string[];  // array of Mongo ObjectIds

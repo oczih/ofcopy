@@ -184,7 +184,7 @@ export default function ChatApp({ session, users, creators }: AppProps) {
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
         return cached.url;
       }
-      console.log(urlCache)
+
       try {
         const res = await fetch("/api/media/download-url", {
           method: "POST",

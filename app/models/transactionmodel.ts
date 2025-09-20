@@ -6,9 +6,11 @@ export interface TransactionDocument extends mongoose.Document {
   userId: mongoose.Types.ObjectId;   // Subscriber who paid
   amount: number;
   postId?: mongoose.Types.ObjectId;
-  type: "subscription" | "tip" | "payout" | "purchase";
+  messageId?: mongoose.Types.ObjectId;
+  type: "subscription" | "tip" | "payout" | "post" | "message";
   status: "completed" | "pending" | "failed";
   createdAt: Date;
+  paymentMethod: "plisio" | "mercuryo";
 }
 
 const transactionSchema = new Schema<TransactionDocument>({
@@ -16,7 +18,9 @@ const transactionSchema = new Schema<TransactionDocument>({
   userId: { type: Schema.Types.ObjectId, ref: "OFUser", required: true },
   amount: { type: Number, required: true },
   postId: { type: Schema.Types.ObjectId, ref: "Post" },
-  type: { type: String, enum: ["subscription", "tip", "payout", "purchase"], required: true },
+  messageId: { type: Schema.Types.ObjectId, ref: "Message" },
+  paymentMethod: { type: String, required: true },
+  type: { type: String, enum: ["subscription", "tip", "message", "payout", "post"], required: true },
   status: { type: String, enum: ["completed", "pending", "failed"], default: "completed" },
 }, { timestamps: true });
 

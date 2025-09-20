@@ -173,7 +173,11 @@ export function CryptoPaymentModal({ amountUsd, onClose, type, creator, session,
         >
           💳 Open Mercuryo to Pay
         </a>
-
+        <div
+          className="w-full font-md text-white font-semibold pb-1 rounded-xl transition-colors duration-200"
+        >
+          Please send the exact amount, we do not provide refunds
+        </div>
         {/* Collapsible tutorial */}
         <button
           onClick={() => setShowTutorial(!showTutorial)}

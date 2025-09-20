@@ -1,9 +1,13 @@
+import React from "react";
 
+import  App from "./SocialMediaPage"
+import { fetchPageData } from "@/lib/fetchDataPage";
 
-export default function SocialMedia() {
-    return (
-        <div>
+export default async function Page() {
+  const { creators, users, safeSession } = await fetchPageData();
 
-        </div>
-    )
+  return (
+      <App creators={creators} users={users} session={safeSession} />
+    
+  );
 }

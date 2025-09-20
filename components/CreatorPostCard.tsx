@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import MediaRenderer from "./MediaRenderer";
 import PaymentForm from "./PaymentForm";
 import { createPortal } from "react-dom";
+import ReportForm from "./ReportForm";
 
 
 // Dynamically import emoji-picker-react to avoid SSR issues
@@ -62,20 +63,18 @@ function resolveImageUrl(url: string) {
     const isSubscribersOnly = post.viewableFor === "subscribers";
     const isViewingUserOwner = String(creator.user) === String(session?.user?._id);
   
-    // Default visibility rules
     let canUserView =
-      isViewingUserOwner ||
-      (!isFollowersOnly && !isSubscribersOnly) ||
-      status === "follower" ||
-      status === "subscriber";
+      isViewingUserOwner || 
+      (!isFollowersOnly && !isSubscribersOnly);
   
-    // If post has a price, restrict unless owner (or later: unlocked)
-    if (post.price && post.price > 0 && !isViewingUserOwner) {
-      canUserView = false; // or check against a `hasPurchased(post)` function
-    }
+    if (isSubscribersOnly && status === "subscriber") canUserView = true;
+  
+    // ✅ allow subscribers to view followers-only content
+    if (isFollowersOnly && (status === "follower" || status === "subscriber"))
+      canUserView = true;
   
     setCanView(canUserView);
-  }, [status, session?.user?._id, creator.user, post.viewableFor, post.price]);
+  }, [status, session?.user?._id, creator.user, post.viewableFor]);
   // Like and comment modal state
   useEffect(() => {
     if (!paymentModal) return;
@@ -98,7 +97,7 @@ function resolveImageUrl(url: string) {
   const [commentModalOpen, setCommentModalOpen] = useState<string | null>(null);
   const [likes, setLikes] = useState(post.likes ?? []);
   const [comments, setComments] = useState(post.comments ?? []);
-  
+  const [reportModal, setReportModalOpen] = useState(false)
   const [imageLoading, setImageLoading] = useState(true);
 
   const handleLike = async (post: Post) => {
@@ -512,12 +511,17 @@ useEffect(() => {
           <MoreHorizontal className="w-5 h-5" />
         </button>
         {modalOpen && !session?.user?.creator && !canDeletePost() && (
-  <div className="absolute right-0 top-full mt-2 w-48 max-w-[90vw] overflow-hidden text-ellipsis bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-100 opacity-100 animate-fade-in z-30">
+  <div className="absolute flex-col flex right-0 top-full mt-2 w-48 max-w-[90vw] overflow-hidden text-ellipsis bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-2 transition-all duration-100 transform origin-top scale-100 opacity-100 animate-fade-in z-30">
     <Link href={`/${creator.username}`}>
-      <button className="w-full justify-start text-left cursor-pointer">
+      <button className="w-full hover:bg-white/10 rounded-full transition-colors duration-200 p-1 justify-start text-left cursor-pointer">
         Go to creator profile
       </button>
     </Link>
+    <button 
+    onClick={() => setReportModalOpen(true)}
+    className="w-full hover:bg-white/10 rounded-full transition-colors duration-200 p-1 justify-start text-left cursor-pointer">
+        Report post content
+      </button>
   </div>
 )}
 </div>
@@ -549,6 +553,21 @@ useEffect(() => {
     </Button>
   </div>
 )}
+<PortalModal open={reportModal}>
+  <div
+    className="w-full max-w-xl mx-auto"
+    onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
+  >
+    <ReportForm
+      creator={creator}
+      avatarUrl={avatarUrl || ""}
+      onClose={() => setReportModalOpen(false)}
+      open={true}   // keep it always true since PortalModal handles visibility
+      session={session}
+      post={post}
+    />
+  </div>
+</PortalModal>
 <PortalModal open={paymentModal}>
   <div
     className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
@@ -594,9 +613,9 @@ useEffect(() => {
    />
   )}
 
-  {(isSubscribersOnly || isFollowersOnly) && (
+  {post.price > 0 && (
     <Badge className="absolute top-4 left-4 bg-pink-600/90 text-white border-none shadow">
-      {isSubscribersOnly ? "Subscribers only" : "Followers only"}
+      Pay Per View
     </Badge>
   )}
 </div> 
