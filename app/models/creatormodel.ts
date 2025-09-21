@@ -16,6 +16,16 @@ export interface Follower {
   avatarKey?: string;
   followedAt: Date;
 }
+export interface Promotion {
+  title: string;
+  description?: string;
+  discountPercent: number;       // e.g. 20 for 20% off
+  startDate: Date;
+  endDate?: Date;                // optional if open-ended
+  active: boolean;               // quick toggle
+  createdAt: Date;
+  updatedAt: Date;
+}
 enum Gender {
   Male = 'Male',
   Female = 'Female',
@@ -65,8 +75,19 @@ export interface CreatorDocument extends mongoose.Document {
   purchases: Purchase[];
   creatorCreatedAt: Date;
   country: string;
+  promotions: Promotion[];
 }
-
+const promotionSchema = new Schema<Promotion>(
+  {
+    title: { type: String, required: true },
+    description: { type: String, default: "" },
+    discountPercent: { type: Number, required: true, min: 0, max: 100 },
+    startDate: { type: Date, required: true },
+    endDate: { type: Date },
+    active: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
 const creatorSchema = new Schema<CreatorDocument>({
   name: { type: String, required: true },
   username: { type: String, unique: true, required: true },
@@ -156,6 +177,7 @@ const creatorSchema = new Schema<CreatorDocument>({
   user: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true },
   totalEarnings: { type: Number, default: 0 },
   currentBalance: { type: Number, default: 0 },
+  promotions: [promotionSchema],
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

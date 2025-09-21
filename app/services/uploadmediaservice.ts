@@ -53,14 +53,7 @@ function sanitizeFileName(name: string): string {
   return name.replace(/\s+/g, "-").toLowerCase();
 }
 
-async function compressImage(file: File): Promise<File> {
-  const options = {
-    maxSizeMB: 1,         // Target maximum size in MB
-    maxWidthOrHeight: 1920, // Resize image if larger than this
-    useWebWorker: true,
-  };
-  return await imageCompression(file, options);
-}
+
 async function createBlurredImage(file: File): Promise<File> {
   if (!file.type.startsWith("image/")) return file;
 
@@ -84,35 +77,51 @@ async function createBlurredImage(file: File): Promise<File> {
     });
   });
 }
-export async function uploadContent(file: File): Promise<{ key: string, blurred_key: string }> {
-  let fileToUpload = file;
+export async function uploadContent(
+  file: File
+): Promise<{ key: string; blurred_key: string } | { prohibited: true }> {
 
-  // Compress image if applicable
+  // ✅ Compress on client
+  let fileToScan = file;
   if (file.type.startsWith("image/")) {
-    fileToUpload = await compressImage(file);
+    fileToScan = await imageCompression(file, {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1024,
+      useWebWorker: true,
+    });
   }
 
+  // ---- 1. Scan with PhotoDNA ----
+  const formData = new FormData();
+  formData.append("file", fileToScan);
 
+  const scanResp = await fetch("/api/media/scan-photodna", {
+    method: "POST",
+    body: formData
+  });
 
-  const sanitizedFileName = sanitizeFileName(fileToUpload.name);
-  const contentType = getContentType(fileToUpload); // <-- get correct MIME type
+  if (!scanResp.ok) {
+    const err = await scanResp.json();
+    if (err?.error === "Image flagged by PhotoDNA") return { prohibited: true };
+    throw new Error(err?.error || "PhotoDNA scan failed");
+  }
 
-  if (!sanitizedFileName) throw new Error("File name is empty");
-
-  // Use contentType here, not fileToUpload.type
+  // ---- 2. Continue S3 upload (your existing code) ----
+  const sanitizedFileName = sanitizeFileName(fileToScan.name);
+  const contentType = getContentType(fileToScan);
   const { uploadUrl, key } = await getSignedUrl(sanitizedFileName, contentType);
-  await uploadFileToS3(fileToUpload, uploadUrl);
+  await uploadFileToS3(fileToScan, uploadUrl);
 
-  // Create blurred version
-  const blurredFile = await createBlurredImage(fileToUpload);
+  const blurredFile = await createBlurredImage(fileToScan);
   const blurredSanitizedName = sanitizeFileName(blurredFile.name);
-  const blurredContentType = getContentType(blurredFile); // also ensure MIME type for blurred
-
-  const { uploadUrl: blurredUploadUrl, key: blurred_key } = await getSignedUrl(blurredSanitizedName, blurredContentType);
+  const blurredContentType = getContentType(blurredFile);
+  const { uploadUrl: blurredUploadUrl, key: blurred_key } =
+    await getSignedUrl(blurredSanitizedName, blurredContentType);
   await uploadFileToS3(blurredFile, blurredUploadUrl);
 
   return { key, blurred_key };
 }
+
 
 
 export async function createPostWithUpload({

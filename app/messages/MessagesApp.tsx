@@ -400,19 +400,28 @@ export default function ChatApp({ session, users, creators }: AppProps) {
 
   const handleSendMessage = async () => {
     if (!messageText.trim() && files.length === 0) return;
-    if (!currentChatIdentifier) return; // ✅ guard against null
+    if (!currentChatIdentifier) return;
   
     setUploading(true);
     try {
       let newMessage: MessageType;
   
-      // Case 1: Sending media
       if (files.length > 0) {
-        const file = files[0]; // one file per message (extend later if needed)
-        const { key, blurred_key } = await uploadmediaservice.uploadContent(file);
+        const file = files[0]; // one file per message
+        const result = await uploadmediaservice.uploadContent(file);
+  
+        // ✅ Narrow the union type before using key/blurred_key
+        if ("prohibited" in result) {
+          setUploading(false);
+          alert("This file type is not allowed.");
+          return;
+        }
+  
+        // ✅ Safe destructuring now
+        const { key, blurred_key } = result;
   
         newMessage = await sendMessage({
-          chatId: currentChatIdentifier, // ✅ FIXED
+          chatId: currentChatIdentifier,
           senderId: session?.user._id ?? "",
           content: messageText || "",
           image_key: file.type.startsWith("image/") ? key : undefined,

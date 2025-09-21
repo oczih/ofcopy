@@ -246,14 +246,16 @@ if (!session?.user) {
       // First, handle files individually
       const uploadPromises: Promise<UploadedFile | null>[] = Object.entries(formData)
   .filter(([, value]) => value instanceof File)
-  .map(async ([key, file]) => {
-    const typedFile = file as File;
-    const s3Key = await uploadContent(typedFile);
-    if (!s3Key) {
-      console.error(`Failed to get s3Key for file: ${typedFile.name}`);
+  .map(async ([key, value]) => {
+    const typedFile = value as File;
+    const result = await uploadContent(typedFile);
+    if (!result || "prohibited" in result) {
+      console.error(`Failed to upload or file prohibited: ${typedFile.name}`);
       return null;
     }
-    return { key, s3Key, file: typedFile };
+
+    // ✅ TypeScript now knows `result` has { key, blurred_key }
+    return { key, s3Key: result, file: typedFile };
   });
 
 const uploadedFiles = (await Promise.all(uploadPromises)).filter(

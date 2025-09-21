@@ -104,6 +104,7 @@ _id: string;
     purchases: Purchase[];
     creatorCreatedAt: Date;
     country: string;
+    promotions: Promotion[];
   }
 
   export type NotificationType = 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comment' | 'like' | 'newfollower'| 'promotion' | 'purchase';
@@ -184,6 +185,17 @@ export type Post = {
   isRepost: boolean;
   originalContentId?: string;
 };
+export interface Promotion {
+  _id: string;
+  title: string;
+  description?: string;
+  discountPercent: number;       // e.g. 20 for 20% off
+  startDate: Date;
+  endDate?: Date;                // optional if open-ended
+  active: boolean;               // quick toggle
+  createdAt: Date;
+  updatedAt: Date;
+}
 declare module "next-auth" {
   interface User {
     _id: string;

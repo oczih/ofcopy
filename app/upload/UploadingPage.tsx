@@ -157,6 +157,7 @@ export default function App({creators, session}: AppProps) {
       }
       setUploading(true);
       setMessage("Uploading...");
+    
       try {
         if (files.length === 0) {
           // No files - create a post without media
@@ -171,54 +172,55 @@ export default function App({creators, session}: AppProps) {
               viewable,
               width: null,
               height: null,
-              price: price ? price : 0,
+              price: price ?? 0,
             }),
           });
-      
+    
           if (!response.ok) {
-            console.error('Post creation without file failed');
             setMessage("Failed to create post without files.");
             return;
           }
-      
+    
           setMessage("Post created without files.");
         } else {
           // Upload files
-          const uploadPromises = files.map(async (file) => {
-            const s3Key = await uploadContent(file);
-            if (!s3Key) {
-              console.error("Failed to get s3Key for file:", file.name);
-              return;
+          for (const file of files) {
+            const s3KeyResult = await uploadContent(file);
+    
+            // Check if PhotoDNA blocked the file
+            if ("prohibited" in s3KeyResult) {
+              console.warn(`File blocked by PhotoDNA: ${file.name}`);
+              setMessage(`Upload blocked: ${file.name} is prohibited.`);
+              continue; // skip this file
             }
-      
+    
             const dims = await getImageDimensions(file);
-            const width = dims?.width || null;
-            const height = dims?.height || null;
-      
+            const width = dims?.width ?? null;
+            const height = dims?.height ?? null;
+    
             const response = await fetch(`/api/media?username=${session?.user?.username}`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                s3Key,
+                s3Key: s3KeyResult,
                 caption,
                 creatorId: creator?._id,
                 type: file.type,
                 viewable,
                 width,
                 height,
-                price: price ? price : 0,
+                price: price ?? 0,
               }),
             });
-      
+    
             if (!response.ok) {
-              console.error('Post creation with file failed');
+              console.error(`Post creation failed for file: ${file.name}`);
             }
-          });
-      
-          await Promise.all(uploadPromises);
-          setMessage(`Upload successful! Uploaded ${files.length} file(s).`);
+          }
+    
+          setMessage(`Upload complete. Processed ${files.length} file(s).`);
         }
-      
+    
         // Reset state
         setFiles([]);
         setPreviews([]);
@@ -230,8 +232,9 @@ export default function App({creators, session}: AppProps) {
         setMessage("Upload failed. Please try again.");
       } finally {
         setUploading(false);
-      }      
+      }
     }
+    
 
     const handleChange = (event: SelectChangeEvent) => {
       setViewable(event.target.value as string);
