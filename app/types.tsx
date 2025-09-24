@@ -105,6 +105,8 @@ _id: string;
     creatorCreatedAt: Date;
     country: string;
     promotions: Promotion[];
+    bundles: Bundle[];
+    freeTrial: boolean;
   }
 
   export type NotificationType = 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comment' | 'like' | 'newfollower'| 'promotion' | 'purchase';
@@ -195,6 +197,16 @@ export interface Promotion {
   active: boolean;               // quick toggle
   createdAt: Date;
   updatedAt: Date;
+}
+export interface Bundle {
+  _id: string;
+  name: string;
+  description: string;
+  monthCount: number;
+  percetangeOff: number;
+  price: number;
+  createdAt: Date;
+  endDate: Date;
 }
 declare module "next-auth" {
   interface User {

@@ -1,56 +1,681 @@
-
-'use client'
+'use client';
 
 import { useState } from "react";
-import { Creator, User } from "../types";
+import { Bundle, Creator, User } from "../types";
 import { Session } from "next-auth";
-import { Switch } from "@mui/material";
-
-
+import { createPortal } from "react-dom";
+import { X } from "lucide-react";
+import { Divider, MenuItem,Select, FormControl, Switch, SelectChangeEvent, Chip, Tabs, Tab } from "@mui/material";
+import creatorservice from "../services/creatorservice";
+import { createBundleAPI, createPromotionAPI } from "@/lib/utils";
 
 interface AppProps {
-    creators: Creator[] | null;
-    session: Session | null;
-    users: User[] | null;
-  }
-  
-  export default function App({ creators, session, users }: AppProps) {
-    const [price, setTempPrice] = useState<number | null>(null)
-    const rightCreator = creators?.find(c => c.user === session?.user._id)
-    const handlePriceChange = () => {
-        try {
-            
-        }catch (error){
-            console.error(error)
-        }
+  creators: Creator[] | null;
+  session: Session | null;
+  users: User[] | null;
+}
+
+interface PromotionForm {
+  type: "freeTrial" | "discount";
+  audience: "all" | "new" | "followers" | "expired";
+  peopleLimit: string;
+  message: string;
+  startDate: string;
+  endDate: string;
+  trialDays?: string;
+  discountPercent?: string;
+}
+
+export default function App({ creators, session }: AppProps) {
+  const rightCreator = creators?.find(c => c.user === session?.user._id);
+
+  // === Subscription price state ===
+  const [tempPrice, setTempPrice] = useState<number | "">(rightCreator?.price ?? "");
+  const [loading, setLoading] = useState(false);
+  const [freeTrial, setFreeTrial] = useState<boolean>(rightCreator?.freeTrial ?? false);
+  const [saving, setSaving] = useState(false)
+  const [bundleModal, setBundleModalOpen] = useState(false)
+  const [percentage, setPercentage] = useState<string>("");
+  const [month, setMonth] = useState<string>("");
+
+  const [showPriceModal, setShowPriceModal] = useState(false);
+
+  const updatePrice = async () => {
+    if (tempPrice === "" || tempPrice < 0) return;
+    setLoading(true);
+    try {
+      await fetch(`/api/creators/${rightCreator?._id}/price`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ price: tempPrice }),
+      });
+      // You can toast success or refresh
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+      setShowPriceModal(false);
     }
-    return (
-            <div className="min-h-screen w-full flex justify-center px-4 py-10">
-            <main className="max-w-3xl w-full space-y-6">
-            <h2 className="text-3xl font-bold text-white">Subscription settings</h2>
-            <div className="flex flex-col justify-start">
-            <span>Subscription price per month</span>
-            <input
-            value={rightCreator?.price}
-            onChange={(e) => setTempPrice(Number(e.target.value))}
-            type="text"
-            />
-            <button
-            disabled={!price}
-            className="w-full rounded-xl disabled:bg-gray-500 disabled:cursor-none cursor-pointer bg-white/10 px-4 py-2 duration-200 transition-colors">
-                Set Price
-            </button>
-            </div>
-            <div className="flex flex-row">
-                <div className="flex flex col">
-                    <h2>Free Trials without Payment method</h2>
-                    <h2>Toggle this to users view content without needing to input payment details</h2>
-                </div>
-                <Switch 
-                    
-                />
-            </div>
-            </main>
+  };
+
+  const handlePriceChange = () => {
+    if (tempPrice === "" || tempPrice < 0) return;
+
+    // ⚡️ If the price is going UP, show the warning modal
+    if (
+      rightCreator?.price !== undefined &&
+      typeof tempPrice === "number" &&
+      tempPrice > rightCreator.price
+    ) {
+      setShowPriceModal(true);
+    } else {
+      updatePrice();
+    }
+  };
+
+
+  const handleFreeTrialToggle = async (checked: boolean) => {
+    setFreeTrial(checked);
+    try {
+      await fetch(`/api/creators/${rightCreator?._id}/free-trial`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ allowFreeTrial: checked }),
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // === Promotions state ===
+  const [promotions, setPromotions] = useState<PromotionForm[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [form, setForm] = useState<PromotionForm>({
+    type: "freeTrial",
+    audience: "all",
+    peopleLimit: "",
+    message: "",
+    startDate: "",
+    endDate: "",
+    trialDays: "7",
+    discountPercent: "10",
+  });
+
+  const handleFormChange = (key: keyof PromotionForm, value: string) => {
+    setForm(prev => ({ ...prev, [key]: value }));
+  };
+
+  const createPromotion = async () => {
+    if (!rightCreator) return;
+  
+    try {
+      // Send to backend
+      const payload = {
+        type: form.type,
+        audience: form.audience,
+        peopleLimit: form.peopleLimit,
+        trialDays: form.trialDays,
+        discountPercent: form.discountPercent,
+        message: form.message,
+        startDate: form.startDate,
+        endDate: form.endDate,
+      };
+  
+      const data = await createPromotionAPI(rightCreator._id, payload);
+  
+      if (!data.error) {
+        setPromotions((prev) => [...prev, payload]); // update local state
+        setModalOpen(false);
+        setForm({
+          type: "freeTrial",
+          audience: "all",
+          peopleLimit: "",
+          message: "",
+          startDate: "",
+          endDate: "",
+          trialDays: "7",
+          discountPercent: "10",
+        });
+      } else {
+        console.error(data.error);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  const createBundle = async () => {
+    if (!rightCreator || !month || !percentage || tempPrice === "") return;
+  
+    try {
+      const bundle: Bundle = {
+        _id: "", // will be generated by backend (or you can use a temp UUID)
+        name: `Bundle ${month}`, 
+        description: `Discount ${percentage}% for ${month}`,
+        monthCount: Number(month),
+        percetangeOff: Number(percentage),
+        price: tempPrice,
+        createdAt: new Date().toISOString(),
+        endDate: new Date(new Date().setMonth(new Date().getMonth() + Number(month.split(" ")[0]))).toISOString(),
+      };
+  
+      const data = await createBundleAPI(rightCreator._id, bundle);
+  
+      if (!data.error) {
+        // Update local state with proper type
+        rightCreator.bundles = [...(rightCreator.bundles || []), bundle];
+        setBundleModalOpen(false);
+        setMonth("");
+        setPercentage("");
+      } else {
+        console.error(data.error);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  const handleRemoveBundle = async (bundle: Bundle) => {
+    if (!rightCreator) return;
+    setSaving(true);
+    try {
+      const updatedBundles = (rightCreator.bundles || []).filter(
+        (b) => !(b.price === bundle.price && b.monthCount === bundle.monthCount)
+      );
+
+      await creatorservice.update(rightCreator._id, {
+        ...rightCreator,
+        bundles: updatedBundles,
+      });
+    } catch (error) {
+      console.error("Error removing bundle:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+    const monthCounts = ["3 months", "6 months", "12 months"]
+    const percentages = [5,10,15,20,25,30,35,45,50]
+      const handleMonthChange = (event: SelectChangeEvent<string>) => {
+        setMonth(event.target.value);   // event.target.value is string
+      };
+      
+  return (
+    <div className="min-h-screen w-full flex justify-center px-4 py-10">
+      <main className="max-w-3xl w-full space-y-6">
+        <h2 className="text-3xl font-bold text-white">Subscription Settings</h2>
+
+        {/* === Subscription Price Input === */}
+        <div className="flex flex-col gap-3">
+          <label className="text-gray-500 text-sm">Subscription price per month</label>
+          
+          <div className="relative w-full">
+  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white">$</span>
+  <input
+    value={tempPrice}
+    onChange={(e) =>
+      setTempPrice(e.target.value === "" ? "" : Number(e.target.value))
+    }
+    type="number"
+    min="0"
+    step="0.01"
+    className="pl-7 pr-3 py-2 w-full rounded-md bg-white/10 text-white"
+  />
+</div>
+          <label className="text-gray-500 text-sm">Minimum $3.99 Maximum $100</label>
+          <button
+            disabled={tempPrice === rightCreator?.price || loading || saving}
+            onClick={handlePriceChange}
+            className="w-full rounded-xl bg-white/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 px-4 py-2 text-white font-medium disabled:opacity-40 transition-colors"
+          >
+            {loading ? "Saving..." : "Set Price"}
+          </button>
         </div>
-    )
-  }
+        <Divider sx={{ borderColor: "#912afa" }} />
+        {/* === Free Trial Toggle === */}
+        <div className="flex flex-row items-center mt-5 justify-between rounded-xl">
+          <div className="flex flex-col">
+            <h3 className="text-lg font-semibold text-white">Free Trials without Payment method</h3>
+            <p className="text-gray-400 text-sm">
+              Allow users to view content without adding a payment method
+            </p>
+          </div>
+          <Switch
+            checked={freeTrial}
+            onChange={e => handleFreeTrialToggle(e.target.checked)}
+            className="h-5 w-10 accent-pink-500"
+          />
+        </div>
+        <Divider sx={{ borderColor: "#912afa" }} />
+        <div className="flex flex-col items-center justify-between rounded-xl">
+        <button
+        disabled={form.peopleLimit === ""}
+          onClick={() => setBundleModalOpen(true)}
+          className="w-full rounded-xl mt-5 bg-white/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 hover:bg-white/20 px-4 py-2 text-white font-medium"
+        >
+          Create Promotional Bundle
+        </button>
+            <div className="flex flex-col justify-between">
+                {rightCreator?.bundles?.map(b => 
+                    <div key={b.price}>
+                        <div className="flex flex-row">
+                            ${b.price} total for {b.monthCount} {b.percetangeOff}
+                            <button
+                                onClick={ () => handleRemoveBundle}
+                                className="text-gray-300 hover:text-white transition-colors"
+                                >
+                                <X size={22} />
+                                </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+        <Divider sx={{ borderColor: "#912afa" }} />
+        {/* === Promotions === */}
+        <h2 className="text-md font-bold text-white mt-5">Start an account promotional offer</h2>
+        <h2 className="text-sm text-gray-400">Offer a free trial or a discounted subscription on your profile to new or expired subscribers</h2>
+        <button
+          onClick={() => setModalOpen(true)}
+          className="w-full rounded-xl bg-white/10 transition-colors duration-200 cursor-pointer hover:bg-white/20 px-4 py-2 text-white font-medium"
+        >
+          Create Promotional Offer
+        </button>
+
+        {promotions.map((p, idx) => (
+          <div
+            key={idx}
+            className="p-4 rounded-xl bg-white/10 text-white flex flex-col gap-1"
+          >
+            <p className="font-semibold">
+              {p.type === "freeTrial"
+                ? `Free Trial (${p.trialDays} days)`
+                : `Discount (${p.discountPercent}%)`}
+            </p>
+            <p>Audience: {p.audience}</p>
+            <p>People Limit: {p.peopleLimit || "Unlimited"}</p>
+            <p>Message: {p.message}</p>
+            <p>
+              {p.startDate} → {p.endDate}
+            </p>
+            <button
+              onClick={() =>
+                setPromotions(promotions.filter((_, i) => i !== idx))
+              }
+              className="mt-2 px-2 py-1 bg-red-600 rounded hover:bg-red-700"
+            >
+              Stop Promotion
+            </button>
+          </div>
+        ))}
+
+        {/* === Promotions Modal === */}
+        {bundleModal && createPortal(
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="relative w-full max-w-md bg-gradient-to-br from-[#3c0d6c] to-[#1a0133] border border-white/10 rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] p-6 text-white space-y-6">
+      
+      {/* Close Button */}
+      <button
+        onClick={() => setBundleModalOpen(false)}
+        className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors"
+      >
+        <X size={22} />
+      </button>
+
+      <h3 className="text-xl font-bold">Create Bundle</h3>
+
+      <div className="justify-start flex flex-col space-y-4">
+        
+        {/* Discount */}
+        <h2>Discount percentage</h2>
+<FormControl fullWidth>
+  <Select
+    value={percentage}
+    onChange={(e) => setPercentage(e.target.value)} // value is already string
+    MenuProps={{
+      PaperProps: {
+        sx: {
+          bgcolor: "#4f1d74",      // dropdown background
+          borderRadius: "0.75rem",
+          "& .MuiList-root": {
+            padding: 0             // remove top/bottom white padding bars
+          }
+        }
+      }
+    }}
+    sx={{
+      bgcolor: "#4f1d74",         // select field background
+      borderRadius: "0.75rem",
+      color: "white",
+      "& .MuiSvgIcon-root": { color: "white" } // arrow color
+    }}
+  >
+    {percentages.map((p) => (
+      <MenuItem
+        key={p}
+        value={String(p)}
+        sx={{
+          bgcolor: "#4f1d74",       // match dropdown background
+          color: "white",
+          "&:hover": { bgcolor: "rgb(54, 19, 81)" } // darker purple on hover
+        }}
+      >
+        {p}%
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
+
+<h2>Bundle duration</h2>
+<FormControl fullWidth>
+  <Select
+    labelId="month-select-label"
+    id="month-select"
+    value={month}
+    onChange={handleMonthChange}
+    MenuProps={{
+      PaperProps: {
+        sx: {
+          bgcolor: "#4f1d74",      // dropdown background
+          borderRadius: "0.75rem",
+          "& .MuiList-root": {
+            padding: 0             // remove top/bottom white padding bars
+          }
+        }
+      }
+    }}
+    sx={{
+      bgcolor: "#4f1d74",         // field background
+      borderRadius: "0.75rem",
+      color: "white",
+      "& .MuiSvgIcon-root": { color: "white" } // arrow color
+    }}
+  >
+    {monthCounts.map((m) => (
+      <MenuItem
+        key={m}
+        value={m}
+        sx={{
+          bgcolor: "#4f1d74",       // match dropdown background
+          color: "white",
+          "&:hover": { bgcolor: "rgb(54, 19, 81)" } // darker purple on hover
+        }}
+      >
+        {m}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
+      </div>
+      <button
+                  disabled={month === ""}
+                  onClick={createBundle}
+                  className="w-full py-2 disabled:cursor-default duration-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-white/10 rounded-xl text-white font-semibold hover:bg-white/20"
+                >
+                  Create Bundle
+                </button>
+    </div>
+  </div>,
+  document.body
+)}
+        {modalOpen &&
+          createPortal(
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="relative w-full max-w-md bg-gradient-to-br from-[#3c0d6c] to-[#1a0133] border border-white/10 rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] p-6 text-white backdrop-blur-xl space-y-6">
+                <button
+                  onClick={() => setModalOpen(false)}
+                  className="absolute top-4 cursor-pointer duration-200 right-4 text-gray-300 hover:text-white transition-colors"
+                >
+                  <X size={22} />
+                </button>
+
+                <h3 className="text-xl font-bold">Create Promotion</h3>
+
+                <div className="space-y-3">
+                <div className="flex flex-wrap gap-2 mt-2">
+  {[
+    { value: "all", label: "All Fans" },
+    { value: "new", label: "New Fans" },
+    { value: "followers", label: "Followers" },
+    { value: "expired", label: "Expired Fans" },
+  ].map(opt => (
+    <Chip
+      key={opt.value}
+      label={opt.label}
+      clickable
+      onClick={() => handleFormChange("audience", opt.value)}
+      color={form.audience === opt.value ? "primary" : "default"}
+      variant={form.audience === opt.value ? "filled" : "outlined"}
+      sx={{
+        bgcolor: form.audience === opt.value ? "#a855f7" : "transparent",
+        color: "white",
+        borderColor: "#a855f7",
+        "&:hover": { bgcolor: form.audience === opt.value ? "#9333ea" : "rgb(54, 19, 81)" }
+      }}
+    />
+  ))}
+</div>
+                    <Tabs
+                    value={form.type}
+                    onChange={(_, newValue) => handleFormChange("type", newValue)}
+                    textColor="inherit"
+                    indicatorColor="secondary"
+                    TabIndicatorProps={{
+                        style: {
+                        backgroundColor: "#a855f7", // bottom border color when selected
+                        height: "3px",              // thickness of the bottom line
+                        borderRadius: "3px 3px 0 0",// rounded top edges
+                        },
+                    }}
+                    sx={{
+                        borderRadius: 2,
+                        minHeight: 40,
+                        "& .MuiTab-root": {
+                        color: "white",
+                        textTransform: "none",
+                        minHeight: 40,
+                        fontWeight: "bold",
+                        },
+                        "& .Mui-selected": {
+                        color: "white", // text stays white (optional)
+                        },
+                    }}
+                    >
+                    <Tab value="freeTrial" label="Free Trial" />
+                    <Tab value="discount" label="First Month Discount" />
+                    </Tabs>
+
+
+                    <FormControl fullWidth>
+  <label className="text-sm text-gray-300 mb-1">People Limit</label>
+  <Select
+    value={form.peopleLimit}
+    onChange={(e) => handleFormChange("peopleLimit", e.target.value)}
+    MenuProps={{
+      PaperProps: {
+        sx: {
+          bgcolor: "#4f1d74",      // 🔥 full dropdown background
+          borderRadius: "0.75rem",
+          "& .MuiList-root": {
+            padding: 0             // remove top/bottom white padding bars
+          }
+        }
+      }
+    }}
+    sx={{
+      bgcolor: "rgba(168,85,247,0.15)", // field background
+      borderRadius: "0.75rem",
+      color: "white",
+      "& .MuiSvgIcon-root": { color: "white" } // white arrow
+    }}
+  >
+    {["10", "25", "50", "100", "250", "1000", "unlimited"].map((opt) => (
+      <MenuItem
+        key={opt}
+        value={opt}
+        sx={{
+          bgcolor: "#4f1d74",         // match menu background
+          color: "white",
+          "&:hover": { bgcolor: "rgb(54, 19, 81)" } // darker purple on hover
+        }}
+      >
+        {opt === "unlimited" ? "Unlimited" : opt}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
+
+
+{form.type === "freeTrial" && (
+  <>
+<label className="text-sm text-gray-300 mb-1">Trial Days</label>
+<FormControl fullWidth>
+  <Select
+    value={form.trialDays}
+    onChange={(e) => handleFormChange("trialDays", e.target.value)}
+    MenuProps={{
+      PaperProps: {
+        sx: {
+          bgcolor: "rgba(168,85,247,0.15)",      // 🔥 dropdown background
+          borderRadius: "0.75rem",
+          mt: 0,
+          "& .MuiList-root": {
+            padding: 0           // remove top/bottom white padding bars
+          }
+        }
+      }
+    }}
+    sx={{
+      bgcolor: "rgba(168,85,247,0.15)", // field background
+      borderRadius: "0.75rem",
+      color: "white",
+      "& .MuiSvgIcon-root": { color: "white" } // white arrow
+    }}
+  >
+    {["1","2","3","4","5","6","7","14","30","unlimited"].map((opt) => (
+      <MenuItem
+        key={opt}
+        value={opt}
+        sx={{
+          bgcolor: "#4f1d74",         // same purple as menu
+          color: "white",
+          "&:hover": { bgcolor: "rgb(54,19,81)" } // darker purple hover
+        }}
+      >
+        {opt === "unlimited"
+          ? "Unlimited"
+          : `${opt} day${opt === "1" ? "" : "s"}`}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
+
+  </>
+)}
+{form.type === "discount" && (
+  <>
+<label className="text-sm text-gray-300 mb-1">Discount Percentage</label>
+<FormControl fullWidth>
+  <Select
+    value={form.discountPercent}
+    onChange={(e) => handleFormChange("discountPercent", e.target.value)}
+    MenuProps={{
+      PaperProps: {
+        sx: {
+          bgcolor: "rgba(168,85,247,0.15)",      // full dropdown background
+          borderRadius: "0.75rem",
+          "& .MuiList-root": {
+            padding: 0             // remove top/bottom white padding bars
+          }
+        }
+      }
+    }}
+    sx={{
+      bgcolor: "rgba(168,85,247,0.15)",         // field background
+      borderRadius: "0.75rem",
+      color: "white",
+      "& .MuiSvgIcon-root": { color: "white" } // white arrow
+    }}
+  >
+    {Array.from({ length: 18 }, (_, i) => (i + 1) * 5) // 5–90 in steps of 5
+      .map((p) => (
+        <MenuItem
+          key={p}
+          value={String(p)}
+          sx={{
+            bgcolor: "#4f1d74",       // same as menu
+            color: "white",
+            "&:hover": { bgcolor: "rgb(54, 19, 81)" } // darker purple hover
+          }}
+        >
+          {p}%
+        </MenuItem>
+    ))}
+  </Select>
+</FormControl>
+
+  </>
+)}
+
+
+
+                  <textarea
+                    placeholder="Message (optional)"
+                    value={form.message}
+                    onChange={e => handleFormChange("message", e.target.value)}
+                    className="w-full bg-[rgba(168,85,247,0.15)] mt-5 rounded-xl px-3 py-2 text-white"
+                  />
+                </div>
+
+                <button
+                  onClick={createPromotion}
+                  className="w-full py-2 cursor-pointer bg-white/10 rounded-xl text-white font-semibold hover:bg-white/20"
+                >
+                  Create Promotional Offer
+                </button>
+              </div>
+            </div>,
+            document.body
+          )}
+          {showPriceModal &&
+          createPortal(
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="relative w-full max-w-md bg-gradient-to-br from-[#3c0d6c] to-[#1a0133] border border-white/10 rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] p-6 text-white backdrop-blur-xl space-y-6">
+                <button
+                  onClick={() => setShowPriceModal(false)}
+                  className="absolute top-4 cursor-pointer duration-200 right-4 text-gray-300 hover:text-white transition-colors"
+                >
+                  <X size={22} />
+                </button>
+
+                <h3 className="text-xl font-bold">Price Increase Notice</h3>
+                <p className="text-gray-300 text-sm">
+                  Note: Until your current subscribers opt-in to your new price,
+                  they will auto-renew at your current subscription price.
+                  <br />
+                  <br />
+                  If you choose to force current subscribers to opt-in at the new
+                  price, their current auto-renewal will be disabled.
+                </p>
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <button
+                    onClick={() => {
+                      setTempPrice(rightCreator?.price ?? "")
+                      setShowPriceModal(false)}}
+                    className="px-4 py-2 cursor-pointer duration-200 rounded-xl bg-gray-500 hover:bg-gray-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={updatePrice}
+                    className="px-4 py-2 rounded-xl cursor-pointer duration-200 bg-purple-600 hover:bg-purple-700 transition-colors font-semibold"
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
+      </main>
+    </div>
+  );
+}

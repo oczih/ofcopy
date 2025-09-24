@@ -40,3 +40,21 @@ export default async function getCroppedImg(imageSrc: string, pixelCrop: Area): 
     }, 'image/jpeg');
   });
 }
+
+export const createPromotionAPI = async (creatorId: string, promotion: any) => {
+  const res = await fetch(`/api/creators/${creatorId}/promotions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(promotion),
+  });
+  return res.json();
+};
+
+export const createBundleAPI = async (creatorId: string, bundle: any) => {
+  const res = await fetch(`/api/creators/${creatorId}/bundles`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(bundle),
+  });
+  return res.json();
+};

@@ -26,6 +26,16 @@ export interface Promotion {
   createdAt: Date;
   updatedAt: Date;
 }
+export interface Bundle {
+  name: string;
+  description: string;
+  monthCount: number;
+  percetangeOff: number;
+  price: number;
+  createdAt: Date;
+  endDate: Date;
+}
+
 enum Gender {
   Male = 'Male',
   Female = 'Female',
@@ -76,6 +86,8 @@ export interface CreatorDocument extends mongoose.Document {
   creatorCreatedAt: Date;
   country: string;
   promotions: Promotion[];
+  bundles: Bundle[];
+  freeTrial: boolean;
 }
 const promotionSchema = new Schema<Promotion>(
   {
@@ -178,6 +190,7 @@ const creatorSchema = new Schema<CreatorDocument>({
   totalEarnings: { type: Number, default: 0 },
   currentBalance: { type: Number, default: 0 },
   promotions: [promotionSchema],
+  freeTrial: {type: Boolean, default: false}
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

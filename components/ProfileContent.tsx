@@ -228,11 +228,13 @@ export default function ProfileContent({
   const [postSignedUrls, setPostSignedUrls] = useState<Record<string, SignedUrls>>({});
   const fetchedPostsRef = useRef<Set<string>>(new Set());
   const rightCreator = creators.find(c => c.user === session?.user._id)
+
   type S3Key = {
     key: string;
     blurredKey?: string;
     blurred_key?: string;
   };
+
   useEffect(() => {
     async function fetchSignedUrls() {
       if (!creators || creators.length === 0) return;
@@ -321,7 +323,15 @@ export default function ProfileContent({
   }, [CACHE_TTL]);
 
 
+  const now = new Date();
+  const activePromotion = creator?.promotions?.find(
+    (p) =>
+      p.active &&
+      new Date(p.startDate) <= now &&
+      (!p.endDate || new Date(p.endDate) >= now)
+  );
 
+  
   // Calculate stats
   const getCreatorStats = () => {
     if (!creator) return { posts: 0, videos: 0, likes: 0 };
@@ -745,17 +755,40 @@ const daysLeft = subscription?.nextBillingDate
           </div>
           
           {!isOwnProfile && userViewed.creator && viewingUser && status !== 'subscriber' && (
-            <button 
-              className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-full font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
-              onClick={() => setModalOpen(true)}
-            >
-              <div className='flex flex-row justify-between'>
-                <span>Subscribe Now</span>
-                
-                <span>${creator?.price}/Month</span>
-              </div>
-            </button>
-          )}
+                <>
+                  {creator?.promotions && creator.promotions.length > 0 && (() => {
+                    const now = new Date();
+                    const activePromotion = creator.promotions.find(
+                      (p) =>
+                        p.active &&
+                        new Date(p.startDate) <= now &&
+                        (!p.endDate || new Date(p.endDate) >= now)
+                    );
+                    return activePromotion ? (
+                      <div className="mb-2 flex items-center justify-center gap-2">
+                        <span className="bg-pink-500/20 text-pink-400 px-3 py-1 rounded-full text-sm font-semibold">
+                          🎉 {activePromotion.discountPercent}% OFF!
+                        </span>
+                      </div>
+                    ) : null;
+                  })()}
+                  
+                  <button
+                    className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-full font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
+                    onClick={() => setModalOpen(true)}
+                  >
+                    <div className="flex flex-row justify-between w-full">
+                      <span>Subscribe Now</span>
+                      <span>
+                        ${activePromotion
+                          ? (creator ? creator.price * (1 - activePromotion.discountPercent / 100) : 0).toFixed(2)
+                          : creator?.price}
+                        /Month
+                      </span>
+                    </div>
+                  </button>
+                </>
+              )}
               {(status === 'follower' || status === 'subscriber') && session?.user?.creator && (
              <button
              onClick={() => {
