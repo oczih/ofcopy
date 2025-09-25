@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from "react";
-import { Bundle, Creator, User } from "../types";
+import { useEffect, useState } from "react";
+import { Bundle, Creator, Promotion, User } from "../types";
 import { Session } from "next-auth";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { Divider, MenuItem,Select, FormControl, Switch, SelectChangeEvent, Chip, Tabs, Tab } from "@mui/material";
 import creatorservice from "../services/creatorservice";
-import { createBundleAPI, createPromotionAPI } from "@/lib/utils";
+import { createBundleAPI, createPromotionAPI, updatePromotionAPI } from "@/lib/utils";
 
 interface AppProps {
   creators: Creator[] | null;
@@ -37,9 +37,13 @@ export default function App({ creators, session }: AppProps) {
   const [bundleModal, setBundleModalOpen] = useState(false)
   const [percentage, setPercentage] = useState<string>("");
   const [month, setMonth] = useState<string>("");
-
+  const [previousModal, setPreviousModal] = useState(false);
   const [showPriceModal, setShowPriceModal] = useState(false);
-
+  useEffect(() => {
+    if (rightCreator?.promotions) {
+      setPromotions(rightCreator.promotions);
+    }
+  }, [rightCreator]);
   const updatePrice = async () => {
     if (tempPrice === "" || tempPrice < 0) return;
     setLoading(true);
@@ -88,14 +92,14 @@ export default function App({ creators, session }: AppProps) {
   };
 
   // === Promotions state ===
-  const [promotions, setPromotions] = useState<PromotionForm[]>([]);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<PromotionForm>({
     type: "freeTrial",
     audience: "all",
     peopleLimit: "",
     message: "",
-    startDate: "",
+    startDate: new Date().toISOString(),
     endDate: "",
     trialDays: "7",
     discountPercent: "10",
@@ -110,21 +114,23 @@ export default function App({ creators, session }: AppProps) {
   
     try {
       // Send to backend
-      const payload = {
+      const payload: Omit<Promotion, "_id"> = {
         type: form.type,
         audience: form.audience,
-        peopleLimit: form.peopleLimit,
-        trialDays: form.trialDays,
-        discountPercent: form.discountPercent,
+        peopleLimit: Number(form.peopleLimit),
+        trialDays: Number(form.trialDays),
+        discountPercent: form.type === "freeTrial" ? 100 : Number(form.discountPercent),
         message: form.message,
-        startDate: form.startDate,
-        endDate: form.endDate,
+        active: true,
+
+        startDate: new Date(form.startDate), // convert string → Date
+        endDate: form.endDate ? new Date(form.endDate) : new Date(),
       };
   
       const data = await createPromotionAPI(rightCreator._id, payload);
   
       if (!data.error) {
-        setPromotions((prev) => [...prev, payload]); // update local state
+        setPromotions(prev => [...prev, data.promotion]); // update local state
         setModalOpen(false);
         setForm({
           type: "freeTrial",
@@ -154,8 +160,8 @@ export default function App({ creators, session }: AppProps) {
         monthCount: Number(month),
         percetangeOff: Number(percentage),
         price: tempPrice,
-        createdAt: new Date().toISOString(),
-        endDate: new Date(new Date().setMonth(new Date().getMonth() + Number(month.split(" ")[0]))).toISOString(),
+        createdAt: new Date(),
+        endDate: new Date(new Date().setMonth(new Date().getMonth() + Number(month.split(" ")[0]))),
       };
   
       const data = await createBundleAPI(rightCreator._id, bundle);
@@ -190,6 +196,35 @@ export default function App({ creators, session }: AppProps) {
     } finally {
       setSaving(false);
     }
+  };
+
+// Sort promotions so newest is first
+const sortedPromotions = promotions
+  .slice()
+  .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+
+const latestPromotion = sortedPromotions[0] || null;
+
+  const handleStopPromotion = async (promotion: Promotion) => {
+    if (!rightCreator || !promotion?._id) return;
+    try {
+      const res = await updatePromotionAPI(rightCreator._id, promotion._id, { active: false });
+      if (!res.error) {
+        // Optimistically update UI
+        const updated = sortedPromotions.map((p) =>
+          p._id === promotion._id ? { ...p, active: false } : p
+        );
+        setPromotions(updated);
+      }
+    } catch (error) {
+      console.error("Failed to stop promotion:", error);
+    }
+  };
+
+  const isExpired = (promo: Promotion) => {
+    if (!promo) return false;
+    if (!promo.endDate) return false;
+    return new Date(promo.endDate).getTime() < Date.now();
   };
     const monthCounts = ["3 months", "6 months", "12 months"]
     const percentages = [5,10,15,20,25,30,35,45,50]
@@ -246,7 +281,6 @@ export default function App({ creators, session }: AppProps) {
         <Divider sx={{ borderColor: "#912afa" }} />
         <div className="flex flex-col items-center justify-between rounded-xl">
         <button
-        disabled={form.peopleLimit === ""}
           onClick={() => setBundleModalOpen(true)}
           className="w-full rounded-xl mt-5 bg-white/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 hover:bg-white/20 px-4 py-2 text-white font-medium"
         >
@@ -269,43 +303,72 @@ export default function App({ creators, session }: AppProps) {
             </div>
         </div>
         <Divider sx={{ borderColor: "#912afa" }} />
-        {/* === Promotions === */}
-        <h2 className="text-md font-bold text-white mt-5">Start an account promotional offer</h2>
-        <h2 className="text-sm text-gray-400">Offer a free trial or a discounted subscription on your profile to new or expired subscribers</h2>
-        <button
-          onClick={() => setModalOpen(true)}
-          className="w-full rounded-xl bg-white/10 transition-colors duration-200 cursor-pointer hover:bg-white/20 px-4 py-2 text-white font-medium"
-        >
-          Create Promotional Offer
-        </button>
 
-        {promotions.map((p, idx) => (
-          <div
-            key={idx}
-            className="p-4 rounded-xl bg-white/10 text-white flex flex-col gap-1"
-          >
-            <p className="font-semibold">
-              {p.type === "freeTrial"
-                ? `Free Trial (${p.trialDays} days)`
-                : `Discount (${p.discountPercent}%)`}
-            </p>
-            <p>Audience: {p.audience}</p>
-            <p>People Limit: {p.peopleLimit || "Unlimited"}</p>
-            <p>Message: {p.message}</p>
-            <p>
-              {p.startDate} → {p.endDate}
-            </p>
-            <button
-              onClick={() =>
-                setPromotions(promotions.filter((_, i) => i !== idx))
-              }
-              className="mt-2 px-2 py-1 bg-red-600 rounded hover:bg-red-700"
-            >
-              Stop Promotion
-            </button>
-          </div>
-        ))}
+{/* === Promotions === */}
+<h2 className="text-md font-bold text-white mt-5">Account Promotional Offer</h2>
+<p className="text-sm text-gray-400">
+  Offer a free trial or a discounted subscription to new or expired subscribers
+</p>
 
+{/* Create New Promotion */}
+<button
+  onClick={() => setModalOpen(true)}
+  className="w-full rounded-xl bg-white/10 transition-colors duration-200 cursor-pointer hover:bg-white/20 px-4 py-2 text-white font-medium mt-2"
+>
+  Create Promotional Offer
+</button>
+
+{/* Show only the latest promotion */}
+{latestPromotion && (
+  <div className="p-4 mt-4 rounded-xl bg-white/10 text-white flex flex-col gap-1">
+    <p className="text-2xl">{latestPromotion.audience}</p>
+    <p className="font-semibold">
+      {latestPromotion.type === "freeTrial"
+        ? `${latestPromotion.peopleLimit ?? "?"} Days Free Trial`
+        : `Discount (${latestPromotion.discountPercent}%)`}
+    </p>
+    <p>
+  {latestPromotion.peopleLimit && latestPromotion.peopleLimit > 0
+    ? latestPromotion.peopleLimit
+    : "No usage limit"}
+</p>
+    <Divider sx={{ borderColor: "#912afa" }} />
+    <p>Message: {latestPromotion.message}</p>
+    <Divider sx={{ borderColor: "#912afa" }} />
+    <div className="justify-between flex flex-row">
+    <p>
+      Start: {new Date(latestPromotion.startDate).toLocaleDateString()}
+    </p>
+    <p>End: {latestPromotion.endDate
+        ? new Date(latestPromotion.endDate).toLocaleDateString()
+        : "No End Date"}</p>
+    </div>
+    {/* Expired or Active */}
+    {isExpired(latestPromotion) || !latestPromotion.active ? (
+      <span className="mt-1 px-2 py-1 rounded bg-red-500 text-xs font-bold self-start">
+        Expired
+      </span>
+    ) : (
+      <button
+        onClick={() => handleStopPromotion(latestPromotion)}
+        className="mt-2 px-3 py-1 border bg-transparent mx-auto cursor-pointer bg-red-600 hover:bg-red-700 rounded-2xl transition-colors duration-300"
+      >
+        Stop Promotion
+      </button>
+    )}
+  </div>
+)}
+
+    
+{/* View Previous Campaigns */}
+{sortedPromotions.length > 1 && (
+  <button
+    onClick={() => setPreviousModal(true)}
+    className="w-full rounded-xl bg-white/10 transition-colors duration-200 cursor-pointer hover:bg-white/20 px-4 py-2 text-white font-medium mt-2"
+  >
+    View Previous Campaigns
+  </button>
+)}
         {/* === Promotions Modal === */}
         {bundleModal && createPortal(
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -431,10 +494,10 @@ export default function App({ creators, session }: AppProps) {
                 <div className="space-y-3">
                 <div className="flex flex-wrap gap-2 mt-2">
   {[
-    { value: "all", label: "All Fans" },
-    { value: "new", label: "New Fans" },
-    { value: "followers", label: "Followers" },
-    { value: "expired", label: "Expired Fans" },
+    { value: "All Fans", label: "All Fans" },
+    { value: "New Fans", label: "New Fans" },
+    { value: "Followers", label: "Followers" },
+    { value: "Expired Fans", label: "Expired Fans" },
   ].map(opt => (
     <Chip
       key={opt.value}
@@ -675,6 +738,42 @@ export default function App({ creators, session }: AppProps) {
             </div>,
             document.body
           )}
+          {previousModal &&
+  createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="relative w-full max-w-md bg-gradient-to-br from-[#3c0d6c] to-[#1a0133] border border-white/10 rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] p-6 text-white space-y-4">
+        <button
+          onClick={() => setPreviousModal(false)}
+          className="absolute top-4 right-4 cursor-pointer duration-200 text-gray-300 hover:text-white transition-colors"
+        >
+          <X size={22} />
+        </button>
+
+        <h3 className="text-xl font-bold">Previous Campaigns</h3>
+        {sortedPromotions.slice(1).map((p: Promotion) => (
+          <div key={p._id} className="border-b border-white/20 pb-2 mb-2">
+            <p className="font-semibold">
+              {p.type === "freeTrial"
+                ? `Free Trial (${p.trialDays ?? "?"} days)`
+                : `Discount (${p.discountPercent}%)`}
+            </p>
+            <p>Audience: {p.audience}</p>
+            <p>
+              {new Date(p.startDate).toLocaleDateString()} →
+              {p.endDate ? new Date(p.endDate).toLocaleDateString() : "No End Date"}
+            </p>
+            {isExpired(p) || !p.active ? (
+              <span className="text-xs text-red-400 font-bold">Expired</span>
+            ) : (
+              <span className="text-xs text-green-400 font-bold">Active</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>,
+    document.body
+  )}
+
       </main>
     </div>
   );

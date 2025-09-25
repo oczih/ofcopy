@@ -17,14 +17,17 @@ export interface Follower {
   followedAt: Date;
 }
 export interface Promotion {
-  title: string;
-  description?: string;
+  type: string;
+  message?: string;
+  audience: string;
   discountPercent: number;       // e.g. 20 for 20% off
   startDate: Date;
   endDate?: Date;                // optional if open-ended
   active: boolean;               // quick toggle
   createdAt: Date;
   updatedAt: Date;
+  peopleLimit?: number;
+  trialDays?: number;
 }
 export interface Bundle {
   name: string;
@@ -91,12 +94,17 @@ export interface CreatorDocument extends mongoose.Document {
 }
 const promotionSchema = new Schema<Promotion>(
   {
-    title: { type: String, required: true },
-    description: { type: String, default: "" },
+    type: { type: String, required: true },
+    message: { type: String, required: false },
+    audience: { type: String, required: true },
     discountPercent: { type: Number, required: true, min: 0, max: 100 },
     startDate: { type: Date, required: true },
     endDate: { type: Date },
     active: { type: Boolean, default: true },
+    peopleLimit: { type: Number, required: false },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
+    trialDays: { type: Number, required: false }
   },
   { timestamps: true }
 );

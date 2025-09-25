@@ -233,6 +233,7 @@ export const authOptions: NextAuthOptions = {
           session.user.createdAt = user.createdAt ?? new Date();
           session.user.wallet = user.wallet ?? 0;
           session.user.paymentmethods = user.paymentmethods ?? [];
+          
           session.user.oauthProvider = token.oauthProvider as string;
         }
         try {

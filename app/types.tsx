@@ -189,14 +189,15 @@ export type Post = {
 };
 export interface Promotion {
   _id: string;
-  title: string;
-  description?: string;
+  message?: string;
+  type: string;
+  audience: string;
   discountPercent: number;       // e.g. 20 for 20% off
   startDate: Date;
   endDate?: Date;                // optional if open-ended
-  active: boolean;               // quick toggle
-  createdAt: Date;
-  updatedAt: Date;
+  active: boolean;  
+  peopleLimit?: number;
+  trialDays?: number;             // quick toggle
 }
 export interface Bundle {
   _id: string;

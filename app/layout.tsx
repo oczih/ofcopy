@@ -8,8 +8,8 @@ import ClientAppWrapper from "@/components/ClientAppWrapper";
 import Script from "next/script"; // 👈 import Script
 import { Analytics } from "@vercel/analytics/next"
 export const metadata: Metadata = {
-  title: "Fanslio",
-  description: "Premium AI content platform for creators and fans.",
+  title: "Fanslio | New Generation Fan Interaction Platform",
+  description: "Premium content platform for creators and fans – share exclusive content, connect with your audience, and grow your community.",
   icons: {
     icon: "/fanslioIconSVG.svg",
   },
@@ -32,6 +32,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en">
       <head>
+        <link rel="canonical" href="https://fanslio.com/" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
                 {/* ✅ Cookiebot script */}

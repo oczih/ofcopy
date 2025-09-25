@@ -5,11 +5,12 @@ import Creator from "@/app/models/creatormodel"; // <-- adjust path to your Crea
 // 🟢 GET: Get all promotions for a creator
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<Params> }
 ) {
+  const { id } = await context.params;
   try {
     await connectDB();
-    const creator = await Creator.findById(params.id).select("promotions");
+    const creator = await Creator.findById(id).select("promotions");
     if (!creator) {
       return NextResponse.json({ error: "Creator not found" }, { status: 404 });
     }
@@ -19,34 +20,43 @@ export async function GET(
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
-
+interface Params {
+  id: string;
+}
 // 🟢 POST: Add a new promotion
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<Params> }
 ) {
+  const { id } = await context.params;
   try {
     await connectDB();
     const body = await req.json();
 
-    const { title, description, discountPercent, startDate, endDate, active } =
-      body;
-
-    if (!title || discountPercent === undefined || !startDate) {
+    const { message, type, discountPercent, startDate, endDate, active, audience } = body;
+    if (!audience || !startDate) {
       return NextResponse.json(
-        { error: "title, discountPercent and startDate are required" },
+        { error: "audience and startDate are required" },
+        { status: 400 }
+      );
+    }
+    
+    if (type === "discount" && !discountPercent) {
+      return NextResponse.json(
+        { error: "discountPercent is required for discount promotions" },
         { status: 400 }
       );
     }
 
-    const creator = await Creator.findById(params.id);
+    const creator = await Creator.findById(id);
     if (!creator) {
       return NextResponse.json({ error: "Creator not found" }, { status: 404 });
     }
 
     const newPromotion = {
-      title,
-      description: description || "",
+      type,
+      audience,
+      message,
       discountPercent,
       startDate: new Date(startDate),
       endDate: endDate ? new Date(endDate) : undefined,
@@ -66,11 +76,13 @@ export async function POST(
   }
 }
 
+
 // 🟡 PATCH: Update an existing promotion
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<Params> }
 ) {
+  const { id } = await context.params;
   try {
     await connectDB();
     const { searchParams } = new URL(req.url);
@@ -81,7 +93,7 @@ export async function PATCH(
 
     const updates = await req.json();
     const creator = await Creator.findOneAndUpdate(
-      { _id: params.id, "promotions._id": promoId },
+      { _id: id, "promotions._id": promoId },
       {
         $set: Object.fromEntries(
           Object.entries(updates).map(([k, v]) => [`promotions.$.${k}`, v])
@@ -105,8 +117,9 @@ export async function PATCH(
 // 🔴 DELETE: Remove a promotion
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<Params> }
 ) {
+  const { id } = await context.params;
   try {
     await connectDB();
     const { searchParams } = new URL(req.url);
@@ -115,7 +128,7 @@ export async function DELETE(
       return NextResponse.json({ error: "promoId query required" }, { status: 400 });
     }
 
-    const creator = await Creator.findById(params.id);
+    const creator = await Creator.findById(id);
     if (!creator) {
       return NextResponse.json({ error: "Creator not found" }, { status: 404 });
     }

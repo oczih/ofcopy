@@ -289,16 +289,19 @@ export default function App({creators, session}: AppProps) {
                   const croppedFile = new File([croppedBlob], `${session.user._id}_avatar.jpg`, { type: "image/jpeg" });
 
                   // 3. Upload to S3
-                  const s3Key = await uploadContent(croppedFile);
+                  const result = await uploadContent(croppedFile);
 
                   // 4. Construct public S3 URL (via your backend or using known format)
                   
-
+                  if ("prohibited" in result) {
+                    console.error("File is prohibited!");
+                    return;
+                  }                  
                   // 5. Save avatar URL to user profile
                   await userservice.update(session.user._id, {
-                    avatarKey: s3Key.key,
+                    avatarKey: result.key,
                   });
-                  // 6. Update frontend state
+                                    // 6. Update frontend state
                   const key = creator?.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
                   const res = await fetch("/api/media/download-url", {
                     method: "POST",

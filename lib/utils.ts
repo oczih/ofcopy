@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { Area } from 'react-easy-crop';
+import { Bundle, Promotion } from "@/app/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -41,16 +42,32 @@ export default async function getCroppedImg(imageSrc: string, pixelCrop: Area): 
   });
 }
 
-export const createPromotionAPI = async (creatorId: string, promotion: any) => {
-  const res = await fetch(`/api/creators/${creatorId}/promotions`, {
+export const createPromotionAPI = async (creatorId: string, promotion: Omit<Promotion, "_id">) => {
+  const res = await fetch(`/api/creators/${creatorId}/promotion`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(promotion),
   });
   return res.json();
 };
+export const updatePromotionAPI = async (
+  creatorId: string,
+  promoId: string,
+  updates: Partial<Promotion>
+) => {
+  const res = await fetch(`/api/creators/${creatorId}/promotion?promoId=${promoId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updates),
+  });
 
-export const createBundleAPI = async (creatorId: string, bundle: any) => {
+  if (!res.ok) {
+    throw new Error(`Failed to update promotion: ${res.status}`);
+  }
+
+  return res.json();
+};
+export const createBundleAPI = async (creatorId: string, bundle: Bundle) => {
   const res = await fetch(`/api/creators/${creatorId}/bundles`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

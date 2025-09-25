@@ -364,6 +364,7 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
   }
   const handleSendMassMessage = async () => {
     if (!messageText.trim() && files.length === 0) return;
+  
     try {
       const chatIds = await getChats({
         selectedCategories,
@@ -377,13 +378,20 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
   
         if (files.length > 0) {
           const file = files[0];
-          const { key, blurred_key } = await uploadmediaservice.uploadContent(file);
+          const result = await uploadmediaservice.uploadContent(file);
+  
+          if ("prohibited" in result) {
+            console.log("File is prohibited!");
+            continue; // skip this file/chat
+          }
+  
+          const { key, blurred_key } = result; // TS now knows these exist
   
           newMessage = await sendMessage({
             chatId,
             senderId: session?.user._id ?? "",
             content: messageText || "",
-            price: price ? price : undefined,
+            price: price ?? undefined,
             ismassmessage: true,
             image_key: file.type.startsWith("image/") ? key : undefined,
             video_key: file.type.startsWith("video/") ? key : undefined,
@@ -400,11 +408,11 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
         } else {
           newMessage = await sendMessage({
             chatId,
-            ismassmessage: true,
             senderId: session?.user._id ?? "",
             content: messageText,
+            ismassmessage: true,
           });
-          if(newMessage) return;
+          if (newMessage) return;
         }
       }
   
@@ -418,6 +426,7 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
       console.error("Error sending mass message:", err);
     }
   };
+  
   
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(e.target.files ?? []);

@@ -103,7 +103,7 @@ export default function App({ session, creators }: AppProps) {
                     key={p._id}
                     className="rounded-xl w-full px-3 py-1.5 bg-purple-700/20 text-purple-300 mb-3"
                   >
-                    {p.title} – {p.discountPercent}% OFF
+                    {p.message} – {p.discountPercent}% OFF
                   </div>
                 ))}
 
