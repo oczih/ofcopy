@@ -33,7 +33,7 @@ export async function POST(
     await connectDB();
     const body = await req.json();
 
-    const { message, type, discountPercent, startDate, endDate, active, audience } = body;
+    const { message, type, discountPercent, startDate, endDate, active, audience, peopleLimit } = body;
     if (!audience || !startDate) {
       return NextResponse.json(
         { error: "audience and startDate are required" },
@@ -58,6 +58,7 @@ export async function POST(
       audience,
       message,
       discountPercent,
+      peopleLimit,
       startDate: new Date(startDate),
       endDate: endDate ? new Date(endDate) : undefined,
       active: active !== undefined ? active : true,

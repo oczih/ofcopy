@@ -153,16 +153,28 @@ export default function CreatorInsights({ session, users, creators }: AppProps) 
 
 // Start from creator’s first purchase/subscription
 const allTransactions: Transaction[] = [
+  // map purchases into Transaction shape
   ...users.flatMap(u =>
-    u.purchases.filter(p => p.creatorId.toString() === correctCreator._id.toString())
+    u.purchases
+      .filter(p => p.creatorId.toString() === correctCreator._id.toString())
+      .map(p => ({
+        date: p.createdAt, // or whatever timestamp Purchase has
+        type: "purchase" as GraphTransactionType,
+        price: p.amount,
+      }))
   ),
+  // map subscriptions
   ...users.flatMap(u =>
     u.subscriptions
-      ?.filter(s => s.creatorId === correctCreator._id && s.status === "active")
-      .map(s => ({ date: s.subscriptionDate, type: "sub" as GraphTransactionType, price: s.price })) ?? []
+      ?.filter(s => s.creatorId.toString() === correctCreator._id.toString() && s.status === "active")
+      .map(s => ({
+        date: s.subscriptionDate,
+        type: "sub" as GraphTransactionType,
+        price: s.price,
+      })) ?? []
   ),
-  // add tips/messages/posts if you track them separately
 ];
+
 
 const groupedByMonth: Record<string, DailyRevenue[]> = {};
 

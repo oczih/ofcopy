@@ -66,16 +66,13 @@ export default function App({users, session, creators}: AppProps) {
     useEffect(() => {
       if (status === "authenticated" && session?.user) {
         const rightCreator = creators.find(c => c.user === session.user._id);
-        
+        console.log(rightCreator)
         if (rightCreator) {
           const initialData = {
             name: rightCreator.name || "",
             handle: rightCreator.username || "",
             bio: rightCreator.bio || "",
-            location:
-              typeof session.user.location === "string"
-                ? session.user.location
-                :  "",
+            location: rightCreator.location || ""
           };
           setFormData(initialData);
           setOriginalFormData(initialData);
@@ -94,7 +91,6 @@ export default function App({users, session, creators}: AppProps) {
         }
       }
     }, [status, session?.user, creators]);
-    
     useEffect(() => {
         const checkUsername = async () => {
           if (!formData.handle) return;
@@ -142,13 +138,13 @@ const handleSave = async () => {
     name?: string;
     username?: string;
     bio?: string;
-    location?: { country: string };
+    location?: string;
   }
 
   const payload: UpdateProfilePayload = {
     name: formData.name,
     bio: formData.bio,
-    location: { country: formData.location },
+    location: formData.location,
   };
 
   // Determine if username is changing
@@ -183,10 +179,12 @@ const handleSave = async () => {
 
   try {
     // ✅ Always update the User document
-    await userservice.update(
-      session.user._id,
-      payload
-    );
+    await userservice.update(session.user._id, {
+      ...payload,
+      location: formData.location
+        ? { country: formData.location } // or whatever structure UserLocation needs
+        : undefined,
+    });
 
     // ✅ If this person is a creator, also update the Creator doc
     if (rightCreator) {
@@ -217,13 +215,6 @@ const handleSave = async () => {
     if (!session?.user) {
         if (typeof window !== "undefined") {
             router.push("/login");
-        }
-        return null;
-    }
-
-    if (!session?.user.creator) {
-        if (typeof window !== "undefined") {
-            router.push("/home");
         }
         return null;
     }
@@ -298,7 +289,7 @@ const handleSave = async () => {
                   value={formData.bio}
                   
                   onChange={(e) => handleInputChange("bio", e.target.value)}
-                  className="w-full px-4 py-2 text-white bg-[#200940] hover:outline hover:outline-white rounded-md cursor-text placeholder-gray-400 transition text-sm"
+                  className="w-full border-transparent px-4 py-2 text-white bg-[#200940] hover:border hover:border-white rounded-md cursor-text placeholder-gray-400 transition-colors duration-200 text-sm"
                 />
               </div>
               <div>

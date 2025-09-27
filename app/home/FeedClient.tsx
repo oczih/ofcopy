@@ -3,7 +3,7 @@
 import { Button } from "../../components/ui/button";
 import { CheckCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Creator, User } from "../types";
+import { Creator, Purchase, User } from "../types";
 
 import toast, { Toaster } from "react-hot-toast";
 
@@ -15,6 +15,7 @@ interface AppProps {
   creators: Creator[];
   session: Session | null;
   users: User[];
+  purchases: Purchase[]
 }
 
 
@@ -25,7 +26,7 @@ type Stats = {
   followers: number;
 };
 
-export default function App({ creators, users, session}: AppProps) {
+export default function App({ creators, users, session, purchases}: AppProps) {
   const [showBanner, setShowBanner] = useState(true);
   type SignedUrls = {
     signedUrl: string;
@@ -348,6 +349,7 @@ export default function App({ creators, users, session}: AppProps) {
                 users={users}
                 signedUrl={postSignedUrls[post._id]?.signedUrl}
                 handleFollow={handleFollow}
+                purchases={purchases}
                 handleDeletePost={() => handleDeletePost(creator._id, post._id)}
               />
             ))}

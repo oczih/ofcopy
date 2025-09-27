@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postbuild": "next-sitemap"
   },
   "dependencies": {
     "@aws-sdk/client-lambda": "^3.865.0",
@@ -54,6 +55,7 @@
     "mongoose": "^8.16.3",
     "next": "15.3.5",
     "next-auth": "^4.24.11",
+    "next-sitemap": "^4.2.3",
     "nodemailer": "^6.10.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

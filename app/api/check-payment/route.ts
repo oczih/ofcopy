@@ -1,96 +1,110 @@
-import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongoose';
-import Purchase from '@/app/models/purchasemodel';
-import OFUser from '@/app/models/usermodel';
-import mongoose from 'mongoose';
-import CreatorModel from '@/app/models/creatormodel';
-import {Creator} from '@/app/types'
-const BLOCKCYPHER_API_URL = 'https://api.blockcypher.com/v1/ltc/main';
-const BLOCKCYPHER_TOKEN = process.env.BLOCKCYPHER_TOKEN!;
-const MIN_AMOUNT_LTC = 0.01;
-const MIN_CONFIRMATIONS = 1;
+import { NextResponse } from "next/server";
+import { connectDB } from "@/lib/mongoose";
+import PaymentIntent from "@/app/models/paymentintent";
+import Purchase from "@/app/models/purchasemodel";
+import OFUser from "@/app/models/usermodel";
+import CreatorModel from "@/app/models/creatormodel";
+import mongoose from "mongoose";
 
-interface Transaction {
-  hash: string;
-  total: number; // satoshis
-  confirmations: number;
-}
+const BLOCKCYPHER_API_URL = "https://api.blockcypher.com/v1/btc/test3";
+const BLOCKCYPHER_TOKEN = process.env.BLOCKCYPHER_TOKEN!;
+const MIN_CONFIRMATIONS = 1;
 
 export async function POST(req: Request) {
   try {
-    const { userId, mediaId, creatorId, amount, type } = await req.json();
-    const walletAddress = process.env.NEXT_PUBLIC_LTCWALLETADDRESS!;
+    const { intentId } = await req.json();
+    await connectDB();
 
-    // 1️⃣ Query blockchain
-    let url = `${BLOCKCYPHER_API_URL}/addrs/${walletAddress}/full`;
+    const intent = await PaymentIntent.findById(intentId);
+    if (!intent) {
+      return NextResponse.json({ confirmed: false, error: "Payment intent not found" }, { status: 404 });
+    }
+
+    if (intent.status === "completed") {
+      return NextResponse.json({ confirmed: true, txid: intent.txid });
+    }
+
+    // Query blockchain
+    let url = `${BLOCKCYPHER_API_URL}/addrs/${intent.address}/full`;
     if (BLOCKCYPHER_TOKEN) url += `?token=${BLOCKCYPHER_TOKEN}`;
 
     const res = await fetch(url);
-    const data = await res.json();
-
+    type BlockCypherTx = {
+      hash: string;
+      total: number; // in satoshis
+      confirmations: number;
+    };
+    const data: { txs?: BlockCypherTx[]; error?: string } = await res.json();
     if (data.error) {
       return NextResponse.json({ confirmed: false, error: data.error }, { status: 500 });
     }
-
-    const transactions: Transaction[] = data.txs || [];
-    const confirmedTx = transactions.find(
-      (tx) => tx.total / 1e8 >= MIN_AMOUNT_LTC && tx.confirmations >= MIN_CONFIRMATIONS
+    
+    const tx = (data.txs || []).find(
+      (t) => t.total / 1e8 >= intent.amount && t.confirmations >= MIN_CONFIRMATIONS
     );
 
-    if (!confirmedTx) {
+    if (!tx) {
       return NextResponse.json({ confirmed: false });
     }
 
-    // 2️⃣ Connect DB
-    await connectDB();
+    // ✅ Mark as completed and process the purchase
+    intent.status = "completed";
+    intent.txid = tx.hash;
+    await intent.save();
 
-    // 3️⃣ Create purchase if it's a one-off media payment
-    if (type === 'purchase' && mediaId) {
+    // Create purchase/subscription/topup depending on type
+    if (intent.type === "purchase" && intent.mediaId) {
       await Purchase.create({
-        userId,
-        creatorId,
-        mediaId,
-        amount
+        userId: intent.userId,
+        creatorId: intent.creatorId,
+        mediaId: intent.mediaId,
+        amount: intent.amount
       });
     }
-    if (type === 'topup') {
+
+    if (intent.type === "topup") {
       await OFUser.updateOne(
-        { _id: userId },
-        { $inc: { balance: amount } } // example: increase balance
+        { _id: intent.userId },
+        { $inc: { balance: intent.amount } }
       );
     }
-    // 4️⃣ Create subscription if type is subscription
-    if (type === 'subscription' && mediaId) {
-      const subscriptionEndDate = new Date();
-      subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + 1);
-      const rightCreator = await CreatorModel.findById(creatorId).lean<Creator | null>();
-      if (!rightCreator) {
-        return NextResponse.json({ confirmed: false, error: "Creator not found" }, { status: 404 });
-      }
-      await OFUser.updateOne(
-        { _id: userId },
-        {
-          $push: {
-            subscriptions: {
-              creatorId: new mongoose.Types.ObjectId(String(creatorId)),
-              creatorName: rightCreator.name,
-              creatorUsername: rightCreator.username,
-              creatorImage: rightCreator.avatarKey,
-              subscriptionDate: new Date(),
-              price: amount,
-              status: 'active',
-              nextBillingDate: subscriptionEndDate,
-              autoRenew: true,
+    if (intent.type === "post" && intent.mediaId) {
+      await Purchase.create({
+        userId: intent.userId,
+        creatorId: intent.creatorId,
+        mediaId: intent.mediaId,
+        amount: intent.amount
+      });
+    }
+    if (intent.type === "subscription" && intent.creatorId) {
+      const creator = await CreatorModel.findById(intent.creatorId);
+      if (creator) {
+        const subscriptionEndDate = new Date();
+        subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + 1);
+        await OFUser.updateOne(
+          { _id: intent.userId },
+          {
+            $push: {
+              subscriptions: {
+                creatorId: new mongoose.Types.ObjectId(String(intent.creatorId)),
+                creatorName: creator.name,
+                creatorUsername: creator.username,
+                creatorImage: creator.avatarKey,
+                subscriptionDate: new Date(),
+                price: intent.amount,
+                status: "active",
+                nextBillingDate: subscriptionEndDate,
+                autoRenew: true
+              }
             }
           }
-        }
-      );
+        );
+      }
     }
-    
-    // 5️⃣ Return success
-    return NextResponse.json({ confirmed: true, txid: confirmedTx.hash });
+
+    return NextResponse.json({ confirmed: true, txid: tx.hash });
   } catch (err) {
-    console.error('Check-payment error:', err);
-    return NextResponse.json({ confirmed: false, error: 'Server error' }, { status: 500 });
+    console.error("Check-payment error:", err);
+    return NextResponse.json({ confirmed: false, error: "Server error" }, { status: 500 });
   }
 }

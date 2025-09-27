@@ -16,11 +16,11 @@ export default async function Page(props: unknown) {
  
   const user = await UserModel.findOne({ username: username.toLowerCase() });
   if (!creator && !user) notFound();
-  const { creators, users, safeSession } = await fetchPageData();
+  const { creators, users, safeSession, purchases } = await fetchPageData();
 
   // Sanitize your data if needed here
   
   return (
-    <App creators={creators} users={users} session={safeSession} username={username.toLowerCase()} />
+    <App creators={creators} users={users} session={safeSession} username={username.toLowerCase()} purchases={purchases} />
   );
 }

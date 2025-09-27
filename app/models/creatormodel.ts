@@ -63,6 +63,7 @@ export interface CreatorDocument extends mongoose.Document {
   email: string;
   password: string;
   bio: string;
+  location?: string;
   googleId: string | null;
   avatarKey?: string;
   oauthProvider: string;
@@ -121,6 +122,7 @@ const creatorSchema = new Schema<CreatorDocument>({
   googleId: { type: String, default: null },
   avatarKey: { type: String },
   oauthProvider: { type: String },
+  location: {type: String, default: ""},
   oauthId: { type: String },
   lastUsernameChange: { type: Date, default: null },
   creatorCreatedAt: { type: Date, default: null },

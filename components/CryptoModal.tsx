@@ -1,7 +1,7 @@
 'use client'
 
 /* eslint-disable @next/next/no-img-element */
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Copy, CheckCircle, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Session } from "next-auth";
 import { Creator, Post } from "@/app/types";
@@ -35,6 +35,8 @@ export function CryptoPaymentModal({ amountUsd, onClose, type, creator, session,
   const [confirmed, setConfirmed] = useState(false);
   const [timer, setTimer] = useState(60);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [intentId, setIntentId] = useState<string | null>(null);
+  const [paymentAddress, setPaymentAddress] = useState<string | null>(null);
   const notifiedCreators = useRef<Set<string>>(new Set());
   const walletAddress: string = process.env.NEXT_PUBLIC_LTCWALLETADDRESS!;
   const paymentToNotificationMap: Record<PaymentType, string> = {
@@ -44,15 +46,45 @@ export function CryptoPaymentModal({ amountUsd, onClose, type, creator, session,
     message: "message",
     topup: "promotion", 
   };
+  useEffect(() => {
+    (async () => {
+      const base: BasePayload = {
+        userId: session?.user._id ?? "",
+        creatorId: creator?._id ?? "",
+        amount: amountUsd,
+        type,
+      };
+      const payload: PaymentPayload =
+        type === "post" && post?._id
+          ? { ...base, type: "post", mediaId: post._id }
+          : base;
+
+      const res = await fetch("/api/create-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.intentId && data.address) {
+        setIntentId(data.intentId);
+        setPaymentAddress(data.address);
+      } else {
+        console.error("Failed to create payment intent:", data);
+      }
+    })();
+  }, [amountUsd, type, creator?._id, post?._id, session?.user._id]);
   const handleCopy = () => {
-    navigator.clipboard.writeText(walletAddress);
+    if (!paymentAddress) return;
+    navigator.clipboard.writeText(paymentAddress);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
   const handlePaidClick = async () => {
+    if (!intentId) return;
     setChecking(true);
     setTimer(60);
-  
+
     const interval = setInterval(() => {
       setTimer((prev) => {
         if (prev <= 1) {
@@ -62,55 +94,35 @@ export function CryptoPaymentModal({ amountUsd, onClose, type, creator, session,
         return prev - 1;
       });
     }, 1000);
-  
-    // Build payload with optional mediaId
-    const base: BasePayload = {
-      userId: session?.user._id ?? "",
-      creatorId: creator?._id ?? "",
-      amount: amountUsd,
-      type,
-    };
-    
-    const payload: PaymentPayload =
-      type === "post" && post?._id
-        ? { ...base, type: "post", mediaId: post._id }
-        : base;
-  
+
     try {
       const res = await fetch("/api/check-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ intentId }),
       });
-  
       const data = await res.json();
       if (data.confirmed) setConfirmed(true);
-      if (creator?._id && !notifiedCreators.current.has(creator._id) && ["subscription","post","tip","message"].includes(type)) {
+
+      // Optional: notify creator
+      if (
+        creator?._id &&
+        !notifiedCreators.current.has(creator._id) &&
+        ["subscription", "post", "tip", "message"].includes(type)
+      ) {
         notifiedCreators.current.add(creator._id);
-      
         const notificationType = paymentToNotificationMap[type];
-      
-        if (notificationType) {
-          try {
-            const response = await fetch("/api/notifications", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                type: notificationType,  // mapped to valid type
-                by: session?.user._id,
-                forUsers: [creator._id],
-                creatorId: creator._id
-              }),
-            });
-      
-            if (!response.ok) {
-              const errorData = await response.json();
-              console.error("Failed to create notification:", errorData);
-            }
-          } catch (err) {
-            console.error("Notification request failed:", err);
-          }
-        }
+
+        await fetch("/api/notifications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: notificationType,
+            by: session?.user._id,
+            forUsers: [{ model: "Creator", id: creator._id }],
+            creatorId: creator._id,
+          }),
+        });
       }
     } catch (err) {
       console.error("Payment check failed:", err);
@@ -245,7 +257,7 @@ export function CryptoPaymentModal({ amountUsd, onClose, type, creator, session,
           <p className="text-xs text-gray-300 mt-1">
             Track:{" "}
             <a
-              href={`https://www.oklink.com/litecoin/address/${walletAddress}`}
+              href={`https://chain.so/address/LTCTEST/${walletAddress}`}
               target="_blank"
               rel="noopener noreferrer"
               className="underline text-pink-400 hover:text-pink-300"

@@ -87,11 +87,11 @@ export default function ChatApp({ session, users, creators }: AppProps) {
           );
         case "Spent more than $25":
           return (participant?.purchases || []).reduce(
-            (sum, p) => sum + (p.price || 0),
+            (sum, p) => sum + (p.amount || 0),
             0
           ) > 25;
         case "Has Tipped":
-          return participant?.purchases?.some(p => p.price > 0);
+          return participant?.purchases?.some(p => p.amount > 0);
         case "Long Conversations (Over 25 messages)":
           return chatMessages.length > 25;
         default:

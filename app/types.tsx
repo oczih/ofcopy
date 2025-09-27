@@ -63,12 +63,13 @@ export type User = {
     nextBillingDate?: Date;
     autoRenew: boolean;
   }
-  export interface Purchase<TPost = string> {
-    id: string;
-    price: number; 
+  export interface Purchase {
+    _id: string;
+    amount: number; 
+    userId: mongoose.Types.ObjectId
     creatorId: mongoose.Types.ObjectId;
-    postId: TPost;
-    date: Date;
+    mediaId: mongoose.Types.ObjectId;
+    createdAt: Date;
   }
   export  enum Gender {
     Male = 'Male',
@@ -107,9 +108,10 @@ _id: string;
     promotions: Promotion[];
     bundles: Bundle[];
     freeTrial: boolean;
+    location?: string;
   }
 
-  export type NotificationType = 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comment' | 'like' | 'newfollower'| 'promotion' | 'purchase';
+  export type NotificationType = 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comment' | 'like' | 'newfollower'| 'promotion' | 'post';
 
   export interface Notification {
     type: NotificationType;

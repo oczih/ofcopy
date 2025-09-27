@@ -1,2 +1,9 @@
+# *
 User-agent: *
-Disallow:
+Allow: /
+
+# Host
+Host: https://fanslio.com
+
+# Sitemaps
+Sitemap: https://fanslio.com/sitemap.xml

@@ -6,7 +6,7 @@ import { MoreHorizontal, Heart, MessageCircle, LockKeyhole } from "lucide-react"
 import Link from "next/link";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { Session } from "next-auth";
-import { Comment, Creator, Post, User} from "../app/types";
+import { Comment, Creator, Post, Purchase, User} from "../app/types";
 import { Skeleton } from "@/components/ui/skeleton"
 import MediaRenderer from "./MediaRenderer";
 import PaymentForm from "./PaymentForm";
@@ -26,7 +26,8 @@ export function CreatorPostCard({
   blurredUrl,
   signedUrl,
   handleFollow,
-  handleDeletePost
+  handleDeletePost,
+  purchases
 }: {
   creator: Creator;
   post: Post;
@@ -38,6 +39,7 @@ export function CreatorPostCard({
   blurredUrl: string;
   handleFollow: (creator: Creator) => void;
   handleDeletePost: () => void;
+  purchases: Purchase[];
 }) {
   // Restriction logic
   const isFollowersOnly = post.viewableFor === "followers";
@@ -61,20 +63,26 @@ function resolveImageUrl(url: string) {
   useEffect(() => {
     const isFollowersOnly = post.viewableFor === "followers";
     const isSubscribersOnly = post.viewableFor === "subscribers";
+    const isPaid = post.price > 0;
     const isViewingUserOwner = String(creator.user) === String(session?.user?._id);
-  
+    const rightPost = purchases.find(p => p.mediaId.toString() === post._id)
     let canUserView =
       isViewingUserOwner || 
-      (!isFollowersOnly && !isSubscribersOnly);
+      (!isFollowersOnly && !isSubscribersOnly);  // public posts
   
+    // Subscribers can view subscribers-only posts
     if (isSubscribersOnly && status === "subscriber") canUserView = true;
   
-    // ✅ allow subscribers to view followers-only content
+    // Followers/subscribers can view followers-only posts
     if (isFollowersOnly && (status === "follower" || status === "subscriber"))
       canUserView = true;
+    if (isPaid && rightPost?.userId.toString() === session?.user._id)
+    // Paid content restriction for non-owners
+    if (isPaid && !isViewingUserOwner && rightPost?.userId.toString() !== session?.user._id) canUserView = false;
   
     setCanView(canUserView);
-  }, [status, session?.user?._id, creator.user, post.viewableFor]);
+  }, [status, session?.user?._id, creator.user, post.viewableFor, post.price]);
+  
   // Like and comment modal state
   useEffect(() => {
     if (!paymentModal) return;

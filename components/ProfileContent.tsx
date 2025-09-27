@@ -3,10 +3,9 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Creator, MediaPost, Post, User } from '@/app/types';
+import { Creator, Post, Purchase, User } from '@/app/types';
 import creatorservice from '@/app/services/creatorservice';
 import { Skeleton } from "@/components/ui/skeleton"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 import { CreatorPostCard } from './CreatorPostCard';
 import { useSession } from 'next-auth/react';
@@ -22,6 +21,7 @@ import { v4 as uuidv4 } from "uuid";
 import { getChatsBetween } from '@/lib/messages';
 import PaymentForm from './PaymentForm';
 import { Box} from '@mui/material';
+
 
 const SocialMediaChips = ({ creator }: {creator: Creator}) => {
   const platforms = [
@@ -71,42 +71,39 @@ const SocialMediaChips = ({ creator }: {creator: Creator}) => {
 }
 
 // Bio Modal Component
-const BioModal = ({ bio, creatorName }: { bio: string; creatorName: string }) => {
-  const [open, setOpen] = useState(false);
-  
+const BioSection = ({
+  bio,
+}: {
+  bio: string;
+}) => {
+  const [showFullBio, setShowFullBio] = useState(false);
+
   const getPreviewText = (text: string, maxLength: number = 100) => {
     if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
+    return text.substring(0, maxLength) + "...";
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <div className="cursor-pointer">
-          <p className="text-gray-300 mb-6 max-w-2xl hover:text-gray-200 transition-colors">
-            {getPreviewText(bio)}
-            {bio.length > 100 && (
-              <span className="text-blue-400 ml-2 font-medium">Read more</span>
-            )}
-          </p>
-        </div>
-      </DialogTrigger>
-      <DialogContent className="max-w-md bg-gray-900/95 backdrop-blur-lg border-gray-700">
-        <DialogHeader>
-          <DialogTitle className="text-white text-xl">{creatorName}&apos;s Bio</DialogTitle>
-          <DialogDescription className="text-gray-300 text-base leading-relaxed mt-4">
-            {bio}
-          </DialogDescription>
-        </DialogHeader>
-      </DialogContent>
-    </Dialog>
+    <div className="max-w-2xl pb-5">
+      <p className="text-gray-300 text-base leading-relaxed transition-all duration-300">
+        {showFullBio ? bio : getPreviewText(bio)}
+      </p>
+
+      {bio.length > 100 && (
+        <button
+          onClick={() => setShowFullBio(!showFullBio)}
+          className="mt-2 text-blue-400 hover:text-blue-300 font-medium transition-colors"
+        >
+          {showFullBio ? "Show less" : "Read more"}
+        </button>
+      )}
+    </div>
   );
 };
 
 type UserProfileData = {
   userViewed: User,
   viewingUser: Creator | User,
-  purchasedContent: MediaPost[],
   totalSpent: number,
   isOwnProfile: boolean,
   relationshipStatus: 'subscriber' | 'follower' | 'none'
@@ -114,17 +111,18 @@ type UserProfileData = {
   creators: Creator[],
   session: Session | null
   creator: Creator | null;
+  purchases: Purchase[]
 }
 
 export default function ProfileContent({ 
   userViewed, 
   viewingUser,
-  purchasedContent, 
   totalSpent, 
   isOwnProfile, 
   relationshipStatus,
   users,
   creators,
+  purchases,
   session,
   creator,
 }: UserProfileData) {
@@ -324,7 +322,10 @@ export default function ProfileContent({
 
 
   const now = new Date();
-  const activePromotion = creator?.promotions?.find(
+  const sortedPromotions =  creator?.promotions ? [...creator?.promotions].sort(
+    (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+  ) : [];
+  const activePromotion = sortedPromotions.find(
     (p) =>
       p.active &&
       new Date(p.startDate) <= now &&
@@ -694,11 +695,10 @@ const daysLeft = subscription?.nextBillingDate
               )}
               
               {creator?.bio && (
-                <BioModal 
-                  bio={creator.bio} 
-                  creatorName={creator?.name || creator?.username || userViewed.name || userViewed.username} 
-                />
-              )}
+  <BioSection 
+    bio={creator.bio} 
+  />
+)}
               {creator && <SocialMediaChips creator={creator} />}
               
               {/* User Stats (for non-creators) - Under profile pic and smaller */}
@@ -743,7 +743,7 @@ const daysLeft = subscription?.nextBillingDate
                 </Link>
               
                 <Link 
-                  href="/settings/creator/promotions" 
+                  href="/creator-promotions" 
                   className="flex-1 flex items-center justify-center bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 text-white font-semibold px-6 py-3 hover:bg-white/10 transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
                   Promote
@@ -756,37 +756,112 @@ const daysLeft = subscription?.nextBillingDate
           
           {!isOwnProfile && userViewed.creator && viewingUser && status !== 'subscriber' && (
                 <>
-                  {creator?.promotions && creator.promotions.length > 0 && (() => {
-                    const now = new Date();
-                    const activePromotion = creator.promotions.find(
-                      (p) =>
-                        p.active &&
-                        new Date(p.startDate) <= now &&
-                        (!p.endDate || new Date(p.endDate) >= now)
-                    );
-                    return activePromotion ? (
-                      <div className="mb-2 flex items-center justify-center gap-2">
-                        <span className="bg-pink-500/20 text-pink-400 px-3 py-1 rounded-full text-sm font-semibold">
-                          🎉 {activePromotion.discountPercent}% OFF!
-                        </span>
-                      </div>
-                    ) : null;
-                  })()}
+{creator?.promotions?.length ? (() => {
+  const now = new Date();
+
+  // 🔎 Sort by start date (newest first)
+  const sortedPromotions = [...creator.promotions].sort(
+    (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+  );
+
+  // ✅ Take ONLY the latest promotion that is active *right now*
+  const latestActivePromotion = sortedPromotions.find(
+    (p) =>
+      p.active &&
+      new Date(p.startDate) <= now &&
+      (!p.endDate || new Date(p.endDate) >= now)
+  );
+
+  return latestActivePromotion ? (
+<div className="mb-2 flex justify-center">
+  {/* ✅ relative parent so we can absolutely position the avatar */}
+  <div
+    className="
+      relative               /* <-- important */
+      bg-gray-500/40
+      w-full min-h-12 rounded-xl
+      flex items-center justify-start
+      pl-6
+    "
+  >
+    {/* ✅ Avatar positioned at the top-left corner */}
+    <div className="absolute -top-4 -left-4">   {/* adjust offsets as needed */}
+      {imageLoading ? (
+        <Skeleton className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700" />
+      ) : avatarUrl ? (
+        <img
+          src={resolvedSrc || avatarImage || ""}
+          alt={userViewed.username || "User profile image"}
+          className="w-10 h-10 rounded-full shadow-lg object-cover"
+          onLoad={() => setImageLoading(false)}
+          onError={() => {
+            console.error("Avatar failed to load");
+            setAvatarUrl(null);
+            setImageLoading(false);
+          }}
+        />
+      ) : (
+        <div className="w-16 h-16 flex items-center justify-center rounded-full bg-gray-400 text-white font-bold text-2xl">
+          {creator?.name?.charAt(0).toUpperCase() ??
+           userViewed.name?.charAt(0).toUpperCase() ??
+           "U"}
+        </div>
+      )}
+    </div>
+
+    {/* ✅ Promotion text centered inside the gray box */}
+    <div className="text-white text-md font-semibold">
+      🎉 {latestActivePromotion.discountPercent}% OFF!
+    </div>
+  </div>
+</div>
+
+  ) : null;
+})() : null}
                   
                   <button
-                    className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-full font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
-                    onClick={() => setModalOpen(true)}
-                  >
-                    <div className="flex flex-row justify-between w-full">
-                      <span>Subscribe Now</span>
-                      <span>
-                        ${activePromotion
-                          ? (creator ? creator.price * (1 - activePromotion.discountPercent / 100) : 0).toFixed(2)
-                          : creator?.price}
-                        /Month
-                      </span>
-                    </div>
-                  </button>
+  className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 transition-colors text-white px-6 py-3 rounded-full font-bold shadow-lg hover:shadow-xl transform cursor-pointer"
+  onClick={async () => {
+    if (creator?.freeTrial && activePromotion) {
+      // ✅ Handle free trial subscription directly
+      try {
+        const res = await fetch("/api/subscribe-free-trial", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ creatorId: creator._id, userId: session?.user?._id })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert("Free trial subscription activated!");
+        } else {
+          alert("Failed to activate free trial: " + data.error);
+        }
+      } catch (err) {
+        console.error("Error subscribing to free trial:", err);
+      }
+    } else {
+      // Open payment modal if not free trial
+      setModalOpen(true);
+    }
+  }}
+>
+  <div className="flex flex-row justify-between w-full">
+    <span>Subscribe Now</span>
+    <div className="flex items-center gap-2">
+      {activePromotion && (
+        <span className="text-black text-md line-through opacity-75">
+          ${creator?.price?.toFixed(2)}
+        </span>
+      )}
+      <span className="text-white font-semibold">
+        ${activePromotion
+          ? (creator && creator.price * (1 - activePromotion.discountPercent / 100))?.toFixed(2)
+          : creator?.price?.toFixed(2)}
+        /Month
+      </span>
+    </div>
+  </div>
+</button>
                 </>
               )}
               {(status === 'follower' || status === 'subscriber') && session?.user?.creator && (
@@ -822,17 +897,22 @@ const daysLeft = subscription?.nextBillingDate
           />
         )}
         
-        {modalOpen && creator && (
-          <PaymentForm 
-            type="subscription"
-            onClose={() => setModalOpen(false)}
-            open={modalOpen}
-            creator={creator}
-            avatarUrl={avatarUrl || ""}
-            price={creator.price}
-            session={session}
-          />
-        )}
+            {modalOpen && creator && (
+      <PaymentForm 
+        type="subscription"
+        onClose={() => setModalOpen(false)}
+        open={modalOpen}
+        creator={creator}
+        avatarUrl={avatarUrl || ""}
+        // ✅ Apply promotion if active
+        price={
+          activePromotion
+            ? creator.price * (1 - activePromotion.discountPercent / 100)
+            : creator.price
+        }
+        session={session}
+      />
+    )}
         {StopSubscribeModalOpen && creator && (
           <StopSubscribeModal
             onClose={() => SetStopSubscribeModal(false)}
@@ -843,7 +923,6 @@ const daysLeft = subscription?.nextBillingDate
         {/* Content Tabs */}
         {creator && (
           <ContentTabs
-            purchasedContent={purchasedContent}
             creator={creator}
             isOwnProfile={isOwnProfile}
             status={status}
@@ -852,6 +931,7 @@ const daysLeft = subscription?.nextBillingDate
             handleFollow={handleFollow}
             user={viewingUser}
             users={users}
+            purchases={purchases}
             session={session}
             creators={creators}
           />
@@ -865,7 +945,6 @@ type SignedUrls = {
   blurredUrl: string;
 };
 function ContentTabs({  
-  purchasedContent, 
   creator, 
   isOwnProfile, 
   status,
@@ -875,14 +954,14 @@ function ContentTabs({
   user,
   users,
   session,
-  creators
+  creators,
+  purchases
 }: {
-  purchasedContent: MediaPost[];
   creator: Creator;
   isOwnProfile: boolean;
   status: 'subscriber' | 'follower' | 'none';
   viewingUser: Creator | User
- 
+  purchases: Purchase[]
 
   postSignedUrls: Record<string, SignedUrls>; 
   handleFollow: (creator: Creator) => Promise<void>
@@ -891,12 +970,13 @@ function ContentTabs({
   session: Session | null,
   creators: Creator[]
 }) {
+  const creatorContent = purchases.filter(p => p.creatorId.toString() === creator._id)
   const [activeTab, setActiveTab] = useState(creator ? 'posts' : 'purchased');
   const tabs = [
     { id: 'posts', label: 'Posts', count: creator?.posts?.length || 0 },
     { id: 'media', label: 'Media', count: creator?.posts?.filter(p => p.signedUrl).length || 0 },
     ...((status === 'subscriber' || status === 'follower') && !isOwnProfile
-      ? [{ id: 'purchased', label: 'Purchased Content', count: purchasedContent.length }]
+      ? [{ id: 'purchased', label: 'Purchased Content', count: creatorContent?.filter(c => c.userId.toString() === viewingUser._id).length ?? 0 }]
       : []),
     ...([{ id: 'likes', label: 'Likes', count: 0 }]),
   ];
@@ -928,16 +1008,16 @@ function ContentTabs({
       {/* Tab Content */}
       <div className="p-6">
         {activeTab === 'posts' && (
-          <PostsGrid creator={creator} status={status} postSignedUrls={postSignedUrls} user={user} handleFollow={handleFollow} users={users} session={session} />
+          <PostsGrid creator={creator} status={status} postSignedUrls={postSignedUrls} user={user} handleFollow={handleFollow} purchases={purchases} users={users} session={session} />
         )}
         {activeTab === 'purchased' && (
-          <PurchasedPostsGrid status={status} creator={creator} handleFollow={handleFollow} creators={creators} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user}/>
+          <PurchasedPostsGrid status={status} creator={creator} handleFollow={handleFollow} creators={creators} purchases={purchases} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user}/>
         )}
         {activeTab === 'media' && (
           <MediaGrid creator={creator} status={status} postSignedUrls={postSignedUrls}user={user}  />
         )}
         {activeTab === 'likes' && (
-          <LikedContent creator={creator} status={status} postSignedUrls={postSignedUrls} viewingUser={viewingUser} creators={creators}/>
+          <LikedContent creator={creator} status={status} postSignedUrls={postSignedUrls} viewingUser={viewingUser} creators={creators} purchases={purchases}/>
           
         )}
       </div>
@@ -949,6 +1029,7 @@ function LikedContent({
   status,
   postSignedUrls,
   viewingUser,
+  purchases,
   creators
 }: {
   creator?: Creator;
@@ -956,6 +1037,7 @@ function LikedContent({
   postSignedUrls: Record<string, SignedUrls>
   viewingUser: Creator | User;
   creators: Creator[];
+  purchases: Purchase[]
 }) {
   const [likedPosts, setLikedPosts] = useState<Post[]>([]);
 
@@ -1016,6 +1098,7 @@ function LikedContent({
             users={[]}
             session={null}
             handleDeletePost={() => {}}
+            purchases={purchases}
           />
         ))
       ) : (
@@ -1035,6 +1118,7 @@ function PurchasedPostsGrid ({
   postSignedUrls,
   handleFollow,
   user,
+  purchases,
   status,
 }: {
   creator?: Creator;
@@ -1044,18 +1128,31 @@ function PurchasedPostsGrid ({
   user: Creator | User,
   status: 'follower' | 'subscriber' | 'none',
   creators: Creator[]
+  purchases: Purchase[]
 }) {
   const [users, setUsers] = useState<User[] | null>(null);
   const [visiblePosts, setVisiblePosts] = useState<Post[]>([]);
   
   useEffect(() => {
-    if (creator?.posts) {
-      const purchased = creator.posts.filter((post) =>
-        viewingUser.purchases?.some((purchase) => purchase.postId === post._id)
-      );
-      setVisiblePosts(purchased);
-    }
-  }, [creator, viewingUser]);
+    if (!creator?.posts || !viewingUser) return;
+  
+    // Find all purchases by this user for this creator
+    const creatorPurchases = purchases.filter(
+      (p) => p.creatorId.toString() === creator._id && p.userId.toString() === viewingUser._id
+    );
+  
+    // Get an array of purchased mediaIds
+    const mediaIds = creatorPurchases
+      .map(p => p.mediaId?.toString())
+      .filter((id): id is string => !!id);
+  
+    // Filter creator.posts to only include purchased posts
+    const purchasedPosts = creator.posts.filter(post =>
+      mediaIds.includes(post._id.toString())
+    );
+  
+    setVisiblePosts(purchasedPosts);
+  }, [creator, viewingUser, purchases]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -1117,6 +1214,7 @@ function PurchasedPostsGrid ({
           signedUrl={postSignedUrls[post._id]?.signedUrl || ""}
           handleFollow={handleFollow}
           handleDeletePost={() => handleDeletePost(creator._id, post._id)}
+          purchases={purchases}
         />
       ))}
     </div>
@@ -1246,6 +1344,7 @@ function PostsGrid({
   user,
   users,
   session,
+  purchases,
 }: {
   creator?: Creator;
   status: 'subscriber' | 'follower' | 'none';
@@ -1254,6 +1353,7 @@ function PostsGrid({
   user: Creator | User;
   users: User[];
   session: Session | null;
+  purchases: Purchase[]
 }) {
   const [visiblePosts, setVisiblePosts] = useState<Post[]>([]);
   useEffect(() => {
@@ -1306,6 +1406,7 @@ function PostsGrid({
               // 👇 satisfy the required props
               signedUrl={urls.signedUrl}
               blurredUrl={urls.blurredUrl}
+              purchases={purchases}
             />
           );
         })

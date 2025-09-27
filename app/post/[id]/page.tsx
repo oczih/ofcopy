@@ -10,7 +10,7 @@ export default async function Page(
   context: { params: Promise<Params> }
 ) {
   const { id } = await context.params;
-    const { creators, users, safeSession, posts } = await fetchPageData();
+    const { creators, users, safeSession, posts, purchases } = await fetchPageData();
   
     return (
       
@@ -20,6 +20,7 @@ export default async function Page(
           session={safeSession}
           postId={id}
           posts={posts}
+          purchases={purchases}
         />
       
     );

@@ -1,7 +1,7 @@
 'use client'
 
 import { Session } from "next-auth";
-import { Creator, User, Post } from "@/app/types";
+import { Creator, User, Post, Purchase } from "@/app/types";
 import { CreatorPostCard } from "@/components/CreatorPostCard";
 import { notFound, useRouter} from "next/navigation";
 import { useEffect, useState, useRef } from "react";
@@ -16,9 +16,10 @@ interface AppProps {
   users: User[];
   posts: Post[];
   postId: string;
+  purchases: Purchase[]
 }
 
-export default function App({ creators, users, session, posts, postId }: AppProps) {
+export default function App({ creators, users, session, posts, postId, purchases }: AppProps) {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<'subscriber' | 'follower' | 'none'>('none');
   const [currentUser, setCurrentUser] = useState<User>(session?.user as User);
@@ -234,6 +235,7 @@ export default function App({ creators, users, session, posts, postId }: AppProp
             user={viewingUser as User}
             users={users}
             signedUrl={postUrl}
+            purchases={purchases}
             blurredUrl={blurredUrl}
             handleFollow={handleFollow}
             handleDeletePost={() => handleDeletePost(creator._id, post._id)}

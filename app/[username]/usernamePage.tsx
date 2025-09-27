@@ -1,10 +1,8 @@
 import { notFound } from 'next/navigation';
 import UserModel from '@/app/models/usermodel';
-import PurchaseModel from '@/app/models/purchasemodel';
 import ProfileContent from '@/components/ProfileContent';
 import CreatorModel from '@/app/models/creatormodel';
-import { MediaPost, Subscriber, Purchase, Follower, User, Creator } from '../types';
-import { PostDocument } from '../models/postmodel';
+import { Subscriber, Purchase, Follower, User, Creator} from '../types';
 import { Session } from 'next-auth';
 
 
@@ -19,9 +17,10 @@ interface AppProps {
   users: User[];
   session: Session | null;
   username: string;
+  purchases: Purchase[]
 }
 
-export default async function App({ creators, users, session, username}: AppProps) {
+export default async function App({ creators, users, session, username, purchases}: AppProps) {
   if (RESERVED_ROUTES.some(route => route.toLowerCase() === username.toLowerCase())) notFound();
   function normalizeId<T extends { _id?: string; id?: string }>(doc: T | null): T | null {
     if (!doc) return null;
@@ -66,7 +65,6 @@ export default async function App({ creators, users, session, username}: AppProp
 
   let relationshipStatus: 'subscriber' | 'follower' | 'none' = 'none';
   const totalSpent = 0;
-  let purchasedContent: MediaPost[] = [];
   const creatorId = creators.find((c: Creator) => String(c.user) === String(session?.user?._id));
   if (creator) {
     // Person being viewed is a creator → check if viewingUser is a follower/subscriber
@@ -98,30 +96,25 @@ export default async function App({ creators, users, session, username}: AppProp
     }
   }
 
-    
-  if (session?.user?._id) {
-    const purchases = await PurchaseModel.find({ userId: session.user._id }).populate('postId') as Purchase<PostDocument>[];
-    purchasedContent = purchases
-      .map(p => p.postId)
-      .filter((post): post is PostDocument => post && typeof post === 'object' && '_id' in post)
-      .map(post => ({ ...post.toObject(), _id: post._id }));
-  }
+  
 
-  const sanitizedCreator = creator ? JSON.parse(JSON.stringify(creator)) : null;
-
-
+  // Sanitize user or creator
+  const safeUserOrCreator = JSON.parse(JSON.stringify(user || creator));
+  const safeSessionUser   = session?.user ? JSON.parse(JSON.stringify(session.user)) : null;
+  const safeCreator       = creator ? JSON.parse(JSON.stringify(creator)) : null;
+  
   return (
     <ProfileContent
-      userViewed={JSON.parse(JSON.stringify(user || creator))}
-      viewingUser={session?.user.creator ? creatorId : session?.user ? JSON.parse(JSON.stringify(session?.user)) : null}
-      purchasedContent={purchasedContent}
+      userViewed={safeUserOrCreator}
+      viewingUser={session?.user?.creator ? creatorId : safeSessionUser}
       totalSpent={totalSpent}
       relationshipStatus={relationshipStatus}
       isOwnProfile={!!isOwnProfile}
-      users={users}
-      creators={creators}
-      session={session}
-      creator={sanitizedCreator}
+      users={JSON.parse(JSON.stringify(users))}
+      creators={JSON.parse(JSON.stringify(creators))}
+      session={JSON.parse(JSON.stringify(session))}
+      purchases={JSON.parse(JSON.stringify(purchases))}
+      creator={safeCreator}
     />
   );
 }

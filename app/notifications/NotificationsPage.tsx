@@ -38,7 +38,7 @@ const notificationMessages: Record<Notification["type"], (n: Notification) => st
   like: () => "liked your post!",
   newfollower: () => "followed you!",
   promotion: () => "launched a promotion!",
-  purchase: () => "purchase your content!"
+  post: () => "purchase your post!"
 };
 
 interface AppProps {
@@ -252,7 +252,7 @@ const byUser = resolveByUser(noti.by);
           const user = users.find(u => u._id === noti.by);
           return `/${user?.username}`;
         } // Subscribers page
-      case "purchase":
+      case "post":
         return `/post/${noti.postId}`; // If purchases are tied to a post
       case "promotion":
         return `/promotions/${noti.by}`; // Example route

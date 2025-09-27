@@ -1,7 +1,7 @@
 import mongoose, { Schema, model, Document, Types } from 'mongoose';
 
 // Define the NotificationType union type
-export type NotificationType = 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comment' | 'like' | 'newfollower' | 'promotion' | 'purchase';
+export type NotificationType = 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comment' | 'like' | 'newfollower' | 'promotion' | 'post';
 
 export interface NotificationDocument extends Document {
   type: NotificationType;
@@ -16,7 +16,7 @@ export interface NotificationDocument extends Document {
 const notificationSchema = new Schema<NotificationDocument>({
   type: { 
     type: String, 
-    enum: ['newsub', 'resub', 'tip', 'subcancel', 'comment', 'like', 'newfollower', 'promotion', 'purchase'], 
+    enum: ['newsub', 'resub', 'tip', 'subcancel', 'comment', 'like', 'newfollower', 'promotion', 'post'], 
     required: true 
   },
   by: { type: Schema.Types.ObjectId, ref: 'User', required: true },

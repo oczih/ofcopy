@@ -108,29 +108,40 @@ export default function App({ creators, session }: AppProps) {
   const handleFormChange = (key: keyof PromotionForm, value: string) => {
     setForm(prev => ({ ...prev, [key]: value }));
   };
-
+  console.log(form.peopleLimit)
   const createPromotion = async () => {
     if (!rightCreator) return;
   
     try {
-      // Send to backend
+      // 🔑 Convert the selected days string to a Date
+      const days = Number(form.endDate);
+      const calculatedEndDate =
+        form.endDate === "unlimited"
+          ? null
+          : !isNaN(days)
+            ? new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+            : null;
+            const limit =
+  form.peopleLimit === "unlimited" || form.peopleLimit === ""
+    ? undefined // ✅ instead of null
+    : Number(form.peopleLimit);
+          
       const payload: Omit<Promotion, "_id"> = {
         type: form.type,
         audience: form.audience,
-        peopleLimit: Number(form.peopleLimit),
+        peopleLimit: limit,
         trialDays: Number(form.trialDays),
         discountPercent: form.type === "freeTrial" ? 100 : Number(form.discountPercent),
         message: form.message,
         active: true,
-
-        startDate: new Date(form.startDate), // convert string → Date
-        endDate: form.endDate ? new Date(form.endDate) : new Date(),
+        startDate: new Date(form.startDate),
+        endDate: calculatedEndDate ?? undefined,  // ✅ actual Date or undefined
       };
-  
+      console.log(payload.peopleLimit)
       const data = await createPromotionAPI(rightCreator._id, payload);
   
       if (!data.error) {
-        setPromotions(prev => [...prev, data.promotion]); // update local state
+        setPromotions(prev => [...prev, data.promotion]);
         setModalOpen(false);
         setForm({
           type: "freeTrial",
@@ -138,7 +149,7 @@ export default function App({ creators, session }: AppProps) {
           peopleLimit: "",
           message: "",
           startDate: "",
-          endDate: "",
+          endDate: "",       // keep as string days for next time
           trialDays: "7",
           discountPercent: "10",
         });
@@ -149,6 +160,7 @@ export default function App({ creators, session }: AppProps) {
       console.error(err);
     }
   };
+  
   const createBundle = async () => {
     if (!rightCreator || !month || !percentage || tempPrice === "") return;
   
@@ -321,7 +333,7 @@ const latestPromotion = sortedPromotions[0] || null;
 {/* Show only the latest promotion */}
 {latestPromotion && (
   <div className="p-4 mt-4 rounded-xl bg-white/10 text-white flex flex-col gap-1">
-    <p className="text-2xl">{latestPromotion.audience}</p>
+    <p className="text-2xl">{latestPromotion.audience === "all" ? "All Fans" : latestPromotion.audience}</p>
     <p className="font-semibold">
       {latestPromotion.type === "freeTrial"
         ? `${latestPromotion.peopleLimit ?? "?"} Days Free Trial`
@@ -329,11 +341,14 @@ const latestPromotion = sortedPromotions[0] || null;
     </p>
     <p>
   {latestPromotion.peopleLimit && latestPromotion.peopleLimit > 0
-    ? latestPromotion.peopleLimit
+    ? `People limit: ${latestPromotion.peopleLimit}`
     : "No usage limit"}
 </p>
     <Divider sx={{ borderColor: "#912afa" }} />
-    <p>Message: {latestPromotion.message}</p>
+    <div className="flex flex-col">
+      <p className="text-xl font-bold pb-2">Message</p>
+      <p className="text-xl">{latestPromotion.message}</p>
+    </div>
     <Divider sx={{ borderColor: "#912afa" }} />
     <div className="justify-between flex flex-row">
     <p>
@@ -351,7 +366,7 @@ const latestPromotion = sortedPromotions[0] || null;
     ) : (
       <button
         onClick={() => handleStopPromotion(latestPromotion)}
-        className="mt-2 px-3 py-1 border bg-transparent mx-auto cursor-pointer bg-red-600 hover:bg-red-700 rounded-2xl transition-colors duration-300"
+        className="mt-2 px-3 py-1 bg-white text-black mx-auto cursor-pointer bg-red-600 hover:bg-red-700 rounded-2xl transition-colors duration-300"
       >
         Stop Promotion
       </button>
@@ -633,6 +648,49 @@ const latestPromotion = sortedPromotions[0] || null;
   </>
 )}
 {form.type === "discount" && (
+  <div>
+    <>
+    <label className="text-sm text-gray-300 mb-1">Offer Expiration</label>
+    <FormControl fullWidth>
+      <Select
+        value={form.endDate}                            // <-- stores "7" or "unlimited"
+        onChange={(e) => handleFormChange("endDate", e.target.value)}
+        MenuProps={{
+          PaperProps: {
+            sx: {
+              bgcolor: "rgba(168,85,247,0.15)",
+              borderRadius: "0.75rem",
+              mt: 0,
+              "& .MuiList-root": { padding: 0 }
+            }
+          }
+        }}
+        sx={{
+          bgcolor: "rgba(168,85,247,0.15)",
+          borderRadius: "0.75rem",
+          color: "white",
+          "& .MuiSvgIcon-root": { color: "white" }
+        }}
+      >
+        {["1","2","3","4","5","6","7","14","30","unlimited"].map((opt) => (
+          <MenuItem
+            key={opt}
+            value={opt}
+            sx={{
+              bgcolor: "#4f1d74",
+              color: "white",
+              "&:hover": { bgcolor: "rgb(54,19,81)" }
+            }}
+          >
+            {opt === "unlimited"
+              ? "Unlimited"
+              : `${opt} day${opt === "1" ? "" : "s"}`}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+    
+      </>
   <>
 <label className="text-sm text-gray-300 mb-1">Discount Percentage</label>
 <FormControl fullWidth>
@@ -675,6 +733,7 @@ const latestPromotion = sortedPromotions[0] || null;
 </FormControl>
 
   </>
+  </div>
 )}
 
 

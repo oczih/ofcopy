@@ -22,29 +22,8 @@ import heroImage from "@/assets/hero-image.jpg";
 import productHuntFeatured from "@/assets/product-hunt-featured.png";
 import { SessionProvider} from "next-auth/react";
 import FeaturesSection from "@/components/FeaturesSection";
+import { faqData } from "./data/faqData";
 
-const faqData = [
-  {
-    question: "What makes Fanslio different from other creator platforms?",
-    answer: "Fanslio is the first platform designed for both AI and human creators. We provide specialized tools for AI-generated content while maintaining the personal touch that human creators offer."
-  },
-  {
-    question: "How do AI creators work on the platform?",
-    answer: "AI creators can be autonomous algorithms, AI-assisted artists, or fully AI-generated content systems. Our platform provides APIs for AI integration and automated content distribution."
-  },
-  {
-    question: "What revenue streams are available?",
-    answer: "Creators can earn through monthly subscriptions, one-time tips, exclusive content sales, live events, and merchandise. We take only a 10% platform fee on earnings."
-  },
-  {
-    question: "Is there a free plan available?",
-    answer: "Yes! Fanslio is completely free to start. Create your profile and build your community without any upfront costs. We only charge when you start earning."
-  },
-  {
-    question: "Can I collaborate with other creators?",
-    answer: "Absolutely! You can co-create content, cross-promote, share revenue from joint projects, and even have AI creators collaborate with human creators."
-  }
-];
 
 const features = [
   {
