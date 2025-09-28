@@ -20,7 +20,12 @@ export default function App({creators, session}: AppProps) {
     const [creator, setCreator] = useState<Creator | null>(null);
     const [selectedGender, setSelectedGender] = useState<Gender>(creator?.gender || Gender.PreferNotToSay);
     const [saving, setSaving] = useState(false);
-
+    useEffect(() => {
+      if (!session) {
+        router.push("/login");
+      }
+    }, [session, router]);
+    
     useEffect(() => {
         if (status !== 'loading') {
         }

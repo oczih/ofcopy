@@ -3,9 +3,10 @@
 import { Session } from "next-auth";
 import { Creator } from "@/app/types";
 import PaymentForm from "@/components/PaymentForm";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface AppProps {
   session: Session | null;
@@ -18,8 +19,13 @@ export default function FollowingList({ session, creators }: AppProps) {
   const [creatorAvatars, setCreatorAvatars] = useState<Record<string, string>>({});
   const [urlCache, setUrlCache] = useState<Record<string, { url: string; timestamp: number }>>({});
   const CACHE_TTL = 15 * 60 * 1000; // 15 min
-
-  const following = session?.user?.following ?? [];
+  const router = useRouter();
+  useEffect(() => {
+    if (!session) {
+      router.push("/login");
+    }
+  }, [session, router]);
+  const following = useMemo(() => session?.user?.following ?? [], [session?.user?.following]);
 
   /** Fetch or return cached signed URL */
   const resolveAvatarUrl = useCallback(

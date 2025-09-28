@@ -49,7 +49,11 @@ export default function App({users, session, creators}: AppProps) {
     const router = useRouter()
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
-    
+    useEffect(() => {
+      if (!session) {
+        router.push("/login");
+      }
+    }, [session, router]);
     const [usernameAvailable, setUsernameAvailable] = useState(true)
     const [formData, setFormData] = useState({
         name: "",

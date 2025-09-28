@@ -39,6 +39,7 @@ export default function App({ creators, users, session, purchases}: AppProps) {
   const HIDE_DURATION = 2 * 60 * 1000;
   const notifiedCreators = useRef<Set<string>>(new Set());
   const router = useRouter()
+  const [loading, setLoading] = useState(true);
   // Manage loading and redirect on unauthenticated
   useEffect(() => {
     async function fetchStats() {
@@ -163,8 +164,14 @@ export default function App({ creators, users, session, purchases}: AppProps) {
   useEffect(() => {
     if (!session) {
       router.push("/login");
+    } else {
+      setLoading(false);
     }
   }, [session, router]);
+
+  if (!session || loading) {
+    return null; // or a spinner/loading state
+  }
 
   const handleFollow = async (creator: Creator) => {
     if (!creator) return;

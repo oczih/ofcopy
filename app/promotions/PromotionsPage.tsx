@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import PaymentForm from "@/components/PaymentForm";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 
 interface AppProps {
   session: Session | null;
@@ -18,7 +19,12 @@ export default function App({ session, creators }: AppProps) {
   const [creatorAvatars, setCreatorAvatars] = useState<Record<string, string>>({});
   const [mounted, setMounted] = useState(false); // ✅ for portal safety
   const CACHE_TTL = 15 * 60 * 1000; // 15 min
-
+  const router = useRouter();
+  useEffect(() => {
+    if (!session) {
+      router.push("/login");
+    }
+  }, [session, router]);
   useEffect(() => setMounted(true), []); // ✅ ensure DOM is ready
 
   // All creators with an active promotion

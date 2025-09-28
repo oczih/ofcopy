@@ -39,7 +39,11 @@ export default function App({ creators, session }: AppProps) {
   const [socials, setSocials] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null); // 🔴 Error message
-
+  useEffect(() => {
+    if (!session) {
+      router.push("/login");
+    }
+  }, [session, router]);
   useEffect(() => {
     if (status !== 'loading') return;
   }, [status]);

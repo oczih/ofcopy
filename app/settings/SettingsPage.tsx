@@ -31,10 +31,10 @@ export default function App({session}: AppProps) {
   const router = useRouter();
   
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!session) {
       router.push("/login");
     }
-  }, [router]);
+  }, [session, router]);
   useEffect(() => {
     if (session?.user) {
       setEmail(session.user.email ?? "");

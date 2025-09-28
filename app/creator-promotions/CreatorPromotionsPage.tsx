@@ -8,6 +8,7 @@ import { X } from "lucide-react";
 import { Divider, MenuItem,Select, FormControl, Switch, SelectChangeEvent, Chip, Tabs, Tab } from "@mui/material";
 import creatorservice from "../services/creatorservice";
 import { createBundleAPI, createPromotionAPI, updatePromotionAPI } from "@/lib/utils";
+import { notFound, useRouter } from "next/navigation";
 
 interface AppProps {
   creators: Creator[] | null;
@@ -39,6 +40,17 @@ export default function App({ creators, session }: AppProps) {
   const [month, setMonth] = useState<string>("");
   const [previousModal, setPreviousModal] = useState(false);
   const [showPriceModal, setShowPriceModal] = useState(false);
+  const router = useRouter();
+  useEffect(() => {
+    if (!session) {
+      router.push("/login");
+    }
+  }, [session, router]);
+    useEffect(() => {
+      if (!session?.user?.creator) {
+        notFound();
+      }
+    }, [session, router]);
   useEffect(() => {
     if (rightCreator?.promotions) {
       setPromotions(rightCreator.promotions);

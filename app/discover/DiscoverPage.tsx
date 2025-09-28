@@ -11,6 +11,7 @@ import { Creator, User } from "../types";
 import Image from "next/image";
 import { resolveImageUrl } from "@/components/resolveImageUrl";
 import { Session } from "next-auth";
+import { useRouter } from "next/navigation";
 
 interface AppProps {
   creators: Creator[];
@@ -18,7 +19,7 @@ interface AppProps {
   users: User[];
 }
 
-export default function App({creators }: AppProps ) {
+export default function App({creators, session }: AppProps ) {
   const [searchQuery, setSearchQuery] = useState("");
   const [creatorsWithMedia, setCreatorsWithMedia] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +30,14 @@ export default function App({creators }: AppProps ) {
       postKeys: (c.posts || []).map(p => p.s3Key)
     }))
   );
+  const router = useRouter();
+
+  // Redirect unauthenticated users
+  useEffect(() => {
+    if (!session) {
+      router.push("/login");
+    }
+  }, [session, router]);
   useEffect(() => {
     const fetchCreators = async () => {
       try {

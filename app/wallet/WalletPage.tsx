@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Creator, User } from "../types";
 import { Session } from "next-auth";
 import { Bitcoin, Banknote, X } from "lucide-react";
 import { CryptoPaymentModal } from "@/components/CryptoModal";
+import { useRouter } from "next/navigation";
 interface PayPanelProps {
   onCancel: () => void;
   topUpAmount: string | null;
@@ -122,7 +123,12 @@ export default function App({session}: AppProps) {
   const [showPayPanel, setShowPayPanel] = useState(false);
   const [showTopUpPanel, setShowTopUpPanel] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState<string | null>(null);
-
+  const router = useRouter();
+  useEffect(() => {
+    if (!session) {
+      router.push("/login");
+    }
+  }, [session, router]);
   return (
     <div className="min-h-screen w-full flex justify-center px-4 py-10">
       <main className="max-w-3xl w-full space-y-8">

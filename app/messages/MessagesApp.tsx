@@ -60,6 +60,11 @@ export default function ChatApp({ session, users, creators }: AppProps) {
   const messages = messagesByChat[currentChatIdentifier ?? ""] || [];
   const router = useRouter();
   useEffect(() => {
+    if (!session) {
+      router.push("/login");
+    }
+  }, [session, router]);
+  useEffect(() => {
     const result = chats.filter(chat => {
       if (!activeFilter) return true; // no filter = show all
   

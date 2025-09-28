@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Creator, User } from '../types';
 import { Session } from 'next-auth';
+import { notFound, useRouter } from 'next/navigation';
 
 interface Payment {
   id: string;
@@ -21,7 +22,17 @@ interface AppProps {
 
 export default function App({ creators, session, users }: AppProps) {
   const [creator, setCreator] = useState<Creator | null>(null);
-
+  const router = useRouter();
+  useEffect(() => {
+    if (!session) {
+      router.push("/login");
+    }
+  }, [session, router]);
+    useEffect(() => {
+      if (!session?.user?.creator) {
+        notFound();
+      }
+    }, [session, router]);
   useEffect(() => {
     if (session) {
       const creatorCorrect = creators.find(c => c.user === session.user._id);

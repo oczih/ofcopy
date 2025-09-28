@@ -59,7 +59,11 @@ export default function App({ session, notifications, users, creators }: AppProp
     setLoading(false);
   }, [notifications]);
 
-  
+  useEffect(() => {
+    if (!session) {
+      router.push("/login");
+    }
+  }, [session, router]);
   useEffect(() => {
     async function fetchSignedUrls() {
       if ((!users || users.length === 0) && (!creators || creators.length === 0)) return;

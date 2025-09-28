@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
 import { Button } from "../../components/ui/button";
 import { Camera, X, ZoomIn, ZoomOut } from 'lucide-react';
 import Cropper, { Area } from 'react-easy-crop';
@@ -67,6 +67,16 @@ export default function App({ users, session}: AppProps) {
   });
 
   const totalSteps = 6;
+  useEffect(() => {
+    if (!session) {
+      router.push("/login");
+    }
+  }, [session, router]);
+    useEffect(() => {
+      if (session?.user?.creator) {
+        notFound();
+      }
+    }, [session, router]);
   useEffect(() => {
     const checkUsername = async () => {
       if (!formData.handle) return;

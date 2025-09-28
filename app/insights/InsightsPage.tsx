@@ -15,6 +15,7 @@ import {
   Chip,
 } from "@mui/material";
 import { MiniGraphCard } from "./MiniGraphCard";
+import { notFound, useRouter } from "next/navigation";
 
 interface AppProps {
   creators: Creator[];
@@ -102,6 +103,17 @@ export default function CreatorInsights({ session, users, creators }: AppProps) 
   const [userAvatars, setUserAvatars] = useState<Record<string, string>>({});
   const [selectedGraphs, setSelectedGraphs] = useState<Record<string, GraphType>>({});
   const [mediaType, setMediaType] = useState<"solo" | "bundle">("solo")
+  const router = useRouter();
+  useEffect(() => {
+    if (!session) {
+      router.push("/login");
+    }
+  }, [session, router]);
+  useEffect(() => {
+    if (!session?.user?.creator) {
+      notFound();
+    }
+  }, [session, router]);
   const fetchUserAvatarUrl = async (user: User) => {
     if (!user.avatarKey) return;
   

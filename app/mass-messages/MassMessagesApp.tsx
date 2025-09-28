@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import uploadmediaservice from "../services/uploadmediaservice";
 import { v4 as uuidv4 } from "uuid";
 import { MassMessagesTable } from "@/components/MassMessageTable";
+import { notFound, useRouter } from "next/navigation";
 
 interface AppProps {
   session: Session | null;
@@ -183,11 +184,22 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [messageText, setMessageText] = useState("");
   const [price, setPrice] = useState<number | null>(0);
- const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [massMessages, setMassMessages] = useState<MessageType[]>([]);
   const [massMediaUrlCache, setMassMediaUrlCache] = useState<Record<string, { url: string; timestamp: number }>>({});
   const [massMessageMediaUrls, setMassMessageMediaUrls] = useState<Record<string, string>>({});
   const CACHE_TTL = 15 * 60 * 1000;
+  const router = useRouter();
+  useEffect(() => {
+    if (!session) {
+      router.push("/login");
+    }
+  }, [session, router]);
+  useEffect(() => {
+    if (!session?.user?.creator) {
+      notFound();
+    }
+  }, [session, router]);
   const resolveMassMediaUrl = useCallback(
     async (key: string | undefined | null): Promise<string | undefined> => {
       if (!key) return undefined;

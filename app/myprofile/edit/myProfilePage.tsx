@@ -10,6 +10,7 @@ import { uploadContent } from '@/app/services/uploadmediaservice';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Creator, User } from '@/app/types';
 import { Session } from 'next-auth';
+import { useRouter } from 'next/navigation';
 interface AppProps {
     creators: Creator[];
     session: Session | null;
@@ -25,6 +26,12 @@ export default function App({creators, session}: AppProps) {
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
   const [creator, setCreator] = useState<Creator | null>(null)
+  const router = useRouter();
+  useEffect(() => {
+    if (!session) {
+      router.push("/login");
+    }
+  }, [session, router]);
   useEffect(() => {
     const fetchCreator = async () => {
       if (!session?.user) return;

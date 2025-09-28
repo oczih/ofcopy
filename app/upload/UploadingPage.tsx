@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useState } from "react";
 import { Button } from "../../components/ui/button";
 import {useSession } from "next-auth/react";
-import {  useRouter } from "next/navigation";
+import {  notFound, useRouter } from "next/navigation";
 import { uploadContent } from "@/app/services/uploadmediaservice";
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
@@ -35,6 +35,16 @@ export default function App({creators, session}: AppProps) {
     const router = useRouter();
     const [showDim, setShowDim] = useState(false);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+    useEffect(() => {
+      if (!session) {
+        router.push("/login");
+      }
+    }, [session, router]);
+      useEffect(() => {
+        if (!session?.user?.creator) {
+          notFound();
+        }
+      }, [session, router]);
     useEffect(() => {
       const fetchCreators = async () => {
         const rightcreator = creators.find(

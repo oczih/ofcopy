@@ -34,7 +34,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en">
       <head>
         <link rel="canonical" href="https://fanslio.com/" />
-        <script type="application/ld+json"></script>
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
                 {/* ✅ Cookiebot script */}
