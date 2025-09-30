@@ -52,12 +52,12 @@ export default function BlogLayout({ children }: BlogLayoutProps) {
       </header>
 
       {/* === MAIN CONTENT === */}
-      <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-12 space-y-12">
+      <main className="flex-1 max-w-screen w-full mx-auto space-y-12">
         {children}
       </main>
 
       {/* === FOOTER === */}
-      <footer className="border-t border-white/10 mt-12">
+      <footer className="border-t border-white/10">
         <div className="max-w-5xl mx-auto px-4 py-8 text-center text-gray-400 text-sm">
           © {new Date().getFullYear()} Fanslio Blog. All rights reserved.
         </div>

@@ -1,6 +1,6 @@
 // app/layout.tsx
 import type { Metadata } from "next";
-import { headers } from "next/headers";           // 👈 import headers
+
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SessionProviderWrapper from "./SessionProviderWrapper";
@@ -30,8 +30,6 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-// Optional: if you have a separate BlogLayout component
-import BlogLayout from "./blog/BlogLayout"; // <-- create one if needed
 
 export default async function RootLayout({
   children,
@@ -39,8 +37,9 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   // 👇 detect which domain is being served
-  const h = await headers();          // ✅ await it
-  const site = h.get('x-site'); 
+
+
+
   const { creators, users, safeSession } = await fetchPageData();
 
   // Common head scripts (used on both sites)
@@ -75,22 +74,6 @@ export default async function RootLayout({
     </>
   );
 
-  if (site === "blog") {
-    // 👉 user is on blog.fanslio.com
-    return (
-      <html lang="en">
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-          {commonScripts}
-          <SessionProviderWrapper>
-            <BlogLayout>
-              {children}
-              {process.env.NODE_ENV === "production" && <Analytics />}
-            </BlogLayout>
-          </SessionProviderWrapper>
-        </body>
-      </html>
-    );
-  }
 
   // 👉 default = main site (fanslio.com)
   return (

@@ -21,7 +21,7 @@ export default function AppWrapper({
   creators: Creator[];
   users: User[];
   session: Session | null;
-  hideHotbar?: boolean
+  hideHotbar?: boolean;
 }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -31,10 +31,20 @@ export default function AppWrapper({
   const lastFetchedAvatarKey = useRef<string | null>(null);
   const [creator, setCreator] = useState<Creator | null>(null);
   const pathname = usePathname();
-  
+
+  // Detect host / subdomain
+  const [host, setHost] = useState("");
+  useEffect(() => {
+    setHost(window.location.host);
+  }, []);
+
+  // If on blog subdomain, treat it as public route
+  const isBlogSubdomain = host.startsWith("blog.");
+
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [pathname]);
+
   // Find the creator
   useEffect(() => {
     if (session?.user?._id && creators) {
@@ -89,114 +99,118 @@ export default function AppWrapper({
 
     fetchAvatarUrl();
   }, [avatarKey]);
+
   const PUBLIC_ROUTES = [
-    'tos',
-    'privacy',
-    'child-protection',
-    'anti-slavery',
-    'guidelines',
-    'dmca',
-    'cookiepolicy',
-    'login',
-    'signup',
-    'verify',
-    'forgot-password',
-    '/', // homepage
-    'about', // add any other public pages you might have
+    "tos",
+    "privacy",
+    "child-protection",
+    "anti-slavery",
+    "guidelines",
+    "dmca",
+    "cookiepolicy",
+    "login",
+    "signup",
+    "verify",
+    "forgot-password",
+    "/", // homepage
+    "about",
   ];
+
   const currentRoute = pathname === "/" ? "/" : pathname.split("/")[1];
   const isPublicRoute = PUBLIC_ROUTES.includes(currentRoute);
+
+  // hide sidebar if public route OR blog subdomain
+  const showSidebar = !isPublicRoute && !isBlogSubdomain;
+
   return (
     <div className="min-h-screen w-full bg-[#3b0364] relative overflow-hidden">
       {/* Sidebar Overlay for Mobile */}
-      
-      {/* Sidebar */}
-      {!isPublicRoute && (
-      <>
-        <Sidebar
-          onCollapseChange={setSidebarCollapsed}
-          creators={creators}
-          users={users}
-          session={session}
-          isSidebarOpen={isSidebarOpen}
-          setIsSidebarOpen={setIsSidebarOpen}
-        />
-        {isSidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 z-20 md:hidden"
-            onClick={() => setIsSidebarOpen(false)}
+      {showSidebar && (
+        <>
+          <Sidebar
+            onCollapseChange={setSidebarCollapsed}
+            creators={creators}
+            users={users}
+            session={session}
+            isSidebarOpen={isSidebarOpen}
+            setIsSidebarOpen={setIsSidebarOpen}
           />
-        )}
-      </>
-    )}
+          {isSidebarOpen && (
+            <div
+              className="fixed inset-0 bg-black/50 z-20 md:hidden"
+              onClick={() => setIsSidebarOpen(false)}
+            />
+          )}
+        </>
+      )}
 
       {/* Main content */}
       <div
-  className={`transition-all duration-300 ${
-    isPublicRoute
-      ? "md:ml-0"      // no margin on homepage
-      : sidebarCollapsed
-      ? "md:ml-20"
-      : "md:ml-72"
-  }`}
->
+        className={`transition-all duration-300 ${
+          isPublicRoute || isBlogSubdomain
+            ? "md:ml-0"
+            : sidebarCollapsed
+            ? "md:ml-20"
+            : "md:ml-72"
+        }`}
+      >
         {/* Mobile Bottom Hotbar */}
-        {!isPublicRoute && (
-         <div
-         className={`fixed bottom-0 left-0 w-full bg-slate-900/90 border-t border-white/10 
-           flex justify-around items-center py-2 md:hidden z-30
-           ${isSidebarOpen || hideHotbar ? "hidden" : "flex"}`}
-       >
-          <Link href="/home">
-            <Home className="w-6 h-6 text-white" />
-          </Link>
+        {showSidebar && (
+          <div
+            className={`fixed bottom-0 left-0 w-full bg-slate-900/90 border-t border-white/10 
+            flex justify-around items-center py-2 md:hidden z-30
+            ${isSidebarOpen || hideHotbar ? "hidden" : "flex"}`}
+          >
+            <Link href="/home">
+              <Home className="w-6 h-6 text-white" />
+            </Link>
 
-          <Link href="/notifications">
-            <Bell className="w-6 h-6 text-white" />
-          </Link>
+            <Link href="/notifications">
+              <Bell className="w-6 h-6 text-white" />
+            </Link>
 
-          <Link href="/upload">
-            <button
-              className="w-12 h-12 bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500 
+            <Link href="/upload">
+              <button
+                className="w-12 h-12 bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500 
               rounded-full flex items-center justify-center text-white shadow-lg -mt-8"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+              </button>
+            </Link>
+
+            <Link href="/messages">
+              <MessageCircle className="w-6 h-6 text-white" />
+            </Link>
+
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+              {loadingAvatar ? (
+                <Skeleton className="h-8 w-8 rounded-full" />
+              ) : avatarUrl && !avatarError ? (
+                <Image
+                  src={avatarUrl}
+                  alt="Profile"
+                  width={32}
+                  height={32}
+                  className="rounded-full border border-pink-500/40 shadow-md"
                 />
-              </svg>
+              ) : (
+                <UserCircle className="w-7 h-7 text-white" />
+              )}
             </button>
-          </Link>
-
-          <Link href="/messages">
-            <MessageCircle className="w-6 h-6 text-white" />
-          </Link>
-
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
-            {loadingAvatar ? (
-              <Skeleton className="h-8 w-8 rounded-full" />
-            ) : avatarUrl && !avatarError ? (
-              <Image
-                src={avatarUrl}
-                alt="Profile"
-                width={32}
-                height={32}
-                className="rounded-full border border-pink-500/40 shadow-md"
-              />
-            ) : (
-              <UserCircle className="w-7 h-7 text-white" />
-            )}
-          </button>
-        </div>
+          </div>
         )}
         {children}
       </div>
