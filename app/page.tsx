@@ -20,9 +20,10 @@ import {
 import Link from "next/link";
 import heroImage from "@/assets/hero-image.jpg";
 import productHuntFeatured from "@/assets/product-hunt-featured.png";
-import { SessionProvider} from "next-auth/react";
+import { SessionProvider, useSession} from "next-auth/react";
 import FeaturesSection from "@/components/FeaturesSection";
 import { faqData } from "./data/faqData";
+import { useRouter } from "next/navigation";
 
 
 const features = [
@@ -117,13 +118,19 @@ export default function LandingPage() {
 }
 
 function Landing() {
+  const { data: session } = useSession();
   const [mounted, setMounted] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const router = useRouter()
   useEffect(() => {
     setMounted(true);
   }, []);
-  
-  
+
+  useEffect(() => {
+    if (session) {
+      router.push("/home");
+    }
+  }, [session, router]);
   if (!mounted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -134,7 +141,7 @@ function Landing() {
       </div>
     );
   }
-
+  
   return (
     <motion.div 
       initial={{ filter: "blur(5px)" }}

@@ -87,40 +87,6 @@ export default function AboutPage() {
       </section>
 
       {/* Team Section */}
-      <section className="max-w-6xl mx-auto px-6 py-20">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            Meet the Team
-          </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            A group of passionate creators, strategists, and technologists
-            behind Fanslio.
-          </p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center hover:shadow-2xl transition-all">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-3xl text-white mx-auto mb-4">
-              👩‍💻
-            </div>
-            <h3 className="text-xl font-bold text-gray-900">Alex</h3>
-            <p className="text-gray-600 text-sm">Founder & CEO</p>
-          </div>
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center hover:shadow-2xl transition-all">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-3xl text-white mx-auto mb-4">
-              🎨
-            </div>
-            <h3 className="text-xl font-bold text-gray-900">Jamie</h3>
-            <p className="text-gray-600 text-sm">Head of Design</p>
-          </div>
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center hover:shadow-2xl transition-all">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-3xl text-white mx-auto mb-4">
-              🚀
-            </div>
-            <h3 className="text-xl font-bold text-gray-900">Taylor</h3>
-            <p className="text-gray-600 text-sm">Growth Strategist</p>
-          </div>
-        </div>
-      </section>
 
       {/* Footer CTA */}
       <section className="bg-white py-16 px-6">

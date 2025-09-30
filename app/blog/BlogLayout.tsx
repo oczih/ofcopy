@@ -1,8 +1,8 @@
 'use client';
 
+import { ScrollProgress } from '@/components/ui/scroll-progress';
 import Link from 'next/link';
 import { ReactNode } from 'react';
-import { Button } from '@/components/ui/button';
 
 interface BlogLayoutProps {
   children: ReactNode;
@@ -10,43 +10,40 @@ interface BlogLayoutProps {
 
 export default function BlogLayout({ children }: BlogLayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black text-gray-100">
+    <div className="min-h-screen flex flex-col bg-white to-black text-gray-100">
+      {/* === SCROLLBAR === */}
+      <ScrollProgress />
+
       {/* === HEADER === */}
-      <header className="border-b border-white/10 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b border-white/10 bg-white backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           {/* Blog Logo / Title */}
           <Link
-            href="/"
-            className="text-xl font-bold text-white hover:text-pink-400 transition"
+            href="/blog"
+            className="text-xl font-bold text-black hover:text-pink-400 transition"
           >
             Fanslio Blog
           </Link>
 
-          <nav className="flex items-center gap-6 text-sm font-medium">
+          <nav className="flex items-center text-black gap-6 text-sm font-medium">
             <Link
-              href="/"
+              href="/blog"
               className="hover:text-pink-400 transition-colors"
             >
               Home
             </Link>
             <Link
-              href="/about"
-              className="hover:text-pink-400 transition-colors"
+              href="/blog/about"
+              className="hover:text-pink-400 text-black transition-colors"
             >
               About
             </Link>
             <Link
               href="https://fanslio.com"
-              className="hover:text-pink-400 transition-colors"
+              className="hover:text-pink-400 text-black transition-colors"
             >
               Main Site
             </Link>
-            <Button
-              className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full shadow hover:opacity-90 transition"
-              asChild
-            >
-              <Link href="/subscribe">Subscribe</Link>
-            </Button>
           </nav>
         </div>
       </header>

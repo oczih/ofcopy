@@ -31,16 +31,7 @@ export default function AppWrapper({
   const lastFetchedAvatarKey = useRef<string | null>(null);
   const [creator, setCreator] = useState<Creator | null>(null);
   const pathname = usePathname();
-
-  // Detect host / subdomain
-  const [host, setHost] = useState("");
-  useEffect(() => {
-    setHost(window.location.host);
-  }, []);
-
-  // If on blog subdomain, treat it as public route
-  const isBlogSubdomain = host.startsWith("blog.");
-
+  
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [pathname]);
@@ -48,14 +39,13 @@ export default function AppWrapper({
   // Find the creator
   useEffect(() => {
     if (session?.user?._id && creators) {
-      const found = creators.find((c: Creator) => c.user === session.user._id);
+      const found = creators.find((c) => c.user === session.user._id);
       setCreator(found || null);
     }
   }, [session?.user?._id, creators]);
 
   const avatarKey = creator?.avatarKey || session?.user?.avatarKey;
 
-  // Fetch avatar
   useEffect(() => {
     if (!avatarKey) {
       setAvatarUrl(null);
@@ -83,13 +73,10 @@ export default function AppWrapper({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ s3Key: key }),
         });
-
         const data = await res.json();
         if (data.downloadUrl?.startsWith("http")) {
           setAvatarUrl(data.downloadUrl);
-        } else {
-          setAvatarError(true);
-        }
+        } else setAvatarError(true);
       } catch {
         setAvatarError(true);
       } finally {
@@ -99,6 +86,15 @@ export default function AppWrapper({
 
     fetchAvatarUrl();
   }, [avatarKey]);
+  // Detect blog subdomain
+  const [isBlogSubdomain, setIsBlogSubdomain] = useState<boolean | null>(null);
+  useEffect(() => {
+    const currentHost = window.location.host;
+    setIsBlogSubdomain(currentHost.startsWith("blog."));
+  }, []);
+
+  // Don't render layout until we know if it's blog
+  if (isBlogSubdomain === null) return null;
 
   const PUBLIC_ROUTES = [
     "tos",
@@ -119,12 +115,11 @@ export default function AppWrapper({
   const currentRoute = pathname === "/" ? "/" : pathname.split("/")[1];
   const isPublicRoute = PUBLIC_ROUTES.includes(currentRoute);
 
-  // hide sidebar if public route OR blog subdomain
+  // Determine if sidebar should show
   const showSidebar = !isPublicRoute && !isBlogSubdomain;
 
   return (
     <div className="min-h-screen w-full bg-[#3b0364] relative overflow-hidden">
-      {/* Sidebar Overlay for Mobile */}
       {showSidebar && (
         <>
           <Sidebar
@@ -144,7 +139,6 @@ export default function AppWrapper({
         </>
       )}
 
-      {/* Main content */}
       <div
         className={`transition-all duration-300 ${
           isPublicRoute || isBlogSubdomain
@@ -154,7 +148,6 @@ export default function AppWrapper({
             : "md:ml-72"
         }`}
       >
-        {/* Mobile Bottom Hotbar */}
         {showSidebar && (
           <div
             className={`fixed bottom-0 left-0 w-full bg-slate-900/90 border-t border-white/10 
@@ -170,10 +163,8 @@ export default function AppWrapper({
             </Link>
 
             <Link href="/upload">
-              <button
-                className="w-12 h-12 bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500 
-              rounded-full flex items-center justify-center text-white shadow-lg -mt-8"
-              >
+              <button className="w-12 h-12 bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500 
+              rounded-full flex items-center justify-center text-white shadow-lg -mt-8">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-6 w-6"
@@ -181,12 +172,7 @@ export default function AppWrapper({
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
               </button>
             </Link>
