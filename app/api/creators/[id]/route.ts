@@ -46,16 +46,12 @@ export async function GET(request: NextRequest, context: unknown) {
   }
 }
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.email !== `${process.env.SECEMAIL}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
     const { id } = await params;
 
     try {
       const body = await request.json();
       const {
-        name, username, password, email,
+        name, username, password, email, avatarKey,
         age, image, gender, instagram, bluesky, youtube, tiktok, facebook, twitter
       } = body;
   
@@ -94,6 +90,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       if (tiktok    !== undefined) user.tiktok    = tiktok;
       if (facebook  !== undefined) user.facebook  = facebook;
       if (twitter   !== undefined) user.twitter   = twitter;
+      if (avatarKey !== undefined) user.avatarKey = avatarKey;
       await user.save();
   
       return NextResponse.json({ user });

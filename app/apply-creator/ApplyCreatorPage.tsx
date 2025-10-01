@@ -77,22 +77,12 @@ export default function App({ users, session}: AppProps) {
         notFound();
       }
     }, [session, router]);
-  useEffect(() => {
-    const checkUsername = async () => {
+    useEffect(() => {
       if (!formData.handle) return;
-  
-      try {
-        const userfound = users.find((u: User) => u.username === formData.handle)
-        if(userfound){
-          setUsernameAvailable(false)
-        }
-      } catch (error) {
-        console.error("Username check failed", error);
-      }
-    };
-  
-    checkUsername();
-  }, [formData.handle, users]);
+    
+      const userfound = users.find((u: User) => u.username === formData.handle);
+      setUsernameAvailable(!userfound);
+    }, [formData.handle, users]);
 
   useEffect(() => {
     return () => {
@@ -101,11 +91,6 @@ export default function App({ users, session}: AppProps) {
       });
     };
   }, [previews]);
-  if (!session?.user) {
-    if (typeof window !== "undefined") router.replace("/");
-    return null;
-  }
-
 if (!session?.user) {
   if (typeof window !== "undefined") router.replace("/");
   return null;
@@ -258,7 +243,11 @@ if (!session?.user) {
   .filter(([, value]) => value instanceof File)
   .map(async ([key, value]) => {
     const typedFile = value as File;
-    const result = await uploadContent(typedFile);
+    const ext = typedFile.name.split('.').pop() || 'jpg';
+    const uniqueName = `${session.user._id}_${key}_${Date.now()}.${ext}`;
+    const renamedFile = new File([typedFile], uniqueName, { type: typedFile.type });
+
+    const result = await uploadContent(renamedFile);
     if (!result || "prohibited" in result) {
       console.error(`Failed to upload or file prohibited: ${typedFile.name}`);
       return null;
@@ -650,15 +639,18 @@ const uploadedFiles = (await Promise.all(uploadPromises)).filter(
                                 croppedAreaPixels
                               );
                             
+                              const uniqueName = `${session.user._id}_profile_${Date.now()}.jpg`;
                             
                               setFormData((prev) => ({
                                 ...prev,
-                                profilePic: new File([cropped], "profile.jpg"),
+                                profilePic: new File([cropped], uniqueName, { type: "image/jpeg" }),
                               }));
+                            
                               setPreviews(prev => ({
                                 ...prev,
                                 profilePic: URL.createObjectURL(cropped),
                               }));
+                            
                               setCropModalOpen(false);
                             }}
                             

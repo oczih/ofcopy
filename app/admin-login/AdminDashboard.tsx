@@ -78,6 +78,59 @@ export default function AdminDashboard({ session, users,creators, applications: 
     if (applications.length > 0) fetchApplicationsWithMedia(applications);
     else setLoading(false);
   }, []); // <-- empty dependency to run only once
+  useEffect(() => {
+    const fetchApplicationsWithMedia = async (apps: CreatorApplicationType[]) => {
+      try {
+        const newPhotoUrls: Record<string, Record<string, string>> = {};
+  
+        const appsWithMedia = await Promise.all(
+          apps.map(async (app) => {
+            const mediaKeys = [
+              { key: app.profilePic, label: "profilePic" },
+              { key: app.idFrontPhoto, label: "idFrontPhoto" },
+              { key: app.idBackPhoto, label: "idBackPhoto" },
+              { key: app.selfieWithId, label: "selfieWithId" },
+            ];
+  
+            const mediaUrls: Record<string, string> = {};
+            await Promise.all(
+              mediaKeys.map(async ({ key, label }) => {
+                if (!key) return;
+                try {
+                  const res = await fetch("/api/media/download-url", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ s3Key: key }),
+                  });
+                  const data = await res.json();
+                  if (res.ok && data.downloadUrl) mediaUrls[label] = data.downloadUrl;
+                } catch (err) {
+                  console.error(`Error fetching ${label} for ${app._id}:`, err);
+                }
+              })
+            );
+  
+            // build map instead of calling setPhotoUrls in each iteration
+            newPhotoUrls[app._id] = mediaUrls;
+  
+            return { ...app, mediaUrls };
+          })
+        );
+  
+        setPhotoUrls(newPhotoUrls); // ✅ only once
+        setApplications(appsWithMedia);
+      } catch (err) {
+        console.error("Failed fetching media URLs:", err);
+        setError("Failed to fetch application media");
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    if (applications.length > 0) fetchApplicationsWithMedia(applications);
+    else setLoading(false);
+  }, []);
+  
   console.log(reports)
   // Handle accept/reject actions
   async function handleAction(

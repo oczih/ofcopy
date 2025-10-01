@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Creator, User } from '@/app/types';
 import { Session } from 'next-auth';
 import { useRouter } from 'next/navigation';
+import creatorservice from '@/app/services/creatorservice';
 interface AppProps {
     creators: Creator[];
     session: Session | null;
@@ -32,6 +33,13 @@ export default function App({creators, session}: AppProps) {
       router.push("/login");
     }
   }, [session, router]);
+  useEffect(() => {
+    return () => {
+      if (avatarUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarUrl);
+      }
+    };
+  }, [avatarUrl]);
   useEffect(() => {
     const fetchCreator = async () => {
       if (!session?.user) return;
@@ -59,12 +67,12 @@ export default function App({creators, session}: AppProps) {
   
         const data = await res.json();
   
-        if (res.ok && data.downloadUrl?.startsWith("https://")) {
-          setImageLoading(true);
-          setAvatarUrl(data.downloadUrl);
-        } else {
-          console.error("Invalid download URL:", data.downloadUrl);
-        }
+        
+          if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
+            setAvatarUrl(data.downloadUrl); // ✅ Update UI with new image
+          } else {
+            console.error("Invalid download URL:", data.downloadUrl);
+          }
       } catch (error) {
         console.error("Error fetching avatar URL:", error);
       } finally {
@@ -82,13 +90,13 @@ export default function App({creators, session}: AppProps) {
   
   const handleFileChange = (key: string, file: File | null) => {
     if (file) {
-      const url = URL.createObjectURL(file);
-      setAvatarUrl(url);
-      setSelectedImage(file)
+      setSelectedImage(file);
       setImageLoading(true);
+      setCropModalOpen(true); // open crop modal
     } else {
       setAvatarUrl(null);
       setImageLoading(false);
+      setCropModalOpen(false);
     }
   };
   const links = [
@@ -280,56 +288,69 @@ export default function App({creators, session}: AppProps) {
               onClick={async () => {
                 try {
                   if (!session?.user?._id) throw new Error("User ID not found");
-
-                  // 1. Get cropped image as a Blob
+              
                   if (!croppedAreaPixels) {
                     console.error("Please select an area to crop.");
                     return;
                   }
-                  
+              
+                  // 1. Get cropped Blob
                   const croppedBlob = await getCroppedImg(
                     URL.createObjectURL(selectedImage),
                     croppedAreaPixels
                   );
-
-                  // 2. Convert Blob to File (to reuse existing uploadContent logic)
-                  const croppedFile = new File([croppedBlob], `${session.user._id}_avatar.jpg`, { type: "image/jpeg" });
-
+              
+                  // 2. Convert Blob -> File
+                  const croppedFile = new File(
+                    [croppedBlob],
+                    `${session.user._id}_avatar.jpg`,
+                    { type: "image/jpeg" }
+                  );
+              
                   // 3. Upload to S3
                   const result = await uploadContent(croppedFile);
-
-                  // 4. Construct public S3 URL (via your backend or using known format)
-                  
                   if ("prohibited" in result) {
                     console.error("File is prohibited!");
                     return;
-                  }                  
-                  // 5. Save avatar URL to user profile
-                  await userservice.update(session.user._id, {
-                    avatarKey: result.key,
-                  });
-                                    // 6. Update frontend state
-                  const key = creator?.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
+                  }
+              
+                  // 4. Save avatarKey in DB
+                  if (session.user.creator) {
+                    if (!creator?._id) throw new Error("Creator ID not found");
+                  
+                    await creatorservice.update(creator._id, {
+                      avatarKey: result.key,
+                    });
+                  } else {
+                    await userservice.update(session.user._id, {
+                      avatarKey: result.key,
+                    });
+                  }
+              
+                  // 5. Immediately fetch new signed URL for THIS key
+                  setImageLoading(true);
                   const res = await fetch("/api/media/download-url", {
                     method: "POST",
-                    headers: {
-                      "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ s3Key: key }),
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ s3Key: result.key }), // ✅ use new key
                   });
-          
+              
                   const data = await res.json();
-          
-                  if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
-                    setAvatarUrl(data.downloadUrl);
+              
+                  if (res.ok && data.downloadUrl?.startsWith("https://")) {
+                    setAvatarUrl(data.downloadUrl); // ✅ show new image
                   } else {
                     console.error("Invalid download URL:", data.downloadUrl);
                   }
+              
                   setCropModalOpen(false);
+                  setImageLoading(false);
                 } catch (err) {
                   console.error("Failed to update user avatar:", err);
+                  setImageLoading(false);
                 }
               }}
+              
             >
               Apply Changes
             </button>
