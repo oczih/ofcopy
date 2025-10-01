@@ -54,7 +54,7 @@ export async function POST(request: NextRequest, context: unknown) {
         if (!existingCreator) {
           await Creator.create({
             username: application.handle,
-            name: application.username,
+            name: application.displayName,
             email: application.email,
             password: user.password,        // keep only if login depends on it
             bio: application.bio,
