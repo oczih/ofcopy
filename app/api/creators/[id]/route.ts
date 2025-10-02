@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-client';
 import { connectDB } from '../../../../lib/mongoose';
 import mongoose from 'mongoose';
-
+import { verifySystemAccess } from "@/lib/auth";
 
 export async function GET(request: NextRequest, context: unknown) {
   // Cast context as unknown then extract params carefully
@@ -13,7 +13,8 @@ export async function GET(request: NextRequest, context: unknown) {
   const { params } = context as { params: { id: string } };
 
   try {
-    await connectDB();
+      verifySystemAccess(request);
+      await connectDB();
   } catch (error) {
     console.error("[API] Database connection failed:", error);
     return NextResponse.json({ message: "Database connection failed" }, { status: 500 });
