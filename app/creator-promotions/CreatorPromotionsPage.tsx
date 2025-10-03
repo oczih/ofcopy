@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Bundle, Creator, Promotion, User } from "../types";
 import { Session } from "next-auth";
 import { createPortal } from "react-dom";
@@ -91,15 +91,19 @@ export default function App({ creators, session }: AppProps) {
 
 
   const handleFreeTrialToggle = async (checked: boolean) => {
+    const previous = freeTrial;
     setFreeTrial(checked);
+  
     try {
-      await fetch(`/api/creators/${rightCreator?._id}/free-trial`, {
+      const res = await fetch(`/api/creators/${rightCreator?._id}/free-trial`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ allowFreeTrial: checked }),
       });
+      if (!res.ok) setFreeTrial(previous); // revert if failed
     } catch (err) {
       console.error(err);
+      setFreeTrial(previous);
     }
   };
 
@@ -111,7 +115,7 @@ export default function App({ creators, session }: AppProps) {
     audience: "all",
     peopleLimit: "",
     message: "",
-    startDate: new Date().toISOString(),
+    startDate: new Date().toISOString(), // set a valid date
     endDate: "",
     trialDays: "7",
     discountPercent: "10",
@@ -120,7 +124,7 @@ export default function App({ creators, session }: AppProps) {
   const handleFormChange = (key: keyof PromotionForm, value: string) => {
     setForm(prev => ({ ...prev, [key]: value }));
   };
-  console.log(form.peopleLimit)
+
   const createPromotion = async () => {
     if (!rightCreator) return;
   
@@ -149,7 +153,7 @@ export default function App({ creators, session }: AppProps) {
         startDate: new Date(form.startDate),
         endDate: calculatedEndDate ?? undefined,  // ✅ actual Date or undefined
       };
-      console.log(payload.peopleLimit)
+
       const data = await createPromotionAPI(rightCreator._id, payload);
   
       if (!data.error) {
@@ -160,8 +164,8 @@ export default function App({ creators, session }: AppProps) {
           audience: "all",
           peopleLimit: "",
           message: "",
-          startDate: "",
-          endDate: "",       // keep as string days for next time
+          startDate: new Date().toISOString(), // set valid date here too
+          endDate: "",
           trialDays: "7",
           discountPercent: "10",
         });
@@ -223,9 +227,10 @@ export default function App({ creators, session }: AppProps) {
   };
 
 // Sort promotions so newest is first
-const sortedPromotions = promotions
-  .slice()
-  .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+const sortedPromotions = useMemo(() =>
+  [...promotions].sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()),
+  [promotions]
+);
 
 const latestPromotion = sortedPromotions[0] || null;
 
@@ -656,7 +661,48 @@ const latestPromotion = sortedPromotions[0] || null;
     ))}
   </Select>
 </FormControl>
-
+<>
+    <label className="text-sm text-gray-300 mb-1">Offer Expiration</label>
+    <FormControl fullWidth>
+      <Select
+        value={form.endDate}                            // <-- stores "7" or "unlimited"
+        onChange={(e) => handleFormChange("endDate", e.target.value)}
+        MenuProps={{
+          PaperProps: {
+            sx: {
+              bgcolor: "rgba(168,85,247,0.15)",
+              borderRadius: "0.75rem",
+              mt: 0,
+              "& .MuiList-root": { padding: 0 }
+            }
+          }
+        }}
+        sx={{
+          bgcolor: "rgba(168,85,247,0.15)",
+          borderRadius: "0.75rem",
+          color: "white",
+          "& .MuiSvgIcon-root": { color: "white" }
+        }}
+      >
+        {["1","2","3","4","5","6","7","14","30","unlimited"].map((opt) => (
+          <MenuItem
+            key={opt}
+            value={opt}
+            sx={{
+              bgcolor: "#4f1d74",
+              color: "white",
+              "&:hover": { bgcolor: "rgb(54,19,81)" }
+            }}
+          >
+            {opt === "unlimited"
+              ? "Unlimited"
+              : `${opt} day${opt === "1" ? "" : "s"}`}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+    
+      </>
   </>
 )}
 {form.type === "discount" && (

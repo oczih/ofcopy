@@ -104,6 +104,10 @@ const userSchema = new Schema<OFUserDocument>({
       },
   username: { type: String, required: false, unique: true },
   password: { type: String, required: false, select: false },
+  creator: {
+    type: Boolean,
+    default: false
+  },
   email: {
     type: String,
     unique: true,

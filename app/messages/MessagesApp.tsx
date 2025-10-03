@@ -129,7 +129,6 @@ export default function ChatApp({ session, users, creators }: AppProps) {
   
     void loadChats();
   }, [session?.user?._id]);
-
   useEffect(() => {
     const loadAllMessages = async () => {
       try {
@@ -256,35 +255,41 @@ export default function ChatApp({ session, users, creators }: AppProps) {
     },
     [mediaUrlCache, CACHE_TTL]
   );
+  type Participant = (User & { creatorObj?: Creator }) | null;
   useEffect(() => {
     const loadAvatars = async () => {
       setImageLoading(true);
       try {
-        const map: Record<string, string | null> = {}; // allow null
+        const map: Record<string, string | null> = {};
   
         for (const chat of chats) {
-          const otherParticipant = users.find(
-            u => chat.participants.includes(u._id) && u._id !== session?.user?._id
-          );
-  
-          let avatarKey: string | null | undefined;
-  
-          if (!otherParticipant) {
-            map[chat.id] = null;
-            continue;
+          // 🔹 Resolve participant (user OR creator)
+          const otherParticipant= (() => {
+            if (!session?.user?._id || !chat.participants) return null;
+          
+            const otherIds = chat.participants.filter(p => p !== session.user._id);
+          
+          
+            // If they're a creator, attach the full Creator doc
+            const creatorObj = creators.find(c => c.user.toString() === users.find(u => otherIds.includes(u._id))?._id.toString());
+          
+            return creatorObj;
+          })();
+          // 🔹 Get avatar key from either creator or user
+          let avatarKey: string | null = null;
+
+          if (otherParticipant) {
+            avatarKey =
+              otherParticipant.avatarKey ?? // creator doc
+              otherParticipant.avatarKey ?? // fallback to user’s avatar
+              null;
           }
   
-          if (otherParticipant.creator) {
-            const creatorObj = creators.find(c => c.user === otherParticipant._id);
-            avatarKey = creatorObj?.avatarKey;
-          } else {
-            avatarKey = otherParticipant.avatarKey;
-          }
-  
+          // 🔹 Resolve S3 URL or fallback
           if (avatarKey) {
             map[chat.id] = await resolveAvatarUrl(avatarKey);
           } else {
-            map[chat.id] = null; // fallback
+            map[chat.id] = null;
           }
         }
   
@@ -296,6 +301,7 @@ export default function ChatApp({ session, users, creators }: AppProps) {
   
     if (chats.length > 0) void loadAvatars();
   }, [chats, users, creators, session?.user?._id, resolveAvatarUrl]);
+  
   useEffect(() => {
     if (!currentChatIdentifier) return;
     const chatMessages = messagesByChat[currentChatIdentifier] || [];
@@ -467,9 +473,25 @@ export default function ChatApp({ session, users, creators }: AppProps) {
     }
   };
   const selectedChat = chats.find(c => c.id === currentChatIdentifier);
-  const otherParticipant = selectedChat
-    ? users.find(u => selectedChat.participants.includes(u._id) && u._id !== session?.user?._id)
-    : null;
+
+  const otherParticipant: Creator | null = (() => {
+    if (!selectedChat || !session?.user?._id) return null;
+    
+    // find the "other" user in this chat
+    const userObj = users.find(
+      u =>
+        selectedChat.participants.includes(u._id.toString()) &&
+        u._id.toString() !== session.user._id.toString()
+    );
+    if (!userObj) return null;
+  
+    // if user is a creator, return their Creator doc
+    const creatorObj = creators.find(c => c.user.toString() === userObj._id.toString());
+    if (creatorObj) return creatorObj;
+  
+    // otherwise, no creator object
+    return null;
+  })();
   const [otherAvatar, setOtherAvatar] = useState<string | null>(null);
 
   useEffect(() => {
@@ -699,9 +721,29 @@ export default function ChatApp({ session, users, creators }: AppProps) {
                     {filteredChats.map(chat => {
   const chatMessages = messagesByChat[chat.id] ?? [];
   const lastMessage = chatMessages[chatMessages.length - 1];
-  const participant = users.find(
-    u => chat.participants.includes(u._id) && u._id !== session?.user?._id
-  );
+
+  const participant: Participant = (() => {
+    if (!session?.user?._id || !chat.participants) return null;
+  
+    const otherParticipantIds = chat.participants
+      .filter(p => p !== session.user._id)
+      .map(p => p.toString());
+  
+    // Try to find a creator first
+    const creatorParticipant = creators.find(c => otherParticipantIds.includes(c.user));
+    if (creatorParticipant) {
+      const userObj = users.find(u => u._id === creatorParticipant.user);
+      if (!userObj) return null;
+  
+      return {
+        ...userObj,
+        creatorObj: creatorParticipant, // ✅ rename to avoid boolean conflict
+      };
+    }
+  
+    // Fallback: normal user
+    return users.find(u => otherParticipantIds.includes(u._id)) ?? null;
+  })();
 
   return (
     <div
@@ -720,11 +762,11 @@ export default function ChatApp({ session, users, creators }: AppProps) {
           className="w-12 h-12 rounded-full object-cover"
         />
          : <div className="w-12 h-12 rounded-full bg-gray-700 text-white flex items-center justify-center text-xl border-2 border-pink-500/40 shadow-lg">
-         {participant?.name?.charAt(0).toUpperCase() || "U"}
+         {participant?.creatorObj?.name?.charAt(0).toUpperCase() || participant?.name.charAt(0).toUpperCase()|| "U"}
        </div>}
         <div className="flex-1">
           <div className="font-semibold text-white">
-            {participant?.name || "Unknown"}
+            {participant?.creatorObj?.name|| participant?.name || "Unknown"}
           </div>
           {lastMessage && (
             <div className="text-sm text-gray-400 truncate">
@@ -782,7 +824,7 @@ export default function ChatApp({ session, users, creators }: AppProps) {
                       </div>
                         <div>
                           <h3 className="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                            {otherParticipant.username}
+                            {otherParticipant?.username || otherParticipant.username}
                           </h3>
                           <p className="text-green-400 text-sm font-medium">Online now</p>
                         </div>
@@ -1021,7 +1063,7 @@ export default function ChatApp({ session, users, creators }: AppProps) {
 })}
 
                   </Box >
-                    {payPostOpen && otherParticipant.creator && (
+                    {payPostOpen && otherParticipant && (
                       <PaymentForm 
                       type="message"
                       onClose={() => {

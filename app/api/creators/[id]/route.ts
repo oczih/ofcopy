@@ -13,8 +13,8 @@ export async function GET(request: NextRequest, context: unknown) {
   const { params } = context as { params: { id: string } };
 
   try {
-      verifySystemAccess(request);
       await connectDB();
+      verifySystemAccess(request);
   } catch (error) {
     console.error("[API] Database connection failed:", error);
     return NextResponse.json({ message: "Database connection failed" }, { status: 500 });

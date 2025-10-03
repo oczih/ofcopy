@@ -7,7 +7,6 @@ import Link from "next/link";
 import { Creator, Post } from "@/app/types";
 import { Session } from "next-auth";
 import { Bitcoin, X } from "lucide-react";
-import { Chip } from "@mui/material";
 import Image from "next/image";
 import { CryptoPaymentModal } from "./CryptoModal";
 import { createPortal } from "react-dom";
@@ -194,59 +193,88 @@ export default function PaymentForm({
 
         {/* Payment Options */}
         <div className="space-y-4">
-          {selectedCountry === "US" ? (
-            <div className="space-y-3">
-              <p className="text-sm font-medium">💳 Choose a wallet:</p>
-              <div className="flex flex-wrap gap-3">
-                <Chip
-                  icon={
-                    <Image
-                      src="/PayPal_Logo_Icon_2014.svg.png"
-                      alt="PayPal"
-                      width={18}
-                      height={18}
-                    />
-                  }
-                  label="PayPal"
-                  clickable
-                  color="primary"
-                  onClick={() => handleWalletPayment("paypal")}
-                />
-                <Chip
-                  icon={
-                    <Image
-                      src="/Venmo_logo.png"
-                      alt="Venmo"
-                      width={18}
-                      height={18}
-                    />
-                  }
-                  label="Venmo"
-                  clickable
-                  color="secondary"
-                  onClick={() => handleWalletPayment("venmo")}
-                />
-                <Chip
-                  icon={
-                    <Image
-                      src="/Apple_logo_black.svg"
-                      alt="Apple Pay"
-                      width={18}
-                      height={18}
-                    />
-                  }
-                  label="Apple Pay"
-                  clickable
-                  sx={{ backgroundColor: "#000", color: "#fff" }}
-                  onClick={() => handleWalletPayment("applepay")}
-                />
-              </div>
-              <p className="text-xs text-gray-400">
-                PayPal™ and Venmo™ are trademarks of PayPal, Inc. Apple Pay® is
-                a trademark of Apple Inc.
-              </p>
-            </div>
-          ) : selectedCountry ? (
+        {selectedCountry === "US" ? (
+  <div className="space-y-3">
+    <p className="text-sm font-medium">💳 Choose a wallet:</p>
+    <div className="space-y-3">
+      <button
+        onClick={() => handleWalletPayment("paypal")}
+        disabled={!termsAccepted}
+        className={`
+          flex items-center gap-2 w-full justify-center
+          rounded-full font-bold cursor-pointer px-4 py-2
+          text-white border border-transparent
+          transition-colors transition-border duration-300
+          ${termsAccepted
+            ? "bg-white/10 hover:bg-[#4d138a] hover:border-white"
+            : "bg-[#1a0133] cursor-not-allowed opacity-60"
+          }
+        `}
+      >
+        <Image src="/PayPal_Logo_Icon_2014.svg.png" alt="PayPal" width={20} height={20} />
+        PayPal
+      </button>
+
+      <button
+        onClick={() => handleWalletPayment("venmo")}
+        disabled={!termsAccepted}
+        className={`
+          flex items-center gap-2 w-full justify-center
+          rounded-full font-bold cursor-pointer px-4 py-2
+          text-white border border-transparent
+          transition-colors transition-border duration-300
+          ${termsAccepted
+            ? "bg-white/10 hover:bg-[#4d138a] hover:border-white"
+            : "bg-[#1a0133] cursor-not-allowed opacity-60"
+          }
+        `}
+      >
+        <Image src="/Venmo_logo.png" alt="Venmo" width={20} height={20} />
+        Venmo
+      </button>
+
+      <button
+        onClick={() => handleWalletPayment("applepay")}
+        disabled={!termsAccepted}
+        className={`
+          flex items-center gap-2 w-full justify-center
+          rounded-full font-bold cursor-pointer px-4 py-2
+          text-white border border-transparent
+          transition-colors transition-border duration-300
+          ${termsAccepted
+            ? "bg-white/10 hover:bg-[#4d138a] hover:border-white"
+            : "bg-[#1a0133] cursor-not-allowed opacity-60"
+          }
+        `}
+      >
+        <Image src="/Apple_logo_black.svg" alt="Apple Pay" width={20} height={20} />
+        Apple Pay
+      </button>
+      <button
+     onClick={handlePay}
+     className={`
+      flex items-center gap-4 mt-2 w-full justify-center
+      rounded-full font-bold cursor-pointer px-4 py-2
+      text-white border border-transparent
+      transition-colors transition-border duration-300
+      ${termsAccepted
+        ? "bg-white/10  hover:bg-[#4d138a] hover:border-white"
+        : "bg-[#1a0133] cursor-not-allowed opacity-60"
+      }
+    `}
+    >
+      <Bitcoin/>
+        Pay with Crypto
+
+    </button>
+    </div>
+
+    <p className="text-xs text-gray-400">
+      PayPal™ and Venmo™ are trademarks of PayPal, Inc. Apple Pay® is a trademark of Apple Inc.
+    </p>
+  </div>
+) : selectedCountry ? (
+
 <div>
   {paymentOptions.map(({ label, icon }) => (
     <div key={label} className="pt-2 pb-2">

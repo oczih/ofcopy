@@ -14,7 +14,7 @@ import { ChevronLeft, Heart, Lock, Video, X } from 'lucide-react';
 import SignUpModal from './SignupModal';
 import { Session } from 'next-auth';
 import { createPortal } from 'react-dom';
-import { Toaster } from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from "uuid";
@@ -144,6 +144,7 @@ export default function ProfileContent({
   const lastFetchedAvatarKey = useRef<string | null>(null);
   const [imageLoading, setImageLoading] = useState(!!avatarKey);
   // Memoized function to get signed URL
+  console.log(userViewed)
   const getSignedUrl = useCallback(async (s3Key: string): Promise<string | null> => {
     if (!s3Key) return null;
     
@@ -411,7 +412,6 @@ export default function ProfileContent({
     }
   };
   
-
   const handleUnfollow = async (creator: Creator) => {
     if (!creator || !viewingUser) return;
 
@@ -432,9 +432,8 @@ export default function ProfileContent({
   
   const handleStartChat = async (userId: string, sessionUserId: string) => {
     const chats = await getChatsBetween(sessionUserId, userId);
-    let chat = chats[0]; // take the first one if it exists
+    let chat = chats.find(c => c.participants.includes(userId) && c.participants.includes(sessionUserId));
   
-    // 2. If no chat found, create one
     if (!chat) {
       const newChat = {
         id: uuidv4(),
@@ -457,11 +456,7 @@ export default function ProfileContent({
       chat = data;
     }
   
-    // 3. Persist the chat ID
-    if (!chat?.id) return;
-    localStorage.setItem("currentChatIdentifier", chat.id);
-  
-    // 4. Navigate to messages page
+    localStorage.setItem("currentChatIdentifier", chat?.id || "");
     router.push("/messages");
   };
   const handleStopSubscribe = async (creator: Creator) => {
@@ -474,6 +469,7 @@ export default function ProfileContent({
     onClose: () => void;
     creator: Creator | null;
   }
+
   function StopSubscribeModal({ creator, avatarUrl, onClose }: StopSubscribeProps
   ) {
     const [loading, setLoading] = useState(false);
@@ -554,16 +550,15 @@ export default function ProfileContent({
 }
 
 
-const subscription = session?.user?.subscriptions?.find(
-  s => s.creatorId === creator?._id
-);
-
-const daysLeft = subscription?.nextBillingDate
-  ? Math.ceil(
-      (new Date(subscription.nextBillingDate).getTime() - Date.now()) /
-      (1000 * 60 * 60 * 24)
-    )
-  : 0;
+    const subscription = session?.user?.subscriptions?.find(
+      s => s.creatorId === creator?._id
+    );
+    const daysLeft = subscription?.nextBillingDate
+      ? Math.ceil(
+          (new Date(subscription.nextBillingDate).getTime() - Date.now()) /
+          (1000 * 60 * 60 * 24)
+        )
+      : 0;
   return (
     <div>
       <Toaster
@@ -832,9 +827,9 @@ const daysLeft = subscription?.nextBillingDate
         });
         const data = await res.json();
         if (data.success) {
-          alert("Free trial subscription activated!");
+          toast.success("Free trial subscription activated!");
         } else {
-          alert("Failed to activate free trial: " + data.error);
+          toast.error("Failed to activate free trial: " + data.error);
         }
       } catch (err) {
         console.error("Error subscribing to free trial:", err);
@@ -864,12 +859,14 @@ const daysLeft = subscription?.nextBillingDate
 </button>
                 </>
               )}
-              {(status === 'follower' || status === 'subscriber') && session?.user?.creator && (
+              {(status === 'follower' || status === 'subscriber') && (
              <button
              onClick={() => {
               
              
-              handleStartChat(userViewed._id, session.user._id)
+              if (userViewed._id && session?.user?._id) {
+                handleStartChat(userViewed._id, session.user._id);
+              }
              }}
              className="w-full mt-4 border border-purple-500 hover:bg-purple-500/10 text-purple-400 px-4 py-2 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
            >

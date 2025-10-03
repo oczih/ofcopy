@@ -100,6 +100,9 @@ export default async function App({ creators, users, session, username, purchase
 
   // Sanitize user or creator
   const safeUserOrCreator = JSON.parse(JSON.stringify(user || creator));
+  if (safeUserOrCreator.id && !safeUserOrCreator._id) {
+    safeUserOrCreator._id = safeUserOrCreator.id;
+  }
   const safeSessionUser   = session?.user ? JSON.parse(JSON.stringify(session.user)) : null;
   const safeCreator       = creator ? JSON.parse(JSON.stringify(creator)) : null;
   
