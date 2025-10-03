@@ -144,7 +144,6 @@ export default function ProfileContent({
   const lastFetchedAvatarKey = useRef<string | null>(null);
   const [imageLoading, setImageLoading] = useState(!!avatarKey);
   // Memoized function to get signed URL
-  console.log(userViewed)
   const getSignedUrl = useCallback(async (s3Key: string): Promise<string | null> => {
     if (!s3Key) return null;
     

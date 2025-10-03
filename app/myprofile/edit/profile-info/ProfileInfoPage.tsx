@@ -70,7 +70,7 @@ export default function App({users, session, creators}: AppProps) {
     useEffect(() => {
       if (status === "authenticated" && session?.user) {
         const rightCreator = creators.find(c => c.user === session.user._id);
-        console.log(rightCreator)
+
         if (rightCreator) {
           const initialData = {
             name: rightCreator.name || "",
