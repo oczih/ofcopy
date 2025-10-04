@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { Creator, Post, Purchase, User } from '@/app/types';
 import creatorservice from '@/app/services/creatorservice';
@@ -320,17 +320,13 @@ export default function ProfileContent({
     return () => clearInterval(cleanup);
   }, [CACHE_TTL]);
 
-
-  const now = new Date();
-  const sortedPromotions =  creator?.promotions ? [...creator?.promotions].sort(
-    (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-  ) : [];
-  const activePromotion = sortedPromotions.find(
-    (p) =>
-      p.active &&
-      new Date(p.startDate) <= now &&
-      (!p.endDate || new Date(p.endDate) >= now)
-  );
+  const activePromotion = useMemo(() => {
+    if (!creator?.promotions?.length) return null;
+    const now = new Date();
+    return [...creator.promotions]
+      .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
+      .find(p => p.active && new Date(p.startDate) <= now && (!p.endDate || new Date(p.endDate) >= now));
+  }, [creator?.promotions]);
 
   
   // Calculate stats
@@ -951,7 +947,7 @@ function ContentTabs({
   users,
   session,
   creators,
-  purchases
+  purchases,
 }: {
   creator: Creator;
   isOwnProfile: boolean;
@@ -964,7 +960,7 @@ function ContentTabs({
   user: Creator | User,
   users: User[],
   session: Session | null,
-  creators: Creator[]
+  creators: Creator[],
 }) {
   const creatorContent = purchases.filter(p => p.creatorId.toString() === creator._id)
   const [activeTab, setActiveTab] = useState(creator ? 'posts' : 'purchased');
@@ -976,7 +972,8 @@ function ContentTabs({
       : []),
     ...([{ id: 'likes', label: 'Likes', count: 0 }]),
   ];
-  
+
+
   return (
     <div className="bg-white/10 backdrop-blur-lg rounded-3xl border border-white/20 overflow-hidden">
       {/* Tab Headers */}
@@ -1026,15 +1023,16 @@ function LikedContent({
   postSignedUrls,
   viewingUser,
   purchases,
-  creators
+  creators,
 }: {
   creator?: Creator;
   status: "follower" | "subscriber" | "none";
   postSignedUrls: Record<string, SignedUrls>
   viewingUser: Creator | User;
   creators: Creator[];
-  purchases: Purchase[]
+  purchases: Purchase[],
 }) {
+
   const [likedPosts, setLikedPosts] = useState<Post[]>([]);
 
   useEffect(() => {
@@ -1074,6 +1072,18 @@ function LikedContent({
 
     setLikedPosts(filtered);
   }, [creator, viewingUser?._id, creators, status]);
+  const handleDeletePost = async (creatorId: string, postId: string) => {
+    try {
+      const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error("Failed to delete post");
+
+      setLikedPosts((prev) => prev.filter((p) => p._id !== postId));
+      toast.success("Post deleted successfully");
+    } catch (error) {
+      console.error(error);
+      alert('Failed to delete post');
+    }
+  };
   if (!creator) return null;
   
 
@@ -1090,10 +1100,9 @@ function LikedContent({
             status={status}
             signedUrl={postSignedUrls[post._id]?.signedUrl || ""}
             user={viewingUser}
-            handleFollow={() => {}}
             users={[]}
             session={null}
-            handleDeletePost={() => {}}
+            handleDeletePost={() => handleDeletePost(creator._id, post._id)}
             purchases={purchases}
           />
         ))

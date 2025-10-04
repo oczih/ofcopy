@@ -5,6 +5,7 @@ import Purchase from "@/app/models/purchasemodel";
 import OFUser from "@/app/models/usermodel";
 import CreatorModel from "@/app/models/creatormodel";
 import mongoose from "mongoose";
+import { supabase } from "@/lib/supabase";
 
 const BLOCKCYPHER_API_URL = "https://api.blockcypher.com/v1/btc/test3";
 const BLOCKCYPHER_TOKEN = process.env.BLOCKCYPHER_TOKEN!;
@@ -99,6 +100,30 @@ export async function POST(req: Request) {
             }
           }
         );
+      }
+    }
+    console.log(intent.type)
+    if (intent.type === "message" && intent.mediaId) {
+      // ✅ Add the user ID to the purchased list in Supabase message
+      const { data: msg, error: fetchErr } = await supabase
+        .from("messages")
+        .select("purchased")
+        .eq("id", intent.mediaId)
+        .single();
+
+      if (fetchErr) {
+        console.error("Supabase fetch error:", fetchErr);
+      } else if (msg) {
+        const newPurchased = Array.isArray(msg.purchased)
+          ? Array.from(new Set([...msg.purchased, String(intent.userId)]))
+          : [String(intent.userId)];
+
+        const { error: updateErr } = await supabase
+          .from("messages")
+          .update({ purchased: newPurchased })
+          .eq("id", intent.mediaId);
+
+        if (updateErr) console.error("Supabase update error:", updateErr);
       }
     }
 

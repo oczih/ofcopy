@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongoose";
 import Post, { PostDocument } from "@/app/models/postmodel";
-import Creator from "@/app/models/creatormodel";
+import CreatorDocument from "@/app/models/creatormodel";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth-client";
 import mongoose from "mongoose";
 import { Session } from "next-auth";
+import { fetchPageData } from "@/lib/fetchDataPage";
+import { Creator } from "@/app/types";
 
 // Extended session type
 interface AppSession extends Session {
@@ -23,7 +25,7 @@ async function canViewPost(post: PostDocument, session: AppSession | null): Prom
   if (isAdmin || isOwner) return true;
 
   // Check if viewer is a subscriber of the post's creator
-  const creator = await Creator.findById(post.creator).lean<{ subscribers?: mongoose.Types.ObjectId[] }>();
+  const creator = await CreatorDocument.findById(post.creator).lean<{ subscribers?: mongoose.Types.ObjectId[] }>();
   if (!creator) return false;
 
   const isSubscriber = creator.subscribers?.some(
@@ -33,12 +35,15 @@ async function canViewPost(post: PostDocument, session: AppSession | null): Prom
   return Boolean(isSubscriber);
 }
 
-async function canEditOrDeletePost(post: PostDocument, session: AppSession | null): Promise<boolean> {
+async function canEditOrDeletePost(
+  post: PostDocument,
+  session: AppSession | null,
+  creators?: Creator[]
+): Promise<boolean> {
   if (!session) return false;
-
   const isAdmin = session.user.email === process.env.SECEMAIL;
-  const isOwner = post.creator?.toString() === session.user._id;
-
+  const correct = creators?.find(c => c.user === session.user._id);
+  const isOwner = post.creator?.toString() === correct?._id;
   return isAdmin || isOwner;
 }
 
@@ -97,24 +102,24 @@ export async function PUT(request: NextRequest, context: unknown) {
 
   return NextResponse.json({ post: updatedPost });
 }
-type Params = { id: string };
 
-export async function DELETE(
-  req: NextRequest,
-  context: { params: Promise<Params> }
-) {
-  const { id } = await context.params;
+
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = (await getServerSession(authOptions)) as AppSession | null;
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   await connectDB();
+
+  // ✅ Move fetchPageData here
+  const { creators } = await fetchPageData();
+
   const post = await Post.findById(id);
   if (!post) return NextResponse.json({ error: "Post not found" }, { status: 404 });
 
-  const allowed = await canEditOrDeletePost(post, session);
+  const allowed = await canEditOrDeletePost(post, session, creators);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   await Post.findByIdAndDelete(post.id);
-
   return NextResponse.json({ message: "Post deleted successfully" });
 }

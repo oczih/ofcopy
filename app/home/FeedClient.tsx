@@ -75,26 +75,30 @@ export default function App({ creators, users, session, purchases}: AppProps) {
       if (!creators || creators.length === 0) return;
   
       const signedUrlsMap: Record<string, { signedUrl: string; blurredUrl: string }> = {};
-  
       const allPosts = creators.flatMap((creator) => creator.posts || []);
   
       await Promise.all(
         allPosts.map(async (post) => {
           try {
-            // Decide which keys to fetch
-            const fullKey = typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.key;
-            const blurredKey = typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.blurred_key;
-            const rightCreator = creators.find(c => c.user === session?.user._id)
-            // Determine access: follower/subscriber or owner
+            // Get correct S3 key format
+            const s3KeyObj =
+              typeof post.s3Key === "string"
+                ? { key: post.s3Key, blurred_key: post.s3Key }
+                : post.s3Key;
+  
+            if (!s3KeyObj) return;
+  
+            // Determine access rights
+            const rightCreator = creators.find((c) => c.user === session?.user._id);
             const canView =
               rightCreator?._id.toString() === post.creator.toString() || // post owner
               session?.user?.following?.some((f) => f.creatorId === post.creator) ||
               session?.user?.subscriptions?.some((s) => s.creatorId === post.creator);
   
-            const keyToFetch = canView ? fullKey : blurredKey;
-  
+            const keyToFetch = canView ? s3KeyObj.key : s3KeyObj.blurred_key;
             if (!keyToFetch) return;
   
+            // ✅ Fetch once (server will cache if needed)
             const res = await fetch("/api/media/download-url", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -103,9 +107,10 @@ export default function App({ creators, users, session, purchases}: AppProps) {
   
             if (res.ok) {
               const data = await res.json();
+  
               signedUrlsMap[post._id] = {
-                signedUrl: data.downloadUrl,
-                blurredUrl: blurredKey ? await fetchBlurredUrl(blurredKey) : data.downloadUrl, // optional
+                signedUrl: canView ? data.downloadUrl : "",
+                blurredUrl: canView ? "" : data.downloadUrl,
               };
             }
           } catch (err) {
@@ -117,26 +122,9 @@ export default function App({ creators, users, session, purchases}: AppProps) {
       setPostSignedUrls((prev) => ({ ...prev, ...signedUrlsMap }));
     }
   
-    // Helper function to fetch blurred URL if needed
-    async function fetchBlurredUrl(blurredKey: string) {
-      try {
-        const res = await fetch("/api/media/download-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ s3Key: blurredKey }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          return data.downloadUrl;
-        }
-      } catch (err) {
-        console.error("Failed to fetch blurred URL:", blurredKey, err);
-      }
-      return "";
-    }
-  
     fetchSignedUrls();
   }, [creators, session?.user]);
+  
   
   
   const handleResendVerification = async () => {
@@ -295,79 +283,75 @@ export default function App({ creators, users, session, purchases}: AppProps) {
           {/* Feed */}
           {page === "Feed" && (
   <div className="space-y-10 mt-10">
-    {filteredCreators && filteredCreators.length > 0 ? (
-      filteredCreators.map((creator) => {
-        const isCreator = creator.user === session?.user._id;
-        const isSubscribed = session?.user.subscriptions?.some(
-          (sub) => sub.creatorId === creator._id
-        );
-        const isFollower = session?.user.following?.some(
-          (f) => f.creatorId === creator._id
-        );
+   {filteredCreators && filteredCreators.length > 0 ? (() => {
+  // Flatten all posts across all creators
+  const allVisiblePosts = filteredCreators.flatMap((creator) => {
+    const isCreator = creator.user === session?.user._id;
+    const isSubscribed = session?.user.subscriptions?.some(
+      (sub) => sub.creatorId === creator._id
+    );
+    const isFollower = session?.user.following?.some(
+      (f) => f.creatorId === creator._id
+    );
 
-        const status: 'subscriber' | 'follower' | 'none' = 
-          isSubscribed
-          ? 'subscriber'
-          : isFollower
-          ? 'follower'
-          : 'none';
+    const status: 'subscriber' | 'follower' | 'none' =
+      isSubscribed ? 'subscriber' : isFollower ? 'follower' : 'none';
 
-        // Filter posts based on viewableFor
-        let visiblePosts = creator.posts?.filter((post) => {
-          if (isCreator) return true;
-          if (status === 'subscriber') return post.viewableFor === 'subscribers' || post.viewableFor === 'followers';
-          if (status === 'follower') return post.viewableFor === 'followers';
-          return false; // nobody else sees any posts
-        });
-        visiblePosts = visiblePosts?.sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        if (!visiblePosts || visiblePosts.length === 0) return null;
+    const visiblePosts = creator.posts?.filter((post) => {
+      if (isCreator) return true;
+      if (status === 'subscriber') return (
+        post.viewableFor === 'subscribers' || post.viewableFor === 'followers'
+      );
+      if (status === 'follower') return post.viewableFor === 'followers';
+      return false;
+    }) || [];
 
-        const handleDeletePost = async (creatorId: string, postId: string) => {
-          try {
-            const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error("Failed to delete post");
+    // Attach creator info to each post for later
+    return visiblePosts.map((post) => ({ post, creator, status }));
+  });
 
-            setFilteredCreators((prev) =>
-              prev.map((c) =>
-                c._id === creatorId
-                  ? { ...c, posts: c.posts?.filter(p => p._id !== postId) }
-                  : c
-              )
-            );
-          } catch (error) {
-            console.error(error);
-            alert('Failed to delete post');
-          }
-        };
+  // Sort globally by creation date
+  const sortedPosts = allVisiblePosts.sort(
+    (a, b) => new Date(b.post.createdAt).getTime() - new Date(a.post.createdAt).getTime()
+  );
 
-        return (
-          <div key={creator._id} className="space-y-8">
-            {visiblePosts.map((post) => (
-              <CreatorPostCard
-                key={post._id}
-                creator={creator}
-                post={post}
-                session={session}
-                user={session?.user as User}
-                status={status}
-                blurredUrl={postSignedUrls[post._id]?.blurredUrl}
-                users={users}
-                signedUrl={postSignedUrls[post._id]?.signedUrl}
-                handleFollow={handleFollow}
-                purchases={purchases}
-                handleDeletePost={() => handleDeletePost(creator._id, post._id)}
-              />
-            ))}
-          </div>
-        );
-      })
-    ) : (
-      <div className="text-center mt-20 text-gray-400">
-        No creators to show. Explore and follow your favorite creators!
-      </div>
-    )}
+  if (sortedPosts.length === 0)
+    return <div className="text-center mt-20 text-gray-400">No posts yet.</div>;
+
+  return (
+    <div className="space-y-10 mt-10">
+      {sortedPosts.map(({ post, creator, status }) => (
+        <CreatorPostCard
+          key={post._id}
+          creator={creator}
+          post={post}
+          session={session}
+          user={session.user as User}
+          status={status}
+          blurredUrl={postSignedUrls[post._id]?.blurredUrl}
+          signedUrl={postSignedUrls[post._id]?.signedUrl}
+          users={users}
+          handleFollow={handleFollow}
+          purchases={purchases}
+          handleDeletePost={async () => {
+            try {
+              const res = await fetch(`/api/posts/${post._id}`, { method: "DELETE" });
+              if (!res.ok) throw new Error("Failed to delete post");
+              toast.success("Post deleted successfully");
+            } catch (err) {
+              console.error(err);
+              toast.error("Failed to delete post");
+            }
+          }}
+        />
+      ))}
+    </div>
+  );
+})() : (
+  <div className="text-center mt-20 text-gray-400">
+    No creators to show. Explore and follow your favorite creators!
+  </div>
+)}
   </div>
 )}
 

@@ -37,7 +37,7 @@ export function CreatorPostCard({
   users: User[]
   signedUrl: string;
   blurredUrl: string;
-  handleFollow: (creator: Creator) => void;
+  handleFollow?: (creator: Creator) => void;
   handleDeletePost: () => void;
   purchases: Purchase[];
 }) {
@@ -615,7 +615,7 @@ useEffect(() => {
     canView={canView}
     isSubscribersOnly={isSubscribersOnly}
     isFollowersOnly={isFollowersOnly}
-    handleFollow={handleFollow}
+    handleFollow={() => handleFollow}
     creator={creator}
     setPaymentModal={setPaymentModal}
    />

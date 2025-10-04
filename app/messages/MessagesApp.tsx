@@ -1071,7 +1071,7 @@ export default function ChatApp({ session, users, creators }: AppProps) {
                         setCurrentMessagePrice(null)
                       }}
                       open={payPostOpen}
-                      creator={creators?.find(c => c.user === otherParticipant._id) || null}
+                      creator={otherParticipant || null}
                       avatarUrl={
                         currentChatIdentifier ? chatAvatars[currentChatIdentifier] ?? null : null
                       }
