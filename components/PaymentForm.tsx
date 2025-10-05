@@ -4,7 +4,7 @@
 import { useState, useMemo } from "react";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import { Creator, Post } from "@/app/types";
+import { Creator, MessageType, Post } from "@/app/types";
 import { Session } from "next-auth";
 import { Bitcoin, X } from "lucide-react";
 import Image from "next/image";
@@ -20,6 +20,7 @@ interface PaymentFormProps {
   price: number | null;
   session: Session | null;
   post?: Post | null
+  message?: MessageType | null
 }
 
 const PLATFORM_FEE_RATE = 0.05;
@@ -32,7 +33,8 @@ export default function PaymentForm({
   avatarUrl,
   price,
   session,
-  post
+  post,
+  message
 }: PaymentFormProps) {
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedCurrency, setSelectedCurrency] = useState("");
@@ -364,6 +366,7 @@ export default function PaymentForm({
       creator={creator}
       type={type}
       post={post ?? null}
+      message={message ?? null}
     />,
     document.body
   )

@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Copy, CheckCircle, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Session } from "next-auth";
-import { Creator, Post } from "@/app/types";
+import { Creator, MessageType, Post } from "@/app/types";
 
 interface CryptoModalProps {
   amountUsd: number;
@@ -13,6 +13,7 @@ interface CryptoModalProps {
   session: Session | null
   creator?: Creator |  null
   post?: Post |  null
+  message?: MessageType |  null
 }
 type PaymentType = "subscription" | "post" | "tip" | "message" | "topup";
 
@@ -22,14 +23,17 @@ interface BasePayload {
   amount: number;
   type: PaymentType;
 }
-
+interface MessagePayload extends BasePayload {
+  type: "message";
+  mediaId: string; // Supabase message ID
+}
 interface PostPayload extends BasePayload {
   type: "post";
   mediaId: string;
 }
 
-type PaymentPayload = BasePayload | PostPayload;
-export function CryptoPaymentModal({ amountUsd, onClose, type, creator, session, post }: CryptoModalProps) {
+type PaymentPayload = BasePayload | PostPayload | MessagePayload;
+export function CryptoPaymentModal({ amountUsd, onClose, type, creator, session, post, message }: CryptoModalProps) {
   const [copied, setCopied] = useState(false);
   const [checking, setChecking] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
@@ -54,10 +58,13 @@ export function CryptoPaymentModal({ amountUsd, onClose, type, creator, session,
         amount: amountUsd,
         type,
       };
-      const payload: PaymentPayload =
-        type === "post" && post?._id
-          ? { ...base, type: "post", mediaId: post._id }
-          : base;
+      let payload: PaymentPayload = base;
+
+      if (type === "post" && post?._id) {
+        payload = { ...base, type: "post", mediaId: post._id };
+      } else if (type === "message" && message?.id) {
+        payload = { ...base, type: "message", mediaId: message.id.toString() };
+      }
 
       const res = await fetch("/api/create-payment", {
         method: "POST",
@@ -73,7 +80,7 @@ export function CryptoPaymentModal({ amountUsd, onClose, type, creator, session,
         console.error("Failed to create payment intent:", data);
       }
     })();
-  }, [amountUsd, type, creator?._id, post?._id, session?.user._id]);
+  }, [amountUsd, type, creator?._id, post?._id, session?.user._id, message?.id]);
   const handleCopy = () => {
     if (!paymentAddress) return;
     navigator.clipboard.writeText(paymentAddress);
@@ -84,45 +91,60 @@ export function CryptoPaymentModal({ amountUsd, onClose, type, creator, session,
     if (!intentId) return;
     setChecking(true);
     setTimer(60);
-
+  
     const interval = setInterval(() => {
       setTimer((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
+          setChecking(false); // stop checking when timer ends
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-
+  
     try {
-      const res = await fetch("/api/check-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ intentId }),
-      });
-      const data = await res.json();
-      if (data.confirmed) setConfirmed(true);
-
-      // Optional: notify creator
-      if (
-        creator?._id &&
-        !notifiedCreators.current.has(creator._id) &&
-        ["subscription", "post", "tip", "message"].includes(type)
-      ) {
-        notifiedCreators.current.add(creator._id);
-        const notificationType = paymentToNotificationMap[type];
-
-        await fetch("/api/notifications", {
+      let confirmedPayment = false;
+  
+      while (!confirmedPayment && timer > 0) {
+        const res = await fetch("/api/check-payment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: notificationType,
-            by: session?.user._id,
-            forUsers: [{ model: "Creator", id: creator._id }],
-            creatorId: creator._id,
-          }),
+          body: JSON.stringify({ intentId }),
         });
+        const data = await res.json();
+  
+        if (data.confirmed) {
+          confirmedPayment = true;
+          setConfirmed(true);
+          clearInterval(interval); // stop the timer
+  
+          // **Send notification only after payment is confirmed**
+          if (
+            creator?._id &&
+            !notifiedCreators.current.has(creator._id) &&
+            ["subscription", "post", "tip", "message"].includes(type)
+          ) {
+            notifiedCreators.current.add(creator._id);
+            const notificationType = paymentToNotificationMap[type];
+  
+            await fetch("/api/notifications", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                type: notificationType,
+                by: session?.user._id,
+                forUsers: [{ model: "Creator", id: creator._id }],
+                creatorId: creator._id,
+              }),
+            });
+          }
+  
+          break;
+        }
+  
+        // Wait 3 seconds before polling again
+        await new Promise((r) => setTimeout(r, 3000));
       }
     } catch (err) {
       console.error("Payment check failed:", err);
@@ -130,6 +152,7 @@ export function CryptoPaymentModal({ amountUsd, onClose, type, creator, session,
       setChecking(false);
     }
   };
+  
   
 
   return (
@@ -239,7 +262,7 @@ export function CryptoPaymentModal({ amountUsd, onClose, type, creator, session,
         <button
           onClick={handlePaidClick}
           disabled={checking || confirmed}
-          className="w-full bg-gradient-to-r cursor-pointer transition-colors disabled:cursor-none from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white py-3 rounded-xl font-bold shadow-lg duration-200 disabled:opacity-50"
+          className="w-full bg-gradient-to-r cursor-pointer transition-colors disabled:cursor-disabled from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white py-3 rounded-xl font-bold shadow-lg duration-200 disabled:opacity-50"
         >
           {checking
             ? `⏳ Checking... ${timer}s`
@@ -257,7 +280,7 @@ export function CryptoPaymentModal({ amountUsd, onClose, type, creator, session,
           <p className="text-xs text-gray-300 mt-1">
             Track:{" "}
             <a
-              href={`https://chain.so/address/LTCTEST/${walletAddress}`}
+              href={`https://sochain.com/address/LTC/${walletAddress}`}
               target="_blank"
               rel="noopener noreferrer"
               className="underline text-pink-400 hover:text-pink-300"

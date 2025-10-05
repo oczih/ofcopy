@@ -3,10 +3,10 @@ import mongoose, { Schema, model, Document } from 'mongoose';
 export interface PaymentIntentDocument extends Document {
   userId: mongoose.Types.ObjectId;
   creatorId?: mongoose.Types.ObjectId;
-  mediaId?: mongoose.Types.ObjectId;
+  mediaId?: string; // change from ObjectId to string
   type: "message" | "subscription" | "topup" | "post";
-  amount: number;                // required amount in BTC/LTC
-  address: string;               // unique receiving address
+  amount: number;
+  address: string;
   status: "pending" | "paid" | "expired";
   txid?: string;
   createdAt: Date;
@@ -16,7 +16,7 @@ export interface PaymentIntentDocument extends Document {
 const PaymentIntentSchema = new Schema<PaymentIntentDocument>({
   userId: { type: Schema.Types.ObjectId, required: true, ref: "OFUser" },
   creatorId: { type: Schema.Types.ObjectId, ref: "Creator" },
-  mediaId: { type: Schema.Types.ObjectId, ref: "Post" },
+  mediaId: { type: Schema.Types.Mixed }, 
   type: { type: String, enum: ["message", "subscription", "topup", "post"], required: true },
   amount: { type: Number, required: true },
   address: { type: String, required: true },

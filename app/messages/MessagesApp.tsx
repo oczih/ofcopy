@@ -56,6 +56,7 @@ export default function ChatApp({ session, users, creators }: AppProps) {
   const [payPostOpen, setPaypostOpen] = useState(false)
   const [currentMessagePrice, setCurrentMessagePrice] = useState<number | null>(null);
   const [showClear, setShowClear] = useState(false)
+  const [message, setMessage] = useState<MessageType | null>(null);
   //const [isPriceModalOpen, setIsPriceModalOpen] = useState(false)
   const messages = messagesByChat[currentChatIdentifier ?? ""] || [];
   const router = useRouter();
@@ -985,6 +986,7 @@ export default function ChatApp({ session, users, creators }: AppProps) {
           <button
             className="absolute inset-0 flex items-center justify-center bg-black/60 text-white text-sm font-semibold rounded-2xl hover:bg-black/70"
             onClick={() => {
+              setMessage(message)
               setCurrentMessagePrice(message.price || null);
               setPaypostOpen(true);
             }}
@@ -1067,6 +1069,7 @@ export default function ChatApp({ session, users, creators }: AppProps) {
                       <PaymentForm 
                       type="message"
                       onClose={() => {
+                        setMessage(null)
                         setPaypostOpen(false)
                         setCurrentMessagePrice(null)
                       }}
@@ -1077,6 +1080,7 @@ export default function ChatApp({ session, users, creators }: AppProps) {
                       }
                       price={currentMessagePrice}
                       session={session}
+                      message={message}
                     />
                     )}
                   {/* Active Image Portal */}

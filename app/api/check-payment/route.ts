@@ -7,7 +7,7 @@ import CreatorModel from "@/app/models/creatormodel";
 import mongoose from "mongoose";
 import { supabase } from "@/lib/supabase";
 
-const BLOCKCYPHER_API_URL = "https://api.blockcypher.com/v1/btc/test3";
+const BLOCKCYPHER_API_URL = "https://api.blockcypher.com/v1/ltc/main"; // ✅ Litecoin mainnet endpoint
 const BLOCKCYPHER_TOKEN = process.env.BLOCKCYPHER_TOKEN!;
 const MIN_CONFIRMATIONS = 1;
 
@@ -18,14 +18,20 @@ export async function POST(req: Request) {
 
     const intent = await PaymentIntent.findById(intentId);
     if (!intent) {
-      return NextResponse.json({ confirmed: false, error: "Payment intent not found" }, { status: 404 });
+      return NextResponse.json(
+        { confirmed: false, error: "Payment intent not found" },
+        { status: 404 }
+      );
     }
 
+    console.log("Intent status:", intent.status);
+
+    // Already completed
     if (intent.status === "completed") {
       return NextResponse.json({ confirmed: true, txid: intent.txid });
     }
 
-    // Query blockchain
+    // 🔍 Query BlockCypher mainnet for transactions for this LTC address
     let url = `${BLOCKCYPHER_API_URL}/addrs/${intent.address}/full`;
     if (BLOCKCYPHER_TOKEN) url += `?token=${BLOCKCYPHER_TOKEN}`;
 
@@ -36,10 +42,13 @@ export async function POST(req: Request) {
       confirmations: number;
     };
     const data: { txs?: BlockCypherTx[]; error?: string } = await res.json();
+
     if (data.error) {
-      return NextResponse.json({ confirmed: false, error: data.error }, { status: 500 });
+      console.error("BlockCypher API error:", data.error);
+      return NextResponse.json({ confirmed: false, error: data.error });
     }
-    
+
+    // 🧠 Find a confirmed transaction with sufficient amount
     const tx = (data.txs || []).find(
       (t) => t.total / 1e8 >= intent.amount && t.confirmations >= MIN_CONFIRMATIONS
     );
@@ -48,18 +57,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ confirmed: false });
     }
 
-    // ✅ Mark as completed and process the purchase
+    // ✅ Mark payment as completed
     intent.status = "completed";
     intent.txid = tx.hash;
     await intent.save();
 
-    // Create purchase/subscription/topup depending on type
-    if (intent.type === "purchase" && intent.mediaId) {
+    // 🪙 Handle post-processing
+    if (intent.type === "post" && intent.mediaId) {
       await Purchase.create({
         userId: intent.userId,
         creatorId: intent.creatorId,
         mediaId: intent.mediaId,
-        amount: intent.amount
+        amount: intent.amount,
       });
     }
 
@@ -69,19 +78,13 @@ export async function POST(req: Request) {
         { $inc: { balance: intent.amount } }
       );
     }
-    if (intent.type === "post" && intent.mediaId) {
-      await Purchase.create({
-        userId: intent.userId,
-        creatorId: intent.creatorId,
-        mediaId: intent.mediaId,
-        amount: intent.amount
-      });
-    }
+
     if (intent.type === "subscription" && intent.creatorId) {
       const creator = await CreatorModel.findById(intent.creatorId);
       if (creator) {
         const subscriptionEndDate = new Date();
         subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + 1);
+
         await OFUser.updateOne(
           { _id: intent.userId },
           {
@@ -95,16 +98,15 @@ export async function POST(req: Request) {
                 price: intent.amount,
                 status: "active",
                 nextBillingDate: subscriptionEndDate,
-                autoRenew: true
-              }
-            }
+                autoRenew: true,
+              },
+            },
           }
         );
       }
     }
-    console.log(intent.type)
+
     if (intent.type === "message" && intent.mediaId) {
-      // ✅ Add the user ID to the purchased list in Supabase message
       const { data: msg, error: fetchErr } = await supabase
         .from("messages")
         .select("purchased")
@@ -130,6 +132,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ confirmed: true, txid: tx.hash });
   } catch (err) {
     console.error("Check-payment error:", err);
-    return NextResponse.json({ confirmed: false, error: "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { confirmed: false, error: "Server error" },
+      { status: 500 }
+    );
   }
 }

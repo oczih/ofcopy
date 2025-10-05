@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongoose";
 import PaymentIntent from "@/app/models/paymentintent";
 
+
 export async function POST(req: Request) {
   try {
     const { userId, creatorId, mediaId, type, amount } = await req.json();
@@ -15,14 +16,14 @@ export async function POST(req: Request) {
     if (!newAddress?.address) {
       return NextResponse.json({ error: "Failed to create blockchain address" }, { status: 500 });
     }
-
+    const WALLET_ADDRESS = process.env.NEXT_PUBLIC_LTCWALLETADDRESS!;
     const intent = await PaymentIntent.create({
       userId,
       creatorId,
       mediaId,
       type,
       amount,
-      address: newAddress.address,
+      address: WALLET_ADDRESS,
       status: "pending",
       createdAt: new Date()
     });
