@@ -50,7 +50,6 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("PhotoDNA scan failed:", errText);
       return NextResponse.json(
         { error: "PhotoDNA scan failed", details: errText },
         { status: 500 }

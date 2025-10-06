@@ -177,15 +177,6 @@ export default function App({session}: AppProps) {
             </div>
           ) : (
             <div>
-              <button
-                className="w-full bg-gradient-to-r cursor-pointer from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300"
-                onClick={() => {
-                  setShowPayPanel(true);
-                  setTopUpAmount(null); // since we’re just adding a card
-                }}
-              >
-                💳 Add Card
-              </button>
             </div>
           )}
         </div>
