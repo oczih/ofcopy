@@ -69,7 +69,7 @@ export default function App({ session, creators }: AppProps) {
       }
       setCreatorAvatars(prev => ({ ...prev, ...avatarMap }));
     })();
-  }, [promotionCreators]); // now stable
+  }, [promotionCreators, resolveAvatarUrl]); // now stable
   
 
   return (

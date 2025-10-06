@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
-import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, ArrowLeft } from "lucide-react";
 import { signIn, getSession, useSession, signOut } from "next-auth/react";
 import { toast, Toaster } from 'react-hot-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -201,9 +201,16 @@ export default function LoginPageWrapper() {
           position="top-center"
           reverseOrder={false}
         />
+               <button
+        onClick={() => window.history.back()}
+        className="absolute top-8 cursor-pointer left-8 flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full shadow-lg hover:from-pink-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 z-20"
+      >
+        <ArrowLeft className="w-5 h-5" />
+      </button>
        <h1 className="text-3xl font-extrabold text-white mb-4 text-center drop-shadow-lg">Fanslio</h1>
        <h1 className="text-5xl font-extrabold text-white mb-4 text-center drop-shadow-lg">Log In</h1>
-      <div className="w-full max-w-md bg-white/10 rounded-2xl shadow-xl p-8 flex flex-col items-center">
+       <div className="w-[90%] sm:w-[80%] md:w-full max-w-md bg-white/10 rounded-2xl shadow-xl p-8 flex flex-col items-center">
+
         {/* Login Method Toggle */}
           <div className="flex flex-col gap-3 w-full">
             <button

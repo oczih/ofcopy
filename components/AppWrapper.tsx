@@ -120,6 +120,20 @@ export default function AppWrapper({
 
   return (
     <div className="min-h-screen w-full bg-[#3b0364] relative overflow-hidden">
+          <div className="w-full bg-pink-600 text-white py-2 px-4 text-center text-sm sm:text-base font-medium">
+  ⚠️ We are currently in beta. Please contact{" "}
+  <a
+    href="#"
+    onClick={(e) => {
+      e.preventDefault();
+      window.location.href = "mailto:" + "support" + "@" + "fanslio.com";
+    }}
+    className="underline font-semibold"
+  >
+    support@fanslio.com
+  </a>{" "}
+  if you face any issues.
+</div>
       {showSidebar && (
         <>
           <Sidebar

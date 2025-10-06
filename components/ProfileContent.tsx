@@ -1268,7 +1268,8 @@ function MediaGrid({
     return false;
   };
   return (
-    <>
+    <><div>
+      {visiblePosts.length > 0 ? (
       <div className="grid grid-cols-3 gap-1">
         {visiblePosts.map((post) => {
           const isLoaded = loadedImages[post._id];
@@ -1309,6 +1310,18 @@ function MediaGrid({
             </div>
           );
         })}
+      </div>
+       ) : creator?.posts && creator.posts.length > 0 ? (
+        <div className="text-center text-gray-400 py-12">
+          <div className="text-6xl mb-4">🔒</div>
+          <p>Subscribe to view more content!</p>
+        </div>
+      ) : (
+        <div className="text-center text-gray-400 py-12">
+          <div className="text-6xl mb-4">🤔</div>
+          <p>This person hasn&apos;t posted anything yet!</p>
+        </div>
+      ) }
       </div>
 
       {/* Fullscreen modal */}
