@@ -181,7 +181,7 @@ export default function SignupPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#13072c] ">
       <h1 className="text-3xl font-extrabold text-white mb-4 text-center drop-shadow-lg">Fanslio</h1>
        <h1 className="text-5xl font-extrabold text-white mb-4 text-center drop-shadow-lg">Sign Up</h1>
-      <div className="w-full max-w-md bg-white/10 rounded-2xl shadow-xl p-8 flex flex-col items-center">
+       <div className="w-[90%] sm:w-[80%] md:w-full max-w-md bg-white/10 rounded-2xl shadow-xl p-8 flex flex-col items-center">
        
         <p className="text-sm text-white font-bold mb-6 text-center">
           Create your free account to become a fan and unlock exclusive content from your favorite creators.
@@ -230,79 +230,83 @@ export default function SignupPage() {
             <span className="mx-4 bg-white/10 px-3 text-white/30 text-xs font-semibold tracking-widest rounded-full shadow-sm">OR</span>
             <Separator className="flex-1 h-px bg-white/10" />
           </div>
-            <form onSubmit={handleEmailSignup} className="space-y-4">
-              {/* Email Field */}
-              <div className="w-full">
-                <input
-                  type="email"
-                  placeholder="Email Address"
-                  value={formData.email}
-                  onChange={(e) => handleEmailChange(e.target.value)}
-                  className={`w-sm pl-4 pr-4 py-3 bg-white/10 rounded-xl shadow-sm text-white placeholder-gray-400 hover:outline hover:outline-white transition-all duration-200 ${
-                    errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-purple-400'
-                  }`}
-                />
-                {errors.email && (
-                  <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.email}
-                  </p>
-                )}
-              </div>
+          <form onSubmit={handleEmailSignup} className="flex flex-col space-y-5 w-full max-w-sm mx-auto px-4 sm:px-0">
+  {/* Email Field */}
+  <div className="w-full">
+    <input
+      type="email"
+      placeholder="Email Address"
+      value={formData.email}
+      onChange={(e) => handleEmailChange(e.target.value)}
+      className={`w-full pl-4 pr-4 py-3 sm:py-3.5 bg-white/10 rounded-xl text-base shadow-sm text-white 
+      placeholder-gray-400 focus:outline-none focus:ring-2 transition-all duration-200
+      ${errors.email ? 'border border-red-500 focus:ring-red-500' : 'border border-transparent focus:ring-purple-400'}`}
+    />
+    {errors.email && (
+      <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
+        <AlertCircle className="w-4 h-4 shrink-0" />
+        {errors.email}
+      </p>
+    )}
+  </div>
 
-              {/* Password Field */}
-              <div className="w-full relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Password"
-                  value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  className={`w-full pl-4 pr-12 py-3 bg-white/10 rounded-xl shadow-sm text-white placeholder-gray-400 hover:outline hover:outline-white transition-all duration-200 ${
-                    errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-purple-400'
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 cursor-pointer text-gray-400 hover:text-purple-600 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-                {errors.password && (
-                  <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.password}
-                  </p>
-                )}
-              </div>
+  {/* Password Field */}
+  <div className="w-full relative">
+    <input
+      type={showPassword ? "text" : "password"}
+      placeholder="Password"
+      value={formData.password}
+      onChange={(e) => handleInputChange('password', e.target.value)}
+      className={`w-full pl-4 pr-12 py-3 sm:py-3.5 bg-white/10 rounded-xl text-base shadow-sm text-white 
+      placeholder-gray-400 focus:outline-none focus:ring-2 transition-all duration-200
+      ${errors.password ? 'border border-red-500 focus:ring-red-500' : 'border border-transparent focus:ring-purple-400'}`}
+    />
+    <button
+      type="button"
+      onClick={() => setShowPassword(!showPassword)}
+      className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-purple-400 transition-colors touch-manipulation"
+    >
+      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+    </button>
+    {errors.password && (
+      <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
+        <AlertCircle className="w-4 h-4 shrink-0" />
+        {errors.password}
+      </p>
+    )}
+  </div>
 
-              {/* Confirm Password Field */}
-              <div className="w-full">
-                <input
-                  type="password"
-                  placeholder="Confirm Password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                  className={`w-full pl-4 pr-4 py-3 bg-white/10 rounded-xl shadow-sm text-white placeholder-gray-400 hover:outline hover:outline-white transition-all duration-200 ${
-                    errors.confirmPassword ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-purple-400'
-                  }`}
-                />
-                {errors.confirmPassword && (
-                  <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.confirmPassword}
-                  </p>
-                )}
-              </div>
+  {/* Confirm Password Field */}
+  <div className="w-full">
+    <input
+      type="password"
+      placeholder="Confirm Password"
+      value={formData.confirmPassword}
+      onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+      className={`w-full pl-4 pr-4 py-3 sm:py-3.5 bg-white/10 rounded-xl text-base shadow-sm text-white 
+      placeholder-gray-400 focus:outline-none focus:ring-2 transition-all duration-200
+      ${errors.confirmPassword ? 'border border-red-500 focus:ring-red-500' : 'border border-transparent focus:ring-purple-400'}`}
+    />
+    {errors.confirmPassword && (
+      <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
+        <AlertCircle className="w-4 h-4 shrink-0" />
+        {errors.confirmPassword}
+      </p>
+    )}
+  </div>
 
-              <button
-                type="submit"
-                disabled={isLoading} 
-                className="w-full bg-purple-600 cursor-pointer hover:bg-purple-700 text-white py-2 px-4 rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? 'Creating Account...' : 'Create Account'}
-              </button>
-            </form>
+  <button
+    type="submit"
+    disabled={isLoading}
+    className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 
+    text-white py-3 sm:py-3.5 px-4 rounded-xl font-semibold text-base tracking-wide
+    transition-all duration-200 shadow-md active:scale-[0.98] 
+    disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    {isLoading ? 'Creating Account...' : 'Create Account'}
+  </button>
+</form>
+
 
           <div className="text-center text-sm text-gray-400 mt-6">
             By continuing, you agree to our

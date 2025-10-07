@@ -162,10 +162,10 @@ export default function AppWrapper({
             : "md:ml-72"
         }`}
       >
-        {showSidebar && (
+        {showSidebar && session && (
           <div
             className={`fixed bottom-0 left-0 w-full bg-slate-900/90 border-t border-white/10 
-            flex justify-around items-center py-2 md:hidden z-30
+            flex justify-around items-center py-5 md:hidden z-30
             ${isSidebarOpen || hideHotbar ? "hidden" : "flex"}`}
           >
             <Link href="/home">
@@ -210,6 +210,17 @@ export default function AppWrapper({
                 <UserCircle className="w-7 h-7 text-white" />
               )}
             </button>
+          </div>
+        )}
+        {showSidebar && !session && (
+          <div
+            className={`fixed bottom-0 left-0 w-full bg-slate-900/90 border-t border-white/10 
+            flex justify-around items-center py-5 md:hidden z-30
+            ${isSidebarOpen || hideHotbar ? "hidden" : "flex"}`}
+          >
+            <Link href="/signup">
+              <Home className="w-6 h-6 text-white" />
+            </Link>
           </div>
         )}
         {children}

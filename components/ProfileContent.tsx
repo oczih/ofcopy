@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { CreatorPostCard } from './CreatorPostCard';
 import { useSession } from 'next-auth/react';
 import { resolveImageUrl } from './resolveImageUrl';
-import { ChevronLeft, Heart, Lock, Video, X } from 'lucide-react';
+import { Heart, HeartHandshake, Lock, Video, X } from 'lucide-react';
 import SignUpModal from './SignupModal';
 import { Session } from 'next-auth';
 import { createPortal } from 'react-dom';
@@ -84,15 +84,15 @@ const BioSection = ({
   };
 
   return (
-    <div className="max-w-2xl pb-5">
-      <p className="text-gray-300 text-base leading-relaxed transition-all duration-300">
+    <div className="max-w-2xl">
+      <p className="text-gray-300 text-base text-sm leading-relaxed transition-all duration-300">
         {showFullBio ? bio : getPreviewText(bio)}
       </p>
 
       {bio.length > 100 && (
         <button
           onClick={() => setShowFullBio(!showFullBio)}
-          className="mt-2 text-blue-400 hover:text-blue-300 font-medium transition-colors"
+          className="mt-2 text-blue-400 text-sm hover:text-blue-300 font-medium transition-colors"
         >
           {showFullBio ? "Show less" : "Read more"}
         </button>
@@ -562,14 +562,6 @@ export default function ProfileContent({
     />
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Profile Header */}
-        <div className="md:hidden">
-        <button 
-          onClick={() => window.history.back()} 
-          className="flex items-center gap-2 text-white"
-        >
-          <ChevronLeft className="w-6 h-6"/>
-        </button>
-      </div>
       {subscriptionStatus === "cancelled" && daysLeft !== null && (
   <div className="my-4 p-4 bg-yellow-500/10 border border-yellow-400/40 text-yellow-200 rounded-xl text-center">
     Your subscription has been <span className="font-semibold">cancelled</span> from this creator.{" "}
@@ -868,15 +860,24 @@ export default function ProfileContent({
              Send Message
            </button>
             )}
-          {!viewingUser && (
+          {!viewingUser && creator && (
+            <div>
+                        <div className="flex items-center justify-center gap-3 bg-white/5 border border-white/10 rounded-xl py-3 px-4 mb-6 w-full">
+                        <HeartHandshake className="w-6 h-6 text-pink-400" />
+                        <div className="text-center">
+                          <p className="text-gray-300 text-sm">You&apos;ve been invited to Fanslio by</p>
+                          <p className="text-pink-400 font-semibold">{creator.name}</p>
+                        </div>
+                      </div>
             <button 
               className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-full font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
               onClick={() => setJoinModalOpen(true)}
             >
               <div className='flex flex-row justify-between'>
-                <span>Join today!</span>
+                <span>Join today for free!</span>
               </div>
             </button>
+            </div>
           )}
         </div>
         
