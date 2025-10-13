@@ -3,14 +3,17 @@
 import React, { useEffect, useState } from "react";
 import { Creator, User } from "../types";
 import { Session } from "next-auth";
-import { Bitcoin, Banknote, X } from "lucide-react";
+import { Bitcoin, X, CreditCard } from "lucide-react";
 import { CryptoPaymentModal } from "@/components/CryptoModal";
 import { useRouter } from "next/navigation";
+import toast, { Toaster } from "react-hot-toast";
 interface PayPanelProps {
   onCancel: () => void;
   topUpAmount: string | null;
   showAlternativeMethods?: boolean; // NEse
   session: Session | null
+  handleStripeCheckout: (type?: "topup" | "subscription", amount?: string) => void | Promise<void>;
+  loading: boolean;
 }
 
 const amounts = ["$10", "$25", "$50", "$100", "$200", "$500"];
@@ -21,7 +24,7 @@ function TopUpPanel({
   onContinue: (amount: string) => void;
 }) {
   const [selectedAmount, setSelectedAmount] = useState<string | null>(null);
-
+  
   return (
     <div className="space-y-6 p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl">
       <div className="text-center mb-6">
@@ -59,7 +62,7 @@ function TopUpPanel({
   );
 }
 
-function PayPanel({ topUpAmount, showAlternativeMethods = true, onCancel, session }: PayPanelProps) {
+function PayPanel({ topUpAmount, showAlternativeMethods = true, onCancel, session, handleStripeCheckout, loading }: PayPanelProps) {
   const [showCryptoModal, setShowCryptoModal] = useState(false);
 
   return (
@@ -101,8 +104,13 @@ function PayPanel({ topUpAmount, showAlternativeMethods = true, onCancel, sessio
       />
           )}
 
-          <button className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 cursor-pointer text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-colors duration-200">
-            <Banknote size={20} /> Bank Transfer
+          <button 
+          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 cursor-pointer text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-colors duration-200"
+          onClick={() => handleStripeCheckout("topup", topUpAmount?.toString())}
+          disabled={loading}
+          >
+            
+            <CreditCard size={20} /> {loading ? "Loading..." : "Card"}
           </button>
         </div>
       )}
@@ -111,7 +119,7 @@ function PayPanel({ topUpAmount, showAlternativeMethods = true, onCancel, sessio
       </div>
     </div>
   );
-}
+} 
 interface AppProps {
   creators: Creator[];
   session: Session | null;
@@ -123,15 +131,63 @@ export default function App({session}: AppProps) {
   const [showPayPanel, setShowPayPanel] = useState(false);
   const [showTopUpPanel, setShowTopUpPanel] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false)
   const router = useRouter();
   useEffect(() => {
     if (!session) {
       router.push("/login");
     }
   }, [session, router]);
+  const handleStripeCheckout = async (type?: "topup" | "subscription", amount?: string) => {
+    setLoading(true);
+    try {
+      // Pick price ID based on type
+      let priceId = "";
+      if (type === "subscription") {
+        priceId = process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION!;
+      } else {
+        const map: Record<string, string> = {
+          "10": process.env.NEXT_PUBLIC_STRIPE_TOPUP10!,
+          "25": process.env.NEXT_PUBLIC_STRIPE_TOPUP25!,
+          "50": process.env.NEXT_PUBLIC_STRIPE_TOPUP50!,
+          "100": process.env.NEXT_PUBLIC_STRIPE_TOPUP100!,
+          "200": process.env.NEXT_PUBLIC_STRIPE_TOPUP200!,
+          "500": process.env.NEXT_PUBLIC_STRIPE_TOPUP500!,
+        };
+        priceId = map[amount ?? "10"]; // default fallback
+      }
+  
+      const res = await fetch("/api/stripe/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          priceId,
+          mode: type === "subscription" ? "subscription" : "payment",
+        }),
+      });
+  
+      const data = await res.json();
+  
+      if (data.url) {
+        window.location.href = data.url; // now points to 10ksteps.vercel.app/redirect/cs_live_...
+      } else {
+        toast.error("Failed to start checkout");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Payment error, please try again");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   return (
     <div className="min-h-screen w-full flex justify-center px-4 py-10">
       <main className="max-w-3xl w-full space-y-8">
+        <Toaster
+        position="top-center"
+        reverseOrder={false}
+      />
         {/* Header */}
         <header>
           <h2 className="text-2xl font-bold text-white mb-2">Your Wallet & Payment Methods</h2>
@@ -198,6 +254,8 @@ export default function App({session}: AppProps) {
         topUpAmount={topUpAmount}
         session={session}
         showAlternativeMethods={!!topUpAmount} // only show when topping up
+        handleStripeCheckout={handleStripeCheckout}
+        loading={loading}
         onCancel={() => {
           setShowPayPanel(false);
           setTopUpAmount(null);

@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import Link from "next/link";
 import { Creator, MessageType, Post } from "@/app/types";
 import { Session } from "next-auth";
-import { Bitcoin, X } from "lucide-react";
+import { Bitcoin, X, CreditCard } from "lucide-react";
 import Image from "next/image";
 import { CryptoPaymentModal } from "./CryptoModal";
 import { createPortal } from "react-dom";
@@ -48,7 +48,49 @@ export default function PaymentForm({
   }, [price]);
   
   if (!open) return null;
-
+  const handleStripeCheckout = async (type?: "topup" | "subscription", amount?: string) => {
+    setLoading(true);
+    try {
+      // Pick price ID based on type
+      let priceId = "";
+      if (type === "subscription") {
+        priceId = process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION!;
+      } else {
+        const map: Record<string, string> = {
+          "10": process.env.NEXT_PUBLIC_STRIPE_TOPUP10!,
+          "25": process.env.NEXT_PUBLIC_STRIPE_TOPUP25!,
+          "50": process.env.NEXT_PUBLIC_STRIPE_TOPUP50!,
+          "100": process.env.NEXT_PUBLIC_STRIPE_TOPUP100!,
+          "200": process.env.NEXT_PUBLIC_STRIPE_TOPUP200!,
+          "500": process.env.NEXT_PUBLIC_STRIPE_TOPUP500!,
+        };
+        priceId = map[amount ?? "10"]; // default fallback
+      }
+  
+      const res = await fetch("/api/stripe/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          priceId,
+          mode: type === "subscription" ? "subscription" : "payment",
+        }),
+      });
+  
+      const data = await res.json();
+  
+      if (data.url) {
+        window.location.href = data.url; // now points to 10ksteps.vercel.app/redirect/cs_live_...
+      } else {
+        toast.error("Failed to start checkout");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Payment error, please try again");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   // LuxFin handlers (wallets)
   const handleWalletPayment = async (
     method: "paypal" | "venmo" | "applepay"
@@ -139,6 +181,8 @@ export default function PaymentForm({
     { label: "Pay with Google Pay", icon: "/gpay.png" },
     { label: "Pay with Revolut", icon: "/revolut.png" },
   ];
+  
+  
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
     <div className="relative w-full max-w-md bg-gradient-to-br from-[#3c0d6c] to-[#1a0133] border border-white/10 rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] p-6 text-white backdrop-blur-xl space-y-6">
@@ -216,7 +260,23 @@ export default function PaymentForm({
         <Image src="/PayPal_Logo_Icon_2014.svg.png" alt="PayPal" width={20} height={20} />
         PayPal
       </button>
-
+      <button
+        onClick={() => handleStripeCheckout("subscription")}
+        disabled={!termsAccepted}
+        className={`
+          flex items-center gap-2 w-full justify-center
+          rounded-full font-bold cursor-pointer px-4 py-2
+          text-white border border-transparent
+          transition-colors transition-border duration-300
+          ${termsAccepted
+            ? "bg-white/10 hover:bg-[#4d138a] hover:border-white"
+            : "bg-[#1a0133] cursor-not-allowed opacity-60"
+          }
+        `}
+      >
+        <CreditCard className="w-20 h-20" />
+        Card
+      </button>
       <button
         onClick={() => handleWalletPayment("venmo")}
         disabled={!termsAccepted}

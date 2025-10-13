@@ -1,7 +1,7 @@
 'use client';
 
 import { FC, SVGProps, useEffect, useState } from "react";
-import {CreditCard, ChevronRight, Calendar, Mail, Trash2, Wallet, ExternalLink, AlertCircle, UserCog, Shield, Settings, Star, ChevronLeft } from "lucide-react";
+import {CreditCard, ChevronRight, Calendar, Mail, Trash2, Wallet, ExternalLink, AlertCircle, UserCog, Shield, Settings, Star, ChevronLeft, SquareUser } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SubscriptionManagement from "@/components/SubscriptionManagement";
 import PaymentHistory from "@/components/PaymentHistory";
@@ -119,6 +119,15 @@ export default function App({session}: AppProps) {
       description: "Request a payout with your preferred method",
       color: "from-emerald-500 to-teal-500",
       restrictedTo: "creator" // only creators
+    },
+    {
+      id: "creator-settings",
+      label: "Creator Settings",
+      href: "/settings/creator",
+      icon: SquareUser,
+      description: "Manage your creator tools and settings",
+      color: "from-emerald-500 to-teal-500",
+      restrictedTo: "creator",
     }
   ];
   
@@ -149,7 +158,31 @@ export default function App({session}: AppProps) {
     { id: "history", label: "Payment History" },
     { id: "wallet", label: "Wallet" },
   ];
-
+  const subTabsMap = {
+    account: [
+      { id: "info", label: "Personal Info" },
+      { id: "security", label: "Security" },
+    ],
+    payments: [
+      { id: "subscriptions", label: "Subscriptions" },
+      { id: "payouts", label: "Payouts" },
+    ],
+    legal: [
+      { id: "privacy", label: "Privacy" },
+      { id: "terms", label: "Terms" },
+    ],
+    "creator-settings": [
+      { id: "tracking-links", label: "Tracking Links" },
+      { id: "subscription", label: "Subscription" },
+      { id: "profile", label: "Profile" },
+      { id: "my-ai", label: "My AI" },
+      { id: "commenting", label: "Commenting" },
+      { id: "automated-messages", label: "Automated Messages" },
+      { id: "tutorials", label: "Tutorials" },
+      { id: "api-keys", label: "Request API Keys" },
+    ],
+  };
+  
   const legalSubTabs = [
     { id: "privacy", label: "Privacy Policy", href: "/privacy" },
     { id: "terms", label: "Terms of Service", href: "/tos" },
@@ -170,9 +203,10 @@ export default function App({session}: AppProps) {
     setActiveTab(tabId);
     // Set default subtab when switching main tabs
     if (tabId === "account") setActiveSubTab("info");
-    else if (tabId === "payments") setActiveSubTab("subscriptions");
-    else if (tabId === "legal") setActiveSubTab("privacy");
-    else setActiveSubTab("");
+else if (tabId === "payments") setActiveSubTab("subscriptions");
+else if (tabId === "legal") setActiveSubTab("privacy");
+else if (tabId === "creator-settings") setActiveSubTab(""); // support for Creator Settings breadcrumb
+else setActiveSubTab("");
   };
 
   const handleSubTabClick = (subTabId: string) => {
@@ -185,44 +219,69 @@ export default function App({session}: AppProps) {
     }
     setActiveSubTab(subTabId);
   };
+  const CreatorTrackingLinks = () => <div className="text-gray-300">Tracking Links Page</div>;
+const CreatorSubscription = () => <div className="text-gray-300">Subscription Settings</div>;
+const CreatorProfile = () => <div className="text-gray-300">Profile Settings</div>;
+const CreatorMyAI = () => <div className="text-gray-300">My AI Settings</div>;
+const CreatorCommenting = () => <div className="text-gray-300">Comment Control Settings</div>;
+const CreatorAutomatedMessages = () => <div className="text-gray-300">Automated Messages Settings</div>;
+const CreatorTutorials = () => <div className="text-gray-300">Tutorials & Tips</div>;
+const CreatorAPIKeys = () => <div className="text-gray-300">API Key Request</div>;
 
+  if (activeTab === "creator-settings") {
+    switch (activeSubTab) {
+      case "tracking-links":
+        return <CreatorTrackingLinks />;
+      case "subscription":
+        return <CreatorSubscription />;
+      case "profile":
+        return <CreatorProfile />;
+      case "my-ai":
+        return <CreatorMyAI />;
+      case "commenting":
+        return <CreatorCommenting />;
+      case "automated-messages":
+        return <CreatorAutomatedMessages />;
+      case "tutorials":
+        return <CreatorTutorials />;
+      case "api-keys":
+        return <CreatorAPIKeys />;
+      default:
+        return (
+          <div className="text-gray-400">
+            <h3 className="text-2xl font-bold text-white mb-2">Creator Settings</h3>
+            <p>See information about your subscriptions, edit profile preferences or set automated messages.</p>
+          </div>
+        );
+    }
+  }
   const renderBreadcrumb = () => {
-    const currentMainTab = mainTabs.find(t => t.id === activeTab);
-    const currentSubTabs = activeTab === "account" ? accountSubTabs : 
-                          activeTab === "payments" ? paymentSubTabs : legalSubTabs;
-    const currentSubTab = currentSubTabs?.find(t => t.id === activeSubTab);
-
+    const mainTab = mainTabs.find((tab) => tab.id === activeTab);
+    const subTab = subTabsMap[activeTab]?.find(
+      (sub) => sub.id === activeSubTab
+    );
+  
     return (
-      <div className="flex items-center space-x-2 text-sm mb-12">
-        <button
-          onClick={() => setActiveTab("")}
-          className="flex items-center space-x-2 text-gray-400 cursor-pointer hover:text-white transition-all duration-200 -105"
-        >
-          <Settings className="w-4 h-4" />
-          <span>Settings</span>
-        </button>
-        {currentMainTab && (
+      <div className="text-sm text-gray-400 mb-4">
+        <span className="cursor-pointer hover:text-white" onClick={() => setActiveTab("")}>
+          Settings
+        </span>
+        {mainTab && (
           <>
-            <div className="w-1 h-1 bg-gray-500 rounded-full"></div>
-            <button
-              onClick={() => handleTabClick(activeTab)}
-              className="text-gray-400 hover:text-white cursor-pointer transition-all duration-200 -105"
+            {" • "}
+            <span
+              className="cursor-pointer hover:text-white"
+              onClick={() => setActiveSubTab("")}
             >
-              {currentMainTab.label}
-            </button>
-          </>
-        )}
-        {currentSubTab && (
-          <>
-            <div className="w-1 h-1 bg-gray-500 rounded-full"></div>
-            <span className="text-white font-medium bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-              {currentSubTab.label}
+              {mainTab.label}
             </span>
           </>
         )}
+        {subTab && <> • <span className="text-white font-medium">{subTab.label}</span></>}
       </div>
     );
   };
+  
 
 const validate = () => {
   const errs: Record<string, string> = {};
