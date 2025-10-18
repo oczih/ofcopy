@@ -14,6 +14,7 @@ export interface Subscription {
   status: 'active' | 'cancelled' | 'expired';
   nextBillingDate?: Date;
   autoRenew: boolean;
+  paymentMethod: 'stripe' | 'credits' | 'none'
 }
 
 export interface Purchase {
@@ -36,7 +37,9 @@ export type Comment = {
   text: string;
   createdAt: Date;
 };
-
+export interface Wallet {
+  balance: number;
+}
 export type NotificationType =
   | 'newsub'
   | 'resub'
@@ -82,7 +85,9 @@ export interface OFUserDocument extends Document {
   emailVerificationExpires: Date;
   lastVerificationEmailSentAt: Date;
   lastPasswordResetSentAt: Date;
-  wallet: number;
+  wallet: {
+    balance: number;
+  };
   
   paymentmethods?: {
     provider: string;
@@ -214,7 +219,12 @@ const userSchema = new Schema<OFUserDocument>({
     autoRenew: {
       type: Boolean,
       default: true
-    }
+    },
+    paymentMethod: {
+      type: String,
+      enum: ['stripe', 'credits', 'none'],
+      required: true
+    },
   }],
   following: [{
     creatorId: {
@@ -259,9 +269,10 @@ const userSchema = new Schema<OFUserDocument>({
   },
   lastPasswordResetSentAt: { type: Date, default: null },
   wallet: {
-    type: Number,
-    default: 0, // initial user balance
-    min: 0
+    balance: {
+      type: Number,
+      default: 0
+    }
   },
   paymentmethods: [
     {

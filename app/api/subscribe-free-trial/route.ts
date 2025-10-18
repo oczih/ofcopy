@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
       creatorName: creator.name,
       nextBillingDate: subscriptionEndDate,
       autoRenew: false, // Free trial doesn't auto-renew
+      paymentMethod: 'none'
     });
 
     await user.save();

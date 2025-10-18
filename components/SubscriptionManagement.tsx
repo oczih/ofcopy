@@ -62,17 +62,17 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ session
           <div>
             <h4 className="text-white font-semibold">{subscription.creatorName}</h4>
             <p className="text-gray-400 text-sm">
-              ${subscription.price}/month
-              {subscription.nextBillingDate && subscription.status === 'active' && (
-                <> • Next billing: {formatDate(subscription.nextBillingDate)}</>
-              )}
-              {subscription.status === 'cancelled' && (
-                <> • Ends: {subscription.nextBillingDate ? formatDate(subscription.nextBillingDate) : 'N/A'}</>
-              )}
-              {subscription.status === 'expired' && (
-                <> • Expired: {formatDate(subscription.subscriptionDate)}</>
-              )}
-            </p>
+  {subscription.price > 0 ? `$${subscription.price}/month` : "Free"}
+  {subscription.nextBillingDate && subscription.status === 'active' && (
+    <> • Next billing: {formatDate(subscription.nextBillingDate)}</>
+  )}
+  {subscription.status === 'cancelled' && (
+    <> • Ends: {subscription.nextBillingDate ? formatDate(subscription.nextBillingDate) : 'N/A'}</>
+  )}
+  {subscription.status === 'expired' && (
+    <> • Expired: {formatDate(subscription.subscriptionDate)}</>
+  )}
+</p>
             <p className="text-gray-500 text-xs">
               @{subscription.creatorUsername} • Auto-renew: {subscription.autoRenew ? 'On' : 'Off'}
             </p>
@@ -121,9 +121,12 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ session
               {activeSubscriptions.length}
             </Badge>
           </div>
-          {activeSubscriptions.map((subscription: Subscription) => (
-            <SubscriptionCard key={subscription.id} subscription={subscription} />
-          ))}
+          {activeSubscriptions.map((subscription: Subscription, index) => (
+  <SubscriptionCard 
+    key={subscription.id ?? `active-${index}`} 
+    subscription={subscription} 
+  />
+))}
         </div>
       )}
 
@@ -136,9 +139,12 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ session
               {nonActiveSubscriptions.length}
             </Badge>
           </div>
-          {nonActiveSubscriptions.map((subscription: Subscription) => (
-            <SubscriptionCard key={subscription.id} subscription={subscription} />
-          ))}
+          {nonActiveSubscriptions.map((subscription: Subscription, index) => (
+  <SubscriptionCard 
+    key={subscription.id ?? `nonactive-${index}`} 
+    subscription={subscription} 
+  />
+))}
         </div>
       )}
 

@@ -4,33 +4,41 @@ import React, { useEffect, useState } from "react";
 import { Creator, User } from "../types";
 import { Session } from "next-auth";
 import { Bitcoin, X, CreditCard } from "lucide-react";
-import { CryptoPaymentModal } from "@/components/CryptoModal";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
+import PlisioModal from "@/components/PlisioModal";
 interface PayPanelProps {
   onCancel: () => void;
-  topUpAmount: string | null;
+  topUpAmount: number | null;
   showAlternativeMethods?: boolean; // NEse
   session: Session | null
-  handleStripeCheckout: (type?: "topup" | "subscription", amount?: string) => void | Promise<void>;
+  handleStripeCheckout: (type?: "payment" | "subscription", amount?: string) => void | Promise<void>;
   loading: boolean;
+  creator: Creator;
 }
 
-const amounts = ["$10", "$25", "$50", "$100", "$200", "$500"];
+const amounts = [10, 25, 50, 100, 200, 500];
 
 function TopUpPanel({
   onContinue,
+  onCancel,
 }: {
-  onContinue: (amount: string) => void;
+  onContinue: (amount: number) => void;
+  onCancel: () => void;
 }) {
-  const [selectedAmount, setSelectedAmount] = useState<string | null>(null);
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   
   return (
     <div className="space-y-6 p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl">
       <div className="text-center mb-6">
         <p className="text-white font-bold text-lg">Add Wallet Credits</p>
       </div>
-
+      <button
+        className="absolute top-4 right-4 cursor-pointer text-white hover:text-pink-400 transition-colors"
+        onClick={onCancel}
+      >
+        <X size={24} />
+      </button>
       <div className="flex flex-wrap gap-4 justify-center">
         {amounts.map((amount, index) => (
           <button
@@ -46,7 +54,7 @@ function TopUpPanel({
               animation: 'fadeInUp 0.6s ease-out forwards'
             }}
           >
-            {amount}
+            ${amount}
           </button>
         ))}
       </div>
@@ -62,9 +70,9 @@ function TopUpPanel({
   );
 }
 
-function PayPanel({ topUpAmount, showAlternativeMethods = true, onCancel, session, handleStripeCheckout, loading }: PayPanelProps) {
+function PayPanel({ topUpAmount, showAlternativeMethods = true, onCancel, session, handleStripeCheckout, loading, creator }: PayPanelProps) {
   const [showCryptoModal, setShowCryptoModal] = useState(false);
-
+  
   return (
     <div className="space-y-6 p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl">
       <div className="text-center mb-6">
@@ -87,7 +95,14 @@ function PayPanel({ topUpAmount, showAlternativeMethods = true, onCancel, sessio
         <X size={24} />
       </button>
           </div>
-
+          <button 
+          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 cursor-pointer text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-colors duration-200"
+          onClick={() => handleStripeCheckout("payment", topUpAmount?.toString())}
+          disabled={loading}
+          >
+            
+            <CreditCard size={20} /> {loading ? "Loading..." : "Card"}
+          </button>
           <button
             onClick={() => setShowCryptoModal(true)}
             className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 cursor-pointer text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-colors duration-200"
@@ -95,23 +110,16 @@ function PayPanel({ topUpAmount, showAlternativeMethods = true, onCancel, sessio
             <Bitcoin size={20} /> Pay with Crypto
           </button>
 
-          {showCryptoModal && (
-      <CryptoPaymentModal 
-      type="topup"
-      session={session}
-      amountUsd={Number(topUpAmount)}
-      onClose={onCancel}
-      />
+          {showCryptoModal && topUpAmount && (
+            <PlisioModal
+            type="topup"
+            session={session}
+            amount={topUpAmount}
+            onClose={onCancel}
+            creator={creator}
+            />
           )}
 
-          <button 
-          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 cursor-pointer text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-colors duration-200"
-          onClick={() => handleStripeCheckout("topup", topUpAmount?.toString())}
-          disabled={loading}
-          >
-            
-            <CreditCard size={20} /> {loading ? "Loading..." : "Card"}
-          </button>
         </div>
       )}
       <div className="text-xs text-gray-500 text-center pt-4 border-t border-white/10">
@@ -126,11 +134,11 @@ interface AppProps {
   users: User[];
 }
 
-export default function App({session}: AppProps) {  
+export default function App({session, creators}: AppProps) {  
 
   const [showPayPanel, setShowPayPanel] = useState(false);
   const [showTopUpPanel, setShowTopUpPanel] = useState(false);
-  const [topUpAmount, setTopUpAmount] = useState<string | null>(null);
+  const [topUpAmount, setTopUpAmount] = useState<number | null>(null);
   const [loading, setLoading] = useState(false)
   const router = useRouter();
   useEffect(() => {
@@ -138,16 +146,29 @@ export default function App({session}: AppProps) {
       router.push("/login");
     }
   }, [session, router]);
-  const handleStripeCheckout = async (type?: "topup" | "subscription", amount?: string) => {
+  const [creator, setCreator] = useState<Creator | null>(null);
+  useEffect(() => {
+    if (session) {
+      const rightCreator = creators?.find(c => c.user === session?.user._id);
+      setCreator(rightCreator || null);
+    } else {
+      setCreator(null);
+    }
+  }, [session, creators]);
+  const handleStripeCheckout = async (
+    type?: "payment" | "subscription",
+    amount?: string
+  ) => {
     setLoading(true);
+    if (!type) return;
     try {
-      // Pick price ID based on type
+      // Pick correct price ID
       let priceId = "";
       if (type === "subscription") {
-        priceId = process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION!;
+        priceId = process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_TEST!;
       } else {
         const map: Record<string, string> = {
-          "10": process.env.NEXT_PUBLIC_STRIPE_TOPUP10!,
+          "10": process.env.NEXT_PUBLIC_STRIPE_TOPUP10_TEST!,
           "25": process.env.NEXT_PUBLIC_STRIPE_TOPUP25!,
           "50": process.env.NEXT_PUBLIC_STRIPE_TOPUP50!,
           "100": process.env.NEXT_PUBLIC_STRIPE_TOPUP100!,
@@ -157,21 +178,36 @@ export default function App({session}: AppProps) {
         priceId = map[amount ?? "10"]; // default fallback
       }
   
+      // Ensure userId & email exist
+      if (!session?.user?._id || !session?.user?.email) {
+        toast.error("Please sign in first");
+        setLoading(false);
+        return;
+      }
+
+      // 🧠 Include userId and amount so they reach backend
       const res = await fetch("/api/stripe/create-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           priceId,
-          mode: type === "subscription" ? "subscription" : "payment",
+          email: session.user.email,
+          amount: Number(amount), // fallback to price prop
+          type,
+          userId: session.user._id,
+          productName:
+            type === "subscription"
+              ? "Subscription Plan"
+              : `${amount} USD Top-Up`,
         }),
       });
   
       const data = await res.json();
   
       if (data.url) {
-        window.location.href = data.url; // now points to 10ksteps.vercel.app/redirect/cs_live_...
+        window.location.href = data.url; // Redirect to Stripe
       } else {
-        toast.error("Failed to start checkout");
+        toast.error(data.error || "Failed to start checkout");
       }
     } catch (err) {
       console.error(err);
@@ -197,7 +233,7 @@ export default function App({session}: AppProps) {
         {/* Wallet Credit */}
         <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-6 text-center shadow-2xl">
           <p className="text-gray-300 text-sm mb-2">Wallet Credit</p>
-          <p className="text-white text-3xl font-bold">${session?.user?.wallet || 0}</p>
+          <p className="text-white text-3xl font-bold">${Number(session?.user?.wallet?.balance) || 0}</p>
         </div>
         
         {/* Top Up Button */}
@@ -211,7 +247,7 @@ export default function App({session}: AppProps) {
         </div>
 
         {/* Payment Methods */}
-        <div className="space-y-4">
+        {/* <div className="space-y-4">
           <p className="text-white text-lg font-semibold">My Payment Methods</p>
           {session?.user?.paymentmethods?.length ? (
             <div className="space-y-3">
@@ -244,10 +280,10 @@ export default function App({session}: AppProps) {
               </button>
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* PayPanel modal */}
-        {showPayPanel && (
+        {showPayPanel && topUpAmount && creator && (
   <div className="fixed inset-0 bg-black/70 flex justify-center items-center p-4 z-50">
     <div className="w-full max-w-md">
       <PayPanel
@@ -256,6 +292,7 @@ export default function App({session}: AppProps) {
         showAlternativeMethods={!!topUpAmount} // only show when topping up
         handleStripeCheckout={handleStripeCheckout}
         loading={loading}
+        creator={creator}
         onCancel={() => {
           setShowPayPanel(false);
           setTopUpAmount(null);
@@ -270,8 +307,12 @@ export default function App({session}: AppProps) {
           <div className="fixed inset-0 bg-black/70 flex justify-center items-center p-4 z-50">
             <div className="w-full max-w-md">
             <TopUpPanel
+                onCancel={() => {
+                  setShowTopUpPanel(false);
+                  setTopUpAmount(null);
+                }}
                 onContinue={(amount) => {
-                  setTopUpAmount(parseFloat(amount.replace('$', '')).toString());
+                  setTopUpAmount(Number(amount));
                   setShowTopUpPanel(false);
                   setShowPayPanel(true); // still shows alternatives
                 }}

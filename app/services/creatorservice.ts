@@ -48,7 +48,17 @@ const followCreator = async (creatorId: string, followerId: string): Promise<voi
     throw new Error("Failed to follow creator");
   }
 };
+export async function subscribeCreator(creatorId: string, userId: string, price?: number) {
+  const res = await fetch("/api/subscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ creatorId, userId, price }),
+  });
 
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Subscription failed");
+  return data;
+}
 const unfollowCreator = async (creatorId: string): Promise<void> => {
   try {
     await axios.delete(`/api/creators/${creatorId}/follow`);

@@ -28,7 +28,9 @@ export type User = {
     password: string;
     purchases: Purchase[];
     createdAt: string;
-    wallet: number;
+    wallet: {
+      balance: number;
+    };
     paymentmethods?: PaymentMethod[];
     creatorApplication?: CreatorApplicationType[];
   }
@@ -109,6 +111,7 @@ _id: string;
     bundles: Bundle[];
     freeTrial: boolean;
     location?: string;
+    commentingEnabled: boolean;
   }
 
   export type NotificationType = 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comment' | 'like' | 'newfollower'| 'promotion' | 'post';
@@ -139,6 +142,7 @@ export type Subscription = {
   status: 'active' | 'cancelled' | 'expired';
   nextBillingDate?: Date;
   autoRenew: boolean;
+  paymentMethod: 'stripe' | 'credits' | 'none'
 }
 export interface Following {
   creatorId: string;
@@ -241,7 +245,11 @@ declare module "next-auth" {
     lastVerificationEmailSentAt: Date;
     lastPasswordResetSentAt: Date;
     purchases: Purchase[];
-    wallet: number;
+    wallet: {
+      balance: {
+        type: number
+      }
+    }
     paymentmethods?: PaymentMethod[]
     creatorApplication?: CreatorApplicationType[];
   }

@@ -27,7 +27,7 @@ const CRYPTOS: Crypto[] = [
   { symbol: "TRX", name: "Tron" },
 ];
 
-export default function PlisioModal({ onClose, amount, type, session, creator, post }: PlisioModalProps) {
+export default function PlisioModal({ onClose, amount, type, session, post}: PlisioModalProps) {
   const [loading, setLoading] = useState(false);
   const [selectedCrypto, setSelectedCrypto] = useState("BTC");
 
@@ -41,7 +41,6 @@ export default function PlisioModal({ onClose, amount, type, session, creator, p
           amount,
           selectedCrypto,
           type,
-          creatorId: creator?._id,
           postId: post?._id ?? null,
           userId: session?.user?._id
         }),
@@ -65,7 +64,7 @@ export default function PlisioModal({ onClose, amount, type, session, creator, p
           Pay with Crypto (Plisio)
         </h2>
         <p className="text-center mb-6 text-gray-600 dark:text-gray-300">
-          Amount: ${amount.toFixed(2)}
+          Amount: ${Number(amount).toFixed(2)}
         </p>
 
         {/* Crypto selection grid */}
@@ -106,7 +105,7 @@ export default function PlisioModal({ onClose, amount, type, session, creator, p
           <button
             onClick={handlePay}
             disabled={loading}
-            className="px-6 py-2 rounded-xl cursor-pointer duration-200 bg-purple-600 hover:bg-purple-700 text-white font-semibold disabled:opacity-50 transition-colors"
+            className="px-6 py-2 rounded-xl cursor-pointer disabled:cursor-not-allowed duration-200 bg-purple-600 hover:bg-purple-700 text-white font-semibold disabled:opacity-50 transition-colors"
           >
             {loading ? "Processing..." : `Pay with ${selectedCrypto}`}
           </button>

@@ -250,6 +250,29 @@ export const Sidebar = ({
             </Link>
           );
         })}
+        {session && (
+  <Link href="/wallet">
+    <button
+      className={`w-full ${
+        isCollapsed ? "justify-center px-2" : "justify-start px-4"
+      } py-3 rounded-2xl text-center flex flex-row items-center transition-all cursor-pointer duration-300 bg-white/5 hover:bg-white/10 text-gray-200 font-medium`}
+    >
+      <Wallet
+        className={`w-5 h-5 ${
+          isCollapsed ? "mr-0" : "mr-3"
+        } text-pink-400 transition-all duration-300`}
+      />
+      {!isCollapsed && (
+        <div className="flex flex-col text-left">
+          <span className="text-sm text-gray-400">Current Balance</span>
+          <span className="text-lg font-semibold text-white">
+            ${Number(session?.user.wallet?.balance || 0).toLocaleString()}
+          </span>
+        </div>
+      )}
+    </button>
+  </Link>
+)}
       </nav>
       {session?.user?.creator && (
           <div className="relative mt-2"

@@ -74,7 +74,9 @@ function normalizeUser(user: Partial<User>): SafeUser {
     image: user.avatarKey ?? "",
     comments: user.comments ?? [],
     purchases: user.purchases ?? [],
-    wallet: user.wallet ?? 0,
+    wallet: {
+      balance: user.wallet?.balance ?? 0,
+    },
     paymentmethods: user.paymentmethods ?? [],
     oauthProvider: user.oauthProvider ?? "",
   };

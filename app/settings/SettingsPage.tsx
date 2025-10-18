@@ -8,14 +8,14 @@ import PaymentHistory from "@/components/PaymentHistory";
 import toast from "react-hot-toast";
 import { Creator, User } from "../types";
 import { Session } from "next-auth";
-
+import WalletPage from "@/app/wallet/WalletPage"
 interface AppProps {
     creators: Creator[];
     session: Session | null;
     users: User[];
   }
 
-export default function App({session}: AppProps) {
+export default function App({session, creators, users}: AppProps) {
   const [activeTab, setActiveTab] = useState("");
   const [activeSubTab, setActiveSubTab] = useState("");
   const searchParams = useSearchParams();
@@ -257,9 +257,11 @@ const CreatorAPIKeys = () => <div className="text-gray-300">API Key Request</div
   }
   const renderBreadcrumb = () => {
     const mainTab = mainTabs.find((tab) => tab.id === activeTab);
-    const subTab = subTabsMap[activeTab]?.find(
+    type SubTabsMap = typeof subTabsMap;
+
+    const subTab = (subTabsMap as SubTabsMap)[activeTab as keyof SubTabsMap]?.find(
       (sub) => sub.id === activeSubTab
-    );
+    )
   
     return (
       <div className="text-sm text-gray-400 mb-4">
@@ -781,56 +783,7 @@ const validate = () => {
           )}
 
           {activeSubTab === "wallet" && (
-            <div className="space-y-8">
-              <div className="text-center">
-                <h3 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-3">
-                  Wallet
-                </h3>
-                <p className="text-gray-400 text-lg">Manage your payment methods and balance</p>
-              </div>
-
-              {/* Balance Card */}
-              <div className="bg-gradient-to-br from-green-500/20 to-emerald-600/20 rounded-3xl text-center mx-auto items-center p-8 border border-green-500/30 backdrop-blur-xl shadow-2xl">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg">
-                      <Wallet className="w-8 h-8 text-white" />
-                    </div>
-                    <h4 className="text-white font-bold text-2xl">Account Balance</h4>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-5xl font-bold bg-gradient-to-r from-white to-green-200 bg-clip-text text-transparent">
-                      $25.00
-                    </p>
-                    <p className="text-green-400 font-semibold">Available</p>
-                  </div>
-                </div>
-                <div className="flex space-x-4">
-                  <button className="flex-1 bg-gradient-to-r cursor-pointer from-green-500 to-emerald-600 max-w-xl hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 -105 hover:shadow-xl">
-                    Add Funds
-                  </button>
-                </div>
-              </div>
-
-              {/* Payment Methods */}
-              <div className="space-y-6">
-                <h4 className="text-white font-bold text-2xl text-center">Payment Methods</h4>
-                <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-3xl p-8 border border-white/20 shadow-2xl backdrop-blur-xl">
-                  <div className="text-center py-12">
-                    <div className="w-24 h-24 bg-gradient-to-br from-gray-600 to-gray-700 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-2xl">
-                      <CreditCard className="w-12 h-12 text-gray-300" />
-                    </div>
-                    <p className="text-gray-400 mb-6 text-lg">No payment methods added yet</p>
-                    <button 
-                      
-                      className="border-2 border-white/30 cursor-pointer text-white hover:bg-white/10 font-semibold py-3 px-8 rounded-xl transition-all duration-300 -105 hover:border-white/50"
-                    >
-                      Add Payment Method
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <WalletPage session={session} creators={creators} users={users}/>
           )}
         </div>
       );
@@ -891,7 +844,7 @@ const validate = () => {
       <main className="flex-1 max-w-7xl mx-auto px-6 py-12 relative z-10">
       <button 
           onClick={() => window.history.back()} 
-          className="flex items-center gap-2 text-white"
+          className="flex items-center gap-2 text-white md:hidden"
         >
           <ChevronLeft className="w-6 h-6"/>
         </button>
@@ -910,7 +863,7 @@ const validate = () => {
         @keyframes fadeInUp {
           from {
             opacity: 0;
-            transform: translateY(30px);
+            transform: translateY(10px);
           }
           to {
             opacity: 1;

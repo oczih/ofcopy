@@ -1,23 +1,23 @@
 'use client';
 
-import { FC, SVGProps, useEffect, useState } from "react";
-import { ChevronLeft, Settings } from "lucide-react";
-import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
+import { useEffect, useState } from "react";
+import { ChevronLeft } from "lucide-react";
+import { notFound, useRouter } from "next/navigation";
 import { Session } from "next-auth";
 
 // Example sub-components for each tab
 import TrackingLinks from "@/components/creator/TrackingLinks";
 import CreatorSubscription from "@/components/creator/Subscription";
 import CreatorProfile from "@/components/creator/Profile";
-import MyAI from "@/components/creator/MyAI";
 import Commenting from "@/components/creator/Commenting";
-import AutomatedMessages from "@/components/creator/AutomatedMessages";
-import Tutorials from "@/components/creator/Tutorials";
-import RequestAPIKeys from "@/components/creator/RequestAPIKeys";
+import { Creator, User } from "@/app/types";
+
+
 
 interface CreatorSettingsPageProps {
-  session: Session | null;
+  session: Session;
+  creators: Creator[]
+  users: User[] | null
 }
 
 type SubTab = {
@@ -29,39 +29,47 @@ const creatorSubTabs: SubTab[] = [
   { id: "tracking", label: "Tracking Links" },
   { id: "subscription", label: "Subscription" },
   { id: "profile", label: "Profile" },
-  { id: "my-ai", label: "My AI" },
   { id: "commenting", label: "Commenting" },
-  { id: "automated-messages", label: "Automated Messages" },
   { id: "tutorials", label: "Tutorials" },
-  { id: "api-keys", label: "Request API Keys" },
 ];
 
-export default function CreatorSettingsPage({ session }: CreatorSettingsPageProps) {
+export default function CreatorSettingsPage({ session, creators, users }: CreatorSettingsPageProps) {
   const router = useRouter();
   const [activeSubTab, setActiveSubTab] = useState("tracking");
+  const [creator, setCreator] = useState<Creator | null>(null);
+  useEffect(() => {
+    if (session) {
+      const rightCreator = creators?.find(c => c.user === session?.user._id);
+      setCreator(rightCreator || null);
+    } else {
+      setCreator(null);
+    }
+  }, [session, creators]);
 
   useEffect(() => {
-    if (!session) router.push("/login");
+    if (session === null) { // only redirect if session is confirmed to be null
+      router.push("/login");
+    }
   }, [session, router]);
+    useEffect(() => {
+      if (!session?.user?.creator) {
+        notFound();
+      }
+    }, [session, router]);
 
   const renderSubTabContent = () => {
+    if (!creator) {
+      return <div>No creator profile found.</div>;
+    }
     switch (activeSubTab) {
       case "tracking":
-        return <TrackingLinks session={session} />;
+        return <TrackingLinks session={session}  creator={creator}/>;
       case "subscription":
-        return <CreatorSubscription session={session} />;
+        return <CreatorSubscription session={session} creators={creators} users={users}/>;
       case "profile":
-        return <CreatorProfile session={session} />;
-      case "my-ai":
-        return <MyAI session={session} />;
+        return <CreatorProfile session={session} creator={creator ?? null} />;
       case "commenting":
-        return <Commenting session={session} />;
-      case "automated-messages":
-        return <AutomatedMessages session={session} />;
-      case "tutorials":
-        return <Tutorials session={session} />;
-      case "api-keys":
-        return <RequestAPIKeys session={session} />;
+        return <Commenting session={session} creator={creator}/>;
       default:
         return null;
     }

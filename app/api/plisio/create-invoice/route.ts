@@ -6,7 +6,7 @@ const PLISIO_API_KEY = process.env.PLISIO_SECRET!;
 
 export async function POST(req: NextRequest) {
   try {
-    const { amount, type, creatorId, postId, userId } = await req.json();
+    const { amount, type,  postId, userId } = await req.json();
 
     if (!amount || amount <= 0) {
       return NextResponse.json({ error: "Missing amount or crypto currency" }, { status: 400 });
@@ -19,7 +19,6 @@ export async function POST(req: NextRequest) {
 
     // Save a pending transaction FIRST
     await Transaction.create({
-      creatorId,
       userId,
       amount,
       paymentMethod: "plisio", 
