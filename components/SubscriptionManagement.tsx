@@ -1,43 +1,28 @@
+import { createPortal } from 'react-dom';
 import { Star, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Session } from 'next-auth';
-import { Subscription } from '@/app/types'; // Import your actual Subscription type
+import { Creator, Subscription } from '@/app/types';
+import { useState } from 'react';
+import CancelSubscriptionCard from './CancelSubscriptionCard';
 
-// Component props
 interface SubscriptionManagementProps {
   session: Session | null;
+  creators: Creator[]| null;
 }
 
-const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ session }) => {
-  const subscriptions = session?.user.subscriptions;
-  
-  if (!subscriptions || subscriptions.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-white mb-2">No Subscriptions</h3>
-        <p className="text-gray-400">You haven&apos;t subscribed to any creators yet.</p>
-      </div>
+const SubscriptionCard = ({
+  subscription,
+  onUnsubscribe,
+}: {
+  subscription: Subscription;
+  onUnsubscribe: (subscription: Subscription) => void;
+}) => {
+  const formatDate = (date: Date) =>
+    new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(
+      new Date(date)
     );
-  }
-
-  // Separate active and non-active subscriptions
-  const activeSubscriptions = subscriptions.filter(
-    (sub: Subscription) => sub.status === 'active'
-  );
-  
-  const nonActiveSubscriptions = subscriptions.filter(
-    (sub: Subscription) => sub.status === 'cancelled' || sub.status === 'expired'
-  );
-
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    }).format(new Date(date));
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -52,7 +37,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ session
     }
   };
 
-  const SubscriptionCard = ({ subscription }: { subscription: Subscription }) => (
+  return (
     <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -62,17 +47,11 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ session
           <div>
             <h4 className="text-white font-semibold">{subscription.creatorName}</h4>
             <p className="text-gray-400 text-sm">
-  {subscription.price > 0 ? `$${subscription.price}/month` : "Free"}
-  {subscription.nextBillingDate && subscription.status === 'active' && (
-    <> • Next billing: {formatDate(subscription.nextBillingDate)}</>
-  )}
-  {subscription.status === 'cancelled' && (
-    <> • Ends: {subscription.nextBillingDate ? formatDate(subscription.nextBillingDate) : 'N/A'}</>
-  )}
-  {subscription.status === 'expired' && (
-    <> • Expired: {formatDate(subscription.subscriptionDate)}</>
-  )}
-</p>
+              {subscription.price > 0 ? `$${subscription.price}/month` : 'Free'}
+              {subscription.nextBillingDate && subscription.status === 'active' && (
+                <> • Next billing: {formatDate(subscription.nextBillingDate)}</>
+              )}
+            </p>
             <p className="text-gray-500 text-xs">
               @{subscription.creatorUsername} • Auto-renew: {subscription.autoRenew ? 'On' : 'Off'}
             </p>
@@ -80,39 +59,60 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ session
         </div>
         <div className="flex items-center space-x-3">
           {getStatusBadge(subscription.status)}
-          {subscription.status === 'active' ? (
-            <Button 
-              variant="outline" 
-              size="sm" 
+          {subscription.status === 'active' && (
+            <Button
+              variant="outline"
+              size="sm"
               className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+              onClick={() => onUnsubscribe(subscription)}
             >
-              Cancel
-            </Button>
-          ) : subscription.status === 'cancelled' ? (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="border-green-500/50 text-green-400 hover:bg-green-500/10"
-            >
-              Reactivate
-            </Button>
-          ) : (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10"
-            >
-              Subscribe Again
+              Unsubscribe
             </Button>
           )}
         </div>
       </div>
     </div>
   );
+};
+
+const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ session, creators}) => {
+  const [cancelSubscription, setCancelSubscription] = useState<Subscription | null>(null);
+  const subscriptions = session?.user.subscriptions;
+
+  const handleConfirmCancel = async () => {
+    if (!cancelSubscription) return;
+
+    try {
+      await fetch('/api/cancel-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscriptionId: cancelSubscription.id }),
+      });
+
+      // Optionally update local state / refetch subscriptions
+      setCancelSubscription(null);
+    } catch (err) {
+      console.error('Failed to cancel subscription', err);
+    }
+  };
+
+  if (!subscriptions || subscriptions.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-white mb-2">No Subscriptions</h3>
+        <p className="text-gray-400">You haven&apos;t subscribed to any creators yet.</p>
+      </div>
+    );
+  }
+
+  const activeSubscriptions = subscriptions.filter((sub: Subscription) => sub.status === 'active');
+  const nonActiveSubscriptions = subscriptions.filter(
+    (sub: Subscription) => sub.status === 'cancelled' || sub.status === 'expired'
+  );
 
   return (
     <div className="space-y-6">
-      {/* Active Subscriptions */}
       {activeSubscriptions.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center space-x-2">
@@ -121,16 +121,12 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ session
               {activeSubscriptions.length}
             </Badge>
           </div>
-          {activeSubscriptions.map((subscription: Subscription, index) => (
-  <SubscriptionCard 
-    key={subscription.id ?? `active-${index}`} 
-    subscription={subscription} 
-  />
-))}
+          {activeSubscriptions.map((sub) => (
+            <SubscriptionCard key={sub.id} subscription={sub} onUnsubscribe={setCancelSubscription} />
+          ))}
         </div>
       )}
 
-      {/* Non-Active Subscriptions */}
       {nonActiveSubscriptions.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center space-x-2">
@@ -139,16 +135,22 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ session
               {nonActiveSubscriptions.length}
             </Badge>
           </div>
-          {nonActiveSubscriptions.map((subscription: Subscription, index) => (
-  <SubscriptionCard 
-    key={subscription.id ?? `nonactive-${index}`} 
-    subscription={subscription} 
-  />
-))}
+          {nonActiveSubscriptions.map((sub) => (
+            <SubscriptionCard key={sub.id} subscription={sub} onUnsubscribe={() => {}} />
+          ))}
         </div>
       )}
 
-      {/* No subscriptions message - this is now handled at the top */}
+      {cancelSubscription &&
+        createPortal(
+          <CancelSubscriptionCard
+            subscription={cancelSubscription}
+            onCancel={() => setCancelSubscription(null)}
+            onConfirm={handleConfirmCancel}
+            creators={creators}
+          />,
+          document.body
+        )}
     </div>
   );
 };

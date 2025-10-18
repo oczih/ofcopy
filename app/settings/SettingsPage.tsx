@@ -775,7 +775,7 @@ const validate = () => {
           </div>
 
           {activeSubTab === "subscriptions" && (
-            <SubscriptionManagement session={session}/>
+            <SubscriptionManagement session={session} creators={creators}/>
           )}
 
           {activeSubTab === "history" && (

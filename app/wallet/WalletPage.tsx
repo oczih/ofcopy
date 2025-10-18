@@ -3,10 +3,10 @@
 import React, { useEffect, useState } from "react";
 import { Creator, User } from "../types";
 import { Session } from "next-auth";
-import { Bitcoin, X, CreditCard } from "lucide-react";
+import {  X, CreditCard } from "lucide-react";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
-import PlisioModal from "@/components/PlisioModal";
+
 interface PayPanelProps {
   onCancel: () => void;
   topUpAmount: number | null;
@@ -70,8 +70,7 @@ function TopUpPanel({
   );
 }
 
-function PayPanel({ topUpAmount, showAlternativeMethods = true, onCancel, session, handleStripeCheckout, loading, creator }: PayPanelProps) {
-  const [showCryptoModal, setShowCryptoModal] = useState(false);
+function PayPanel({ topUpAmount, showAlternativeMethods = true, onCancel, handleStripeCheckout, loading}: PayPanelProps) {
   
   return (
     <div className="space-y-6 p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl">
@@ -103,22 +102,6 @@ function PayPanel({ topUpAmount, showAlternativeMethods = true, onCancel, sessio
             
             <CreditCard size={20} /> {loading ? "Loading..." : "Card"}
           </button>
-          <button
-            onClick={() => setShowCryptoModal(true)}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 cursor-pointer text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-colors duration-200"
-          >
-            <Bitcoin size={20} /> Pay with Crypto
-          </button>
-
-          {showCryptoModal && topUpAmount && (
-            <PlisioModal
-            type="topup"
-            session={session}
-            amount={topUpAmount}
-            onClose={onCancel}
-            creator={creator}
-            />
-          )}
 
         </div>
       )}

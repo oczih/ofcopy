@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { notFound, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
@@ -15,15 +15,14 @@ export default function RedirectPage() {
   const { data: session } = useSession();
 
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
 
   const isSuccess = status === "success";
   const isCancel = status === "cancel";
 
   if (!status || !type) notFound();
-
+  const hasPostedRef = useRef(false);
   useEffect(() => {
-    if (!isSuccess || done || !sessionId) return;
+    if (!isSuccess || hasPostedRef.current || !sessionId || !session?.user) return;
 
     const handlePostPayment = async () => {
       setLoading(true);
@@ -36,7 +35,6 @@ export default function RedirectPage() {
         const { userId, email, creatorId, amount } = sessionData.metadata || {};
 
         if (type === "topup") {
-          // 💰 Handle wallet top-up
           const topupRes = await fetch("/api/topup", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -90,12 +88,12 @@ export default function RedirectPage() {
         toast.error("Server error");
       } finally {
         setLoading(false);
-        setDone(true);
+        hasPostedRef.current = true;
       }
     };
 
     handlePostPayment();
-  }, [isSuccess, done, sessionId, type, session]);
+  }, [isSuccess, sessionId, type, session]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-purple-950 to-black text-white p-6">

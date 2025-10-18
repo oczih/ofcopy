@@ -187,7 +187,7 @@ export default function PaymentForm({
           </button>
           <Divider sx={{ borderColor: "#912afa" }} className="pt-2 pb-2" />
           <div>
-              <div className="flex flex-row justify-between p-2"><p className="text-md font-medium">Use your current credits</p>
+              <div className="flex flex-row justify-between p-2"><p className="text-md font-medium">Use your current balance</p>
               <p className="text-md font-medium">${session?.user.wallet?.balance}</p>
               </div>
               <button

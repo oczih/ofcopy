@@ -136,8 +136,6 @@ export default function ProfileContent({
   const [urlCache, setUrlCache] = useState<Record<string, { url: string; timestamp: number }>>({});
   const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
   const router = useRouter();
-
-  
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarImage, setAvatarImage] = useState<string | null>(null);
   const avatarKey = creator?.avatarKey ?? userViewed?.avatarKey?.replace(/^\/+/, '');
