@@ -71,11 +71,7 @@ const SocialMediaChips = ({ creator }: {creator: Creator}) => {
 }
 
 // Bio Modal Component
-const BioSection = ({
-  bio,
-}: {
-  bio: string;
-}) => {
+const BioSection = ({ bio }: { bio: string }) => {
   const [showFullBio, setShowFullBio] = useState(false);
 
   const getPreviewText = (text: string, maxLength: number = 100) => {
@@ -85,14 +81,14 @@ const BioSection = ({
 
   return (
     <div className="max-w-2xl">
-      <p className="text-gray-300 text-base text-sm leading-relaxed transition-all duration-300">
+      <p className="text-gray-300 text-base text-sm leading-relaxed transition-all duration-300 whitespace-pre-wrap">
         {showFullBio ? bio : getPreviewText(bio)}
       </p>
 
       {bio.length > 100 && (
         <button
           onClick={() => setShowFullBio(!showFullBio)}
-          className="mt-2 text-blue-400 text-sm hover:text-blue-300 font-medium transition-colors"
+          className="mb-5 text-blue-400 text-sm cursor-pointer hover:text-blue-300 font-medium transition-colors"
         >
           {showFullBio ? "Show less" : "Read more"}
         </button>
@@ -100,6 +96,7 @@ const BioSection = ({
     </div>
   );
 };
+
 
 type UserProfileData = {
   userViewed: User,

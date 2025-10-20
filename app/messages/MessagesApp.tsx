@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { MessageCircle,  Search, Image as MoreVertical, Phone, Video, Info, X, Package, ChevronLeft, Funnel } from "lucide-react";
+import { MessageCircle,  Search, Image as MoreVertical, Phone, Video, Info, X, Package, ChevronLeft, Funnel, VideoIcon, Images } from "lucide-react";
 import { Chat, Creator, User } from "../types";
 import { Session } from "next-auth";
 import { subscribeToMessages } from "@/lib/realtime";
@@ -55,7 +55,7 @@ export default function ChatApp({ session, users, creators }: AppProps) {
   const [filteredChats, setFilteredChats] = useState<Chat[]>([]);
   const [payPostOpen, setPaypostOpen] = useState(false)
   const [currentMessagePrice, setCurrentMessagePrice] = useState<number | null>(null);
-  const [showClear, setShowClear] = useState(false)
+  const [revealedMessages, setRevealedMessages] = useState<string[]>([]);
   const [message, setMessage] = useState<MessageType | null>(null);
   //const [isPriceModalOpen, setIsPriceModalOpen] = useState(false)
   const messages = messagesByChat[currentChatIdentifier ?? ""] || [];
@@ -923,7 +923,7 @@ export default function ChatApp({ session, users, creators }: AppProps) {
           <img
             src={
               // ✅ RULE: Other participant's photo with *no price* → show blurred
-              (!isOwn && !message.price && message.blurred_key && !showClear)
+              (!isOwn && !message.price && message.blurred_key && !revealedMessages.includes(message.id!))
                 ? messageMediaUrls[message.blurred_key]
                 : messageMediaUrls[message.image_key]
             }
@@ -933,7 +933,7 @@ export default function ChatApp({ session, users, creators }: AppProps) {
             }`}
             onClick={() =>
               // ✅ Only allow full-screen if media is already revealed
-              (!message.price && (isOwn || showClear)) &&
+              (!message.price && (isOwn || revealedMessages.includes(message.id!))) &&
               message.image_key && setActiveImage(messageMediaUrls[message.image_key])
             }
           />
@@ -942,17 +942,17 @@ export default function ChatApp({ session, users, creators }: AppProps) {
               <img
                 src={
                   // ✅ RULE: Other participant's photo with *no price* → show blurred
-                  (!isOwn && message.price && message.blurred_key && !showClear)
+                  (!isOwn && message.price && message.blurred_key && !revealedMessages.includes(message.id!))
                     ? messageMediaUrls[message.blurred_key]
                     : messageMediaUrls[message.image_key]
                 }
                 alt="Sent image"
-                className={`rounded-2xl object-cover ${
-                  message.content ? "max-w-full max-h-64" : "max-w-[250px] max-h-[250px]"
+                className={`rounded-t-2xl object-cover ${
+                  message.content ? "max-w-full max-h-90" : "max-w-[250px] max-h-[250px]"
                 }`}
                 onClick={() =>
                   // ✅ Only allow full-screen if media is already revealed
-                  (!message.price && (isOwn || showClear)) &&
+                  (!message.price && (isOwn || revealedMessages.includes(message.id!))) &&
                   message.image_key && setActiveImage(messageMediaUrls[message.image_key])
                 }
               />
@@ -960,11 +960,11 @@ export default function ChatApp({ session, users, creators }: AppProps) {
         {message.type === "video" && message.video_key && (
           <video
             src={
-              (!isOwn && !message.price && message.blurred_key && !showClear)
+              (!isOwn && !message.price && message.blurred_key && !revealedMessages.includes(message.id!))
                 ? messageMediaUrls[message.blurred_key]
                 : messageMediaUrls[message.video_key]
             }
-            controls={(!message.price && (isOwn || showClear))}
+            controls={(!message.price && (isOwn || revealedMessages.includes(message.id!)))}
             className={`rounded-2xl ${
               message.content ? "max-w-full max-h-64" : "w-full h-auto"
             }`}
@@ -982,30 +982,46 @@ export default function ChatApp({ session, users, creators }: AppProps) {
         )}
 
         {/* ✅ Paywall overlay */}
-        {message.price && !isOwn && (
-          <button
-            className="absolute inset-0 flex items-center justify-center bg-black/60 text-white text-sm font-semibold rounded-2xl hover:bg-black/70"
-            onClick={() => {
-              setMessage(message)
-              setCurrentMessagePrice(message.price || null);
-              setPaypostOpen(true);
-            }}
-          >
-            ${message.price} to view
-          </button>
-        )}
+        {/* ✅ Paywall footer box (Fanvue-style) */}
+          {message.price && !isOwn && (
+            <div className="mt-2 w-full bg-black/30 items-center backdrop-blur-md border pb-5 border-white/10 overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2 border-white/10">
+                <div className="flex items-center gap-2 text-white/80 text-sm">
+                  {/* Media type icon */}
+                  {message.type === "photo"&& (
+                    <Images className="w-5 h-5" />
+                  )}
+                  {message.type === "video" && (
+                    <VideoIcon className="w-5 h-5" />
+                  )}
+                  <p>{message.type === "photo" ? "1 Image" : "1 Video"}</p>
+                </div>
+              </div>
+
+              <button
+                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold py-2 rounded-full hover:opacity-90 transition"
+                onClick={() => {
+                  setMessage(message);
+                  setCurrentMessagePrice(message.price || null);
+                  setPaypostOpen(true);
+                }}
+              >
+                View for ${message.price}
+              </button>
+            </div>
+          )}
+
 
         {/* ✅ “Show media” button for blurred non-paid images */}
         {!isOwn &&
           !message.price &&
           message.blurred_key &&
-          !showClear && (
+          !revealedMessages.includes(message.id!) && (
             <button
               className="absolute cursor-pointer bottom-2 left-2 px-3 py-1 bg-black/60 hover:bg-black/80 text-white text-sm rounded-xl"
               onClick={() => {
                 // you can manage local state or a DB flag; here we mutate in-place
-                setShowClear(true)
-                setMessagesByChat((prev) => ({ ...prev }))
+                setRevealedMessages(prev => [...prev, message.id!]);
               }
               }
             >
