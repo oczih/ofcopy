@@ -8,6 +8,7 @@ import { Session } from "next-auth";
 import { Coins, CreditCard, X } from "lucide-react";
 import { Divider } from "@mui/material";
 import Link from "next/link";
+import { createPortal } from "react-dom";
 
 interface PaymentFormProps {
   type: "post" | "subscription" | "tip" | "message";
@@ -32,7 +33,7 @@ export default function PaymentForm({
 }: PaymentFormProps) {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const [creditModalOpen, setCreditModalOpen] = useState(false)
 
   if (!open) return null;
   const handleStripeCheckout = async (
@@ -191,7 +192,7 @@ export default function PaymentForm({
               <p className="text-md font-medium">${session?.user.wallet?.balance}</p>
               </div>
               <button
-                onClick={() => handleCreditPayment()}
+                onClick={() => setCreditModalOpen(true)}
                 disabled={!termsAccepted || loading || session?.user?.wallet?.balance === 0 }
                 className={`flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-[#1a0133] w-full justify-center rounded-full font-bold cursor-pointer px-4 py-3 text-white border border-transparent transition-all duration-300
                   ${termsAccepted && !loading 
@@ -268,6 +269,55 @@ export default function PaymentForm({
             <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
           </div>
         )}
+        {creditModalOpen &&
+  createPortal(
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-gradient-to-br from-[#3c0d6c] to-[#1a0133] rounded-2xl p-6 w-full max-w-sm text-white border border-white/10 shadow-2xl relative">
+        <button
+          onClick={() => setCreditModalOpen(false)}
+          className="absolute top-4 cursor-pointer right-4 text-gray-400 hover:text-white transition-colors"
+        >
+          <X size={20} />
+        </button>
+
+        <div className="space-y-4 text-center">
+          <h2 className="text-xl font-semibold">Confirm Credit Subscription</h2>
+          <p className="text-sm text-gray-300">
+            You’re about to subscribe to{" "}
+            <span className="font-medium text-white">{creator?.name}</span> for{" "}
+            <span className="text-pink-400">${price?.toFixed(2)}</span> using your credits.
+          </p>
+          <p className="text-sm text-gray-400">
+            This subscription lasts <strong>1 month</strong> and{" "}
+            <strong>will not auto-renew</strong>.
+          </p>
+
+          <div className="flex flex-col gap-3 pt-4">
+            <button
+              onClick={async () => {
+                setCreditModalOpen(false);
+                await handleCreditPayment();
+              }}
+              disabled={loading}
+              className="flex items-center justify-center cursor-pointer gap-2 bg-white/10 hover:bg-[#4d138a] border border-white rounded-full py-3 font-semibold transition-all duration-300"
+            >
+              <Coins className="w-5 h-5" />
+              {loading ? "Processing..." : "Confirm Subscription"}
+            </button>
+
+            <button
+              onClick={() => setCreditModalOpen(false)}
+              className="text-sm text-gray-400 cursor-pointer hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  )}
+
       </div>
     </div>
   );

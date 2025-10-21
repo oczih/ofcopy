@@ -6,7 +6,7 @@ type ProfileProps = {
   creator: Creator
 }
 
-export default function CreatorProfile({ session, creator }: ProfileProps) {
+export default function CreatorProfile({ creator }: ProfileProps) {
   return (
     <div className="space-y-6">
       <h3 className="text-2xl font-bold text-white">Profile Settings</h3>

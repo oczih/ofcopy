@@ -56,6 +56,7 @@ export type User = {
     addedAt: Date;
   };
   export interface Subscriber {
+    _id: mongoose.Types.ObjectId;
     userId: mongoose.Types.ObjectId;
     username: string;
     avatarKey?: string;
@@ -64,7 +65,7 @@ export type User = {
     status: 'active' | 'cancelled' | 'expired';
     nextBillingDate?: Date;
     autoRenew: boolean;
-    subscriptionId: string;
+    subscriptionId?: string;
   }
   export interface Purchase {
     _id: string;
@@ -133,7 +134,7 @@ export interface Follower {
   followedAt: Date;
 }
 export type Subscription = {
-  id: string;
+  _id: string;
   creatorId: string;
   creatorName: string;
   creatorUsername: string;
@@ -144,7 +145,7 @@ export type Subscription = {
   nextBillingDate?: Date;
   autoRenew: boolean;
   paymentMethod: 'stripe' | 'credits' | 'none'
-  subscriptionId: string;
+  subscriptionId?: string;
 }
 export interface Following {
   creatorId: string;

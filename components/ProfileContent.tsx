@@ -466,7 +466,6 @@ export default function ProfileContent({
     onClose: () => void;
     creator: Creator | null;
   }
-
   const StopSubscribeModal: React.FC<StopSubscribeModalProps> = ({
     subscription,
     creator,
@@ -474,28 +473,33 @@ export default function ProfileContent({
     avatarUrl,
     onClose
   }) => {
+    console.log(subscription)
     const subscriptionCreator = creators?.find(c => c._id === subscription?.creatorId) || creator;
   
     const [imageLoading, setImageLoading] = useState(true);
     const [loading, setLoading] = useState(false);
   
     // Unsubscribe handler
-    const handleUnsubscribe = async (subscriptionId: string) => {
+    const handleUnsubscribe = async (subscriptionId?: string, localId?: string) => {
       try {
         setLoading(true);
         toast.loading("Cancelling subscription...");
-  
+    
         const res = await fetch("/api/stripe/unsubscribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subscriptionId })
+          body: JSON.stringify({
+            subscriptionId, // Stripe subscription
+            localId         // local DB subscription (_id) for credit-based subs
+          }),
         });
-  
+    
         const data = await res.json();
         toast.dismiss();
-  
+    
         if (data.success) {
           toast.success("Subscription cancelled successfully");
+          window.location.reload();
         } else {
           toast.error(data.error || "Failed to cancel subscription");
         }
@@ -508,6 +512,7 @@ export default function ProfileContent({
         onClose();
       }
     };
+    
   
     if (!subscription) return null;
   
@@ -559,7 +564,7 @@ export default function ProfileContent({
               Cancel
             </button>
             <button
-              onClick={() => handleUnsubscribe(subscription.subscriptionId)}
+              onClick={() => handleUnsubscribe(subscription.subscriptionId, subscription._id)}
               className="w-full px-4 py-2 rounded-xl bg-red-500 cursor-pointer hover:bg-red-600 text-white disabled:opacity-60 disabled:cursor-not-allowed"
               disabled={loading}
             >
@@ -961,7 +966,7 @@ export default function ProfileContent({
           <StopSubscribeModal
             onClose={() => SetStopSubscribeModal(false)}
             creator={creator}
-            avatarUrl={avatarUrl}
+            avatarUrl={resolvedSrc}
             subscription={rightSubscription}
             creators={creators}
           />
