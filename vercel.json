@@ -12,7 +12,7 @@
     "crons": [
       {
         "path": "/api/cron/update-subscriptions",
-        "schedule": "0 * * * *"
+        "schedule": "0 0 * * *"
       }
     ]
 }
