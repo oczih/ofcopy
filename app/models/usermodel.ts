@@ -15,6 +15,7 @@ export interface Subscription {
   nextBillingDate?: Date;
   autoRenew: boolean;
   paymentMethod: 'stripe' | 'credits' | 'none'
+  subscriptionId: string;
 }
 
 export interface Purchase {
@@ -225,6 +226,10 @@ const userSchema = new Schema<OFUserDocument>({
       enum: ['stripe', 'credits', 'none'],
       required: true
     },
+    subscriptionId: {
+      type: String,
+      required: true
+    }
   }],
   following: [{
     creatorId: {

@@ -602,31 +602,58 @@ useEffect(() => {
     </header>
     
     {/* Media */}
-    <div className="relative bg-slate-900">
+<div className="relative bg-slate-900 overflow-hidden">
   {signedUrlLoading ? (
     <div className="relative w-full" style={{ minHeight: 200 }}>
       <Skeleton className="w-full rounded-none bg-gray-200 dark:bg-gray-700" />
     </div>
   ) : (
-   <MediaRenderer 
-    resolvedUrl={resolvedUrl ?? ""}
-    resolvedBlurredUrl={resolvedBlurredUrl ?? ""}
-    post={post}
-    canView={canView}
-    isSubscribersOnly={isSubscribersOnly}
-    isFollowersOnly={isFollowersOnly}
-    handleFollow={() => handleFollow}
-    creator={creator}
-    setPaymentModal={setPaymentModal}
-   />
+    <>
+      {/* 🔒 Visibility badge for creator only */}
+      {isViewingUserOwner && (
+        <div className="absolute top-4 left-4 z-[999] flex items-center bg-black/70 backdrop-blur-sm text-white text-xl p-2 px-3 py-1 rounded-full shadow-lg border border-white/10">
+          {isSubscribersOnly ? (
+            <>
+              <LockKeyhole className="w-6 h-6 mr-1 text-pink-400" />
+              <span>Subscribers only</span>
+            </>
+          ) : isFollowersOnly ? (
+            <>
+              <LockKeyhole className="w-6 h-6 mr-1 text-blue-400" />
+              <span>Followers only</span>
+            </>
+          ) : (
+            <>
+              <LockKeyhole className="w-4 h-4 mr-1 text-gray-300" />
+              <span>Public</span>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Media */}
+      <MediaRenderer
+        resolvedUrl={resolvedUrl ?? ""}
+        resolvedBlurredUrl={resolvedBlurredUrl ?? ""}
+        post={post}
+        canView={canView}
+        isSubscribersOnly={isSubscribersOnly}
+        isFollowersOnly={isFollowersOnly}
+        handleFollow={() => handleFollow}
+        creator={creator}
+        setPaymentModal={setPaymentModal}
+      />
+    </>
   )}
 
+  {/* 💰 Pay Per View badge */}
   {post.price > 0 && (
-    <Badge className="absolute top-4 left-4 bg-pink-600/90 text-white border-none shadow">
+    <Badge className="absolute top-4 right-4 z-[998] bg-pink-600/90 text-white border-none shadow">
       Pay Per View
     </Badge>
   )}
-</div> 
+</div>
+
 
     {/* Footer */}
     {canView ? (

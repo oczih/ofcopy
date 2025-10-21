@@ -9,6 +9,7 @@ export interface Subscriber {
   status: 'active' | 'cancelled' | 'expired';
   nextBillingDate?: Date;
   autoRenew: boolean;
+  subscriptionId: string;
 }
 export interface Follower {
   userId: mongoose.Types.ObjectId;
@@ -195,7 +196,11 @@ const creatorSchema = new Schema<CreatorDocument>({
     subscriptionPrice: { type: Number, required: true },
     status: { type: String, enum: ['active', 'cancelled', 'expired'], required: true },
     nextBillingDate: { type: Date, default: null },
-    autoRenew: { type: Boolean, default: true }
+    autoRenew: { type: Boolean, default: true },
+    subscriptionId: {
+      type: String,
+      required: true
+    }
   }],
   user: { type: Schema.Types.ObjectId, ref: 'OFUser', required: true },
   totalEarnings: { type: Number, default: 0 },

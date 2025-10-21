@@ -64,6 +64,7 @@ export type User = {
     status: 'active' | 'cancelled' | 'expired';
     nextBillingDate?: Date;
     autoRenew: boolean;
+    subscriptionId: string;
   }
   export interface Purchase {
     _id: string;
@@ -143,6 +144,7 @@ export type Subscription = {
   nextBillingDate?: Date;
   autoRenew: boolean;
   paymentMethod: 'stripe' | 'credits' | 'none'
+  subscriptionId: string;
 }
 export interface Following {
   creatorId: string;

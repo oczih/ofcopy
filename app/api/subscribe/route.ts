@@ -3,11 +3,10 @@ import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongoose";
 import OFUser from "@/app/models/usermodel";
 import CreatorModel from "@/app/models/creatormodel";
-import { Subscription } from "@/app/types";
 
 export async function POST(req: NextRequest) {
   try {
-    const { creatorId, userId, price } = await req.json();
+    const { creatorId, userId, price, subscriptionId } = await req.json();
 
     if (!creatorId || !userId) {
       return NextResponse.json(
@@ -47,6 +46,7 @@ export async function POST(req: NextRequest) {
       nextBillingDate,
       autoRenew: true,
       paymentMethod: "stripe", // ✅ directly set
+      subscriptionId
     });
     
     await user.save();
@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
       status: "active",
       nextBillingDate, // optional, but good to include
       autoRenew: true,
+      subscriptionId
     });
     await creator.save();
 

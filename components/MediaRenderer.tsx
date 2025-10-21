@@ -48,6 +48,7 @@ export default function MediaRenderer({
       {/* Media */}
       {currentSrc &&
         (isImage(currentSrc) ? (
+          
           <img
             src={encodeURI(currentSrc)}
             alt={post.caption || ""}

@@ -3,7 +3,7 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
-import { Creator, Post, Purchase, User } from '@/app/types';
+import { Creator, Post, Purchase, Subscription, User } from '@/app/types';
 import creatorservice from '@/app/services/creatorservice';
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -203,16 +203,21 @@ export default function ProfileContent({
     fetchAvatarUrl();
   }, [avatarKey, getSignedUrl]);
   useEffect(() => {
-    if (!session?.user.subscriptions?.some(s => s.creatorId === creator?._id)) return;
-    
-    const subscription = session.user.subscriptions.find(
-      s => s.creatorId === creator?._id
-    );
-    if (!subscription) return;
+    if (!session?.user.subscriptions?.length) return;
   
-    // Save status in state (active, cancelled, expired…)
-    setSubscriptionStatus(subscription.status);
-  }, [session, creator?._id]);
+    // Filter subscriptions for this creator
+    const creatorSubs = session.user.subscriptions
+      .filter(s => s.creatorId === creator?._id);
+  
+    if (!creatorSubs.length) return;
+  
+    // Sort by subscriptionDate descending to get the latest
+    const latestSub = creatorSubs.sort(
+      (a, b) => new Date(b.subscriptionDate).getTime() - new Date(a.subscriptionDate).getTime()
+    )[0];
+  
+    setSubscriptionStatus(latestSub.status);
+  }, [session?.user.subscriptions, creator?._id]);
   // Post signed URLs - batch fetch and cache
   type SignedUrls = {
     signedUrl: string;
@@ -454,101 +459,152 @@ export default function ProfileContent({
     SetStopSubscribeModal(true)
   }
 
-  type StopSubscribeProps= {
+  type StopSubscribeModalProps= {
+    subscription: Subscription | null;
     avatarUrl: string | null;
+    creators: Creator[] | null
     onClose: () => void;
     creator: Creator | null;
   }
 
-  function StopSubscribeModal({ creator, avatarUrl, onClose }: StopSubscribeProps
-  ) {
+  const StopSubscribeModal: React.FC<StopSubscribeModalProps> = ({
+    subscription,
+    creator,
+    creators,
+    avatarUrl,
+    onClose
+  }) => {
+    const subscriptionCreator = creators?.find(c => c._id === subscription?.creatorId) || creator;
+  
+    const [imageLoading, setImageLoading] = useState(true);
     const [loading, setLoading] = useState(false);
   
-    const handleConfirm = async () => {
+    // Unsubscribe handler
+    const handleUnsubscribe = async (subscriptionId: string) => {
       try {
         setLoading(true);
-        // 🔑 Call your unsubscribe API here
-        // await api.unsubscribe(creator._id);
-        if(!creator?._id) return null;
-        await creatorservice.unSubscribe(creator?._id)
-        onClose();
-      } catch (error) {
-        console.error("Failed to unsubscribe:", error);
+        toast.loading("Cancelling subscription...");
+  
+        const res = await fetch("/api/stripe/unsubscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subscriptionId })
+        });
+  
+        const data = await res.json();
+        toast.dismiss();
+  
+        if (data.success) {
+          toast.success("Subscription cancelled successfully");
+        } else {
+          toast.error(data.error || "Failed to cancel subscription");
+        }
+      } catch (err) {
+        toast.dismiss();
+        toast.error("Failed to cancel subscription");
+        console.error(err);
       } finally {
         setLoading(false);
+        onClose();
       }
     };
-    const rightSubscription = session?.user.subscriptions?.find(s => s.creatorId === creator?._id)
+  
+    if (!subscription) return null;
+  
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div className="relative w-full max-w-sm bg-white/10 border border-white/20 backdrop-blur-xl rounded-2xl p-6 text-center shadow-2xl">
-  
-          {/* Avatar */}
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={creator?.name || creator?.username || "Creator"}
-              className="w-20 h-20 mx-auto rounded-full border border-white/20 object-cover mb-4"
-            />
-          ) : (
-            <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center rounded-full bg-gray-400 text-white font-bold text-3xl">
-              {creator?.name?.charAt(0).toUpperCase() ||
-                creator?.username?.charAt(0).toUpperCase() ||
-                "U"}
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="bg-white/10 backdrop-blur-xl p-8 rounded-3xl border border-white/20 max-w-md w-full space-y-6 shadow-2xl">
+          {/* Creator Info */}
+          <div className="flex flex-col items-center space-y-4">
+            <div className="relative w-28 h-28">
+              {imageLoading ? (
+                <Skeleton className="w-full h-full rounded-full bg-gray-300 dark:bg-gray-700" />
+              ) : avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={subscriptionCreator?.name || subscriptionCreator?.username || ""}
+                  className="object-cover"
+                  onLoad={() => setImageLoading(false)}
+                  onError={() => setImageLoading(false)}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center rounded-full bg-gray-400 text-white font-bold text-3xl">
+                  {subscriptionCreator?.name?.charAt(0)?.toUpperCase() ||
+                    subscriptionCreator?.username?.charAt(0)?.toUpperCase() ||
+                    "U"}
+                </div>
+              )}
             </div>
-          )}
   
-          <h2 className="text-xl font-bold text-white mb-2">Cancel Subscription</h2>
-          <p className="text-gray-300 mb-6">
-            Your subscription won&apos;t continue after 
-            <span className="font-semibold text-pink-400">
-            {rightSubscription?.nextBillingDate
-                ? new Date(rightSubscription.nextBillingDate).toLocaleDateString()
-                : "the next billing date"}
-
-          </span>
-          ?
-        </p>
-          <p className="text-gray-300 mb-6">
-            Are you sure you want to unsubscribe from 
-            <span className="font-semibold text-pink-400">
-             {" " + creator?.name || creator?.username || "this creator"}
-          </span>
-          ?
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button
-            onClick={onClose}
-            className="flex-1 bg-gradient-to-r from-pink-500 cursor-pointer to-red-500 hover:from-pink-600 hover:to-red-600 text-white  px-4 py-2 rounded-xl font-semibold transition-colors duration-300"
-            disabled={loading}
-          >
-            Cancel
-          </button>
-
-          <button
-            onClick={handleConfirm}
-            disabled={loading}
-            className="flex-1  cursor-pointer  border-gray-400 text-gray-300  px-4 py-2 rounded-xl font-semibold hover:bg-gray-400/20 transition-colors duration-300"
-          >
-            {loading ? "Unsubscribing..." : "Confirm Unsubscribe"}
-          </button>
+            <h3 className="text-white text-lg font-semibold text-center">
+              Unsubscribe from @{subscription.creatorUsername}
+            </h3>
+            <p className="text-gray-400 text-sm text-center">
+              {subscription.creatorName} won&apos;t have your support anymore, and
+              you will lose access to{" "}
+              <span className="font-semibold text-white">
+                {subscriptionCreator?.posts?.length ?? 0}
+              </span>{" "}
+              exclusive posts.
+            </p>
+          </div>
+  
+          {/* Action Buttons */}
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={onClose}
+              className="w-full px-4 py-2 rounded-xl border cursor-pointer border-gray-400 text-gray-300 hover:bg-gray-400/20 transition-colors duration-300"
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleUnsubscribe(subscription.subscriptionId)}
+              className="w-full px-4 py-2 rounded-xl bg-red-500 cursor-pointer hover:bg-red-600 text-white disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={loading}
+            >
+              {loading ? "Unsubscribing..." : "Confirm Unsubscribe"}
+            </button>
+          </div>
+  
+          {/* Access Info */}
+          <p className="text-gray-400 text-xs text-center">
+            You will still have access to the creator&apos;s content until{" "}
+            {subscription.nextBillingDate
+              ? new Date(subscription.nextBillingDate).toLocaleString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit"
+                })
+              : "N/A"}
+            .
+          </p>
         </div>
       </div>
-    </div>
-  );
-}
-
-
-    const subscription = session?.user?.subscriptions?.find(
-      s => s.creatorId === creator?._id
     );
-    const daysLeft = subscription?.nextBillingDate
-      ? Math.ceil(
-          (new Date(subscription.nextBillingDate).getTime() - Date.now()) /
-          (1000 * 60 * 60 * 24)
-        )
-      : 0;
+  };
+
+
+  const creatorSubs = session?.user?.subscriptions?.filter(
+    s => s.creatorId === creator?._id
+  );
+  
+  const latestSub = creatorSubs?.sort(
+    (a, b) => new Date(b.subscriptionDate).getTime() - new Date(a.subscriptionDate).getTime()
+  )[0];
+  
+  const daysLeft = latestSub?.nextBillingDate
+    ? Math.ceil(
+        (new Date(latestSub.nextBillingDate).getTime() - Date.now()) /
+        (1000 * 60 * 60 * 24)
+      )
+    : 0;
+    const rightSubscription = session?.user.subscriptions
+  ?.filter(s => s.creatorId === creator?._id)  // all subscriptions for this creator
+  .sort((a, b) => new Date(b.subscriptionDate).getTime() - new Date(a.subscriptionDate).getTime()) // newest first
+  [0];
   return (
     <div>
       <Toaster
@@ -634,7 +690,7 @@ export default function ProfileContent({
                       Following
                     </button>
                   )}
-                  {status === 'subscriber' && creator && (subscription?.status === "active") && (
+                  {status === 'subscriber' && creator && (rightSubscription?.status === "active") && (
                     <button
                       onClick={() => handleStopSubscribe(creator)}
                       className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-full font-bold transition-colors duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
@@ -642,7 +698,7 @@ export default function ProfileContent({
                       Unsubscribe
                     </button>
                   )}
-                  {status === 'subscriber' && creator && (subscription?.status === "cancelled" ||  subscription?.status === "expired") && (
+                  {status === 'subscriber' && creator && (rightSubscription?.status === "cancelled" ||  rightSubscription?.status === "expired") && (
                     <button
                       onClick={() => setModalOpen(true)}
                       className="bg-gradient-to-r w-full from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white px-6 py-3 rounded-full font-bold transition-colors duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
@@ -901,11 +957,13 @@ export default function ProfileContent({
         session={session}
       />
     )}
-        {StopSubscribeModalOpen && creator && (
+        {StopSubscribeModalOpen && creator && rightSubscription && (
           <StopSubscribeModal
             onClose={() => SetStopSubscribeModal(false)}
             creator={creator}
             avatarUrl={avatarUrl}
+            subscription={rightSubscription}
+            creators={creators}
           />
         )}
         {/* Content Tabs */}

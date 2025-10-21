@@ -1,17 +1,19 @@
 /* eslint-disable @next/next/no-img-element */
 import { Button } from "./ui/button";
 import { Heart, Verified, Crown, Sparkles } from "lucide-react";
-import { Creator } from  "../app/types";
+import { Creator, Subscription } from  "../app/types";
 import Link from "next/link";
 import { useState } from "react";
 import { Skeleton } from "./ui/skeleton";
+import { Session } from "next-auth";
 interface CreatorCardProps {
   creator: Creator;
   avatarKey?: string;
   signedAvatarUrl: string | undefined;
+  session: Session | undefined;
 }
 
-export function CreatorCard({ creator, signedAvatarUrl }: CreatorCardProps) {
+export function CreatorCard({ creator, signedAvatarUrl, session }: CreatorCardProps) {
   const [avatarLoading, setAvatarLoading] = useState(true);
 
   return (
@@ -52,7 +54,7 @@ export function CreatorCard({ creator, signedAvatarUrl }: CreatorCardProps) {
             <Verified className="w-5 h-5 text-blue-500" />
           </div>
           {/* Premium badge */}
-          {creator.isSubscribed && (
+          {session?.user.subscriptions?.find((s: Subscription) => s.creatorUsername=== creator.username) && (
             <div className="absolute -top-2 -left-2 bg-gradient-to-r from-yellow-500 to-orange-500 p-2 rounded-full animate-glow">
               <Crown className="w-4 h-4 text-black" />
             </div>
@@ -71,7 +73,7 @@ export function CreatorCard({ creator, signedAvatarUrl }: CreatorCardProps) {
         
         {/* Action buttons */}
         <div className="w-full space-y-3">
-          {creator.isSubscribed ? (
+          {session?.user.subscriptions?.find((s: Subscription) => s.creatorUsername=== creator.username) ? (
             <Button className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 group-hover:animate-glow cursor-pointer">
               <Heart className="w-4 h-4 mr-2 fill-current" />
               Subscribed
