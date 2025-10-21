@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import PaymentForm from "@/components/PaymentForm";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
 
 interface AppProps {
   session: Session | null;
@@ -26,7 +26,11 @@ export default function App({ session, creators }: AppProps) {
     }
   }, [session, router]);
   useEffect(() => setMounted(true), []); // ✅ ensure DOM is ready
-
+  useEffect(() => {
+    if (!session?.user?.creator) {
+      notFound();
+    }
+  }, [session, router]);
   // All creators with an active promotion
   const promotionCreators = creators.filter(
     (c) => Array.isArray(c.promotions) && c.promotions.some((p) => p.active)

@@ -102,7 +102,6 @@ export default function App({session, creators, users}: AppProps) {
       icon: CreditCard,
       description: "Handle subscriptions, payments, and billing",
       color: "from-green-500 to-emerald-500",
-      restrictedTo: "creator" // only creators
     },
     { 
       id: "legal", 

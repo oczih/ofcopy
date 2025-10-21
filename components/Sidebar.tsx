@@ -229,7 +229,7 @@ export const Sidebar = ({
   const isActive = pathname === item.href;
 
   // Only "messages" is coming soon
-  const isComingSoon = item.id === "messages";
+  const isComingSoon = item.id === "messages" || item.id === "promotions";
 
   return (
     <div key={item.id} className="relative group">
