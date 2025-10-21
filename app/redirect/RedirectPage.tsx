@@ -115,7 +115,7 @@ export default function RedirectPage({creators, session}: {creators: Creator[], 
           <h1 className="text-3xl font-bold mb-2">Payment Successful 🎉</h1>
           <p className="text-gray-300 mb-6">
             {type === "subscription"
-              ? "Your subscription is now active!"
+              ? (!loading ? "Your subscription is now active!" : "Your payment is being processed, please wait...")
               : "Your payment has been processed successfully."}
           </p>
         </>

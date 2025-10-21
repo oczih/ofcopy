@@ -1,29 +1,33 @@
-// /api/stripe/webhook.ts
-import { buffer } from "micro";
+import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import OFUser from "@/app/models/usermodel";
 import CreatorModel from "@/app/models/creatormodel";
 import { connectDB } from "@/lib/mongoose";
 import { Subscriber, Subscription } from "@/app/types";
-import { NextApiRequest, NextApiResponse } from "next";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_TEST!, { apiVersion: "2025-09-30.clover" });
 
 export const config = { api: { bodyParser: false } };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST") return res.status(405).end();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY_LIVE!, {
+  apiVersion: "2025-09-30.clover",
+});
+
+export async function POST(req: Request) {
   await connectDB();
 
-  const buf = await buffer(req);
-  const sig = req.headers["stripe-signature"];
-  let event: Stripe.Event;
+  // Get raw body buffer for Stripe validation
+  const rawBody = Buffer.from(await req.arrayBuffer());
+  const sig = req.headers.get("stripe-signature");
 
+  let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(buf, sig!, process.env.STRIPE_WEBHOOK_SECRET!);
+    event = stripe.webhooks.constructEvent(
+      rawBody,
+      sig!,
+      process.env.STRIPE_WEBHOOK_SECRET!
+    );
   } catch (err) {
-    console.error("Webhook signature verification failed.", err);
-    return res.status(400).end();
+    console.error("Webhook signature verification failed:", err);
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
   const data = event.data.object as Stripe.Subscription;
@@ -32,7 +36,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const user = await OFUser.findOne({ "subscriptions.subscriptionId": subscriptionId });
   const creator = await CreatorModel.findOne({ "subscribers.subscriptionId": subscriptionId });
 
-  // Use items.data[0].current_period_end instead of root property
   const currentPeriodEnd =
     data.items?.data?.[0]?.current_period_end
       ? new Date(data.items.data[0].current_period_end * 1000)
@@ -75,5 +78,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
   }
 
-  res.json({ received: true });
+  return NextResponse.json({ received: true });
 }

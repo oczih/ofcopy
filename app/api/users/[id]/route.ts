@@ -105,7 +105,7 @@ export async function PUT(request: NextRequest, context: unknown) {
     if (age !== undefined) user.age = age;
     if (avatar !== undefined) user.avatar = avatar;
     if (following !== undefined) user.following = following;
-
+    if (bio !== undefined) user.bio = bio
     await user.save();
     return NextResponse.json({ user });
   }

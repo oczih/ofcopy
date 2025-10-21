@@ -114,6 +114,10 @@ _id: string;
     freeTrial: boolean;
     location?: string;
     commentingEnabled: boolean;
+    isDiscoverable: boolean;
+    followForFree: boolean;
+    allowFollowerMessages: boolean;
+    blurPreviewImages: boolean;
   }
 
   export type NotificationType = 'newsub' | 'resub' | 'tip' | 'subcancel' | 'comment' | 'like' | 'newfollower'| 'promotion' | 'post';

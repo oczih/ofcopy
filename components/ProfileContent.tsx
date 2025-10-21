@@ -15,10 +15,10 @@ import SignUpModal from './SignupModal';
 import { Session } from 'next-auth';
 import { createPortal } from 'react-dom';
 import toast, { Toaster } from 'react-hot-toast';
-import { useRouter } from 'next/navigation';
+/* import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from "uuid";
-import { getChatsBetween } from '@/lib/messages';
+import { getChatsBetween } from '@/lib/messages'; */
 import PaymentForm from './PaymentForm';
 import { Box} from '@mui/material';
 
@@ -132,12 +132,13 @@ export default function ProfileContent({
   // Cache for signed URLs with timestamps
   const [urlCache, setUrlCache] = useState<Record<string, { url: string; timestamp: number }>>({});
   const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
-  const router = useRouter();
+  /* const router = useRouter(); */
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarImage, setAvatarImage] = useState<string | null>(null);
   const avatarKey = creator?.avatarKey ?? userViewed?.avatarKey?.replace(/^\/+/, '');
   const lastFetchedAvatarKey = useRef<string | null>(null);
   const [imageLoading, setImageLoading] = useState(!!avatarKey);
+  const [loading, setLoading] = useState(false)
   // Memoized function to get signed URL
   const getSignedUrl = useCallback(async (s3Key: string): Promise<string | null> => {
     if (!s3Key) return null;
@@ -395,6 +396,7 @@ export default function ProfileContent({
           console.error("Failed to create notification:", errorData);
         }
       }
+      window.location.reload()
     } catch (err) {
       console.error("Error following creator:", err);
     
@@ -406,10 +408,9 @@ export default function ProfileContent({
       setStatus("none");
     }
   };
-  
   const handleUnfollow = async (creator: Creator) => {
     if (!creator || !viewingUser) return;
-
+    setLoading(true)
     try {
       await creatorservice.unfollowCreator(creator._id);
 
@@ -421,11 +422,14 @@ export default function ProfileContent({
       setStatus('none');
     } catch (err) {
       console.error('Error unfollowing creator:', err);
+      setLoading(false)
+    } finally {
+      setLoading(false)
     }
   };
   const resolvedSrc = resolveImageUrl(avatarUrl);
   
-  const handleStartChat = async (userId: string, sessionUserId: string) => {
+  {/* const handleStartChat = async (userId: string, sessionUserId: string) => {
     const chats = await getChatsBetween(sessionUserId, userId);
     let chat = chats.find(c => c.participants.includes(userId) && c.participants.includes(sessionUserId));
   
@@ -453,7 +457,7 @@ export default function ProfileContent({
   
     localStorage.setItem("currentChatIdentifier", chat?.id || "");
     router.push("/messages");
-  };
+  }; */}
   const handleStopSubscribe = async (creator: Creator) => {
     if(!creator) return;
     SetStopSubscribeModal(true)
@@ -473,7 +477,6 @@ export default function ProfileContent({
     avatarUrl,
     onClose
   }) => {
-    console.log(subscription)
     const subscriptionCreator = creators?.find(c => c._id === subscription?.creatorId) || creator;
   
     const [imageLoading, setImageLoading] = useState(true);
@@ -521,25 +524,30 @@ export default function ProfileContent({
         <div className="bg-white/10 backdrop-blur-xl p-8 rounded-3xl border border-white/20 max-w-md w-full space-y-6 shadow-2xl">
           {/* Creator Info */}
           <div className="flex flex-col items-center space-y-4">
-            <div className="relative w-28 h-28">
-              {imageLoading ? (
-                <Skeleton className="w-full h-full rounded-full bg-gray-300 dark:bg-gray-700" />
-              ) : avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt={subscriptionCreator?.name || subscriptionCreator?.username || ""}
-                  className="object-cover"
-                  onLoad={() => setImageLoading(false)}
-                  onError={() => setImageLoading(false)}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center rounded-full bg-gray-400 text-white font-bold text-3xl">
-                  {subscriptionCreator?.name?.charAt(0)?.toUpperCase() ||
-                    subscriptionCreator?.username?.charAt(0)?.toUpperCase() ||
-                    "U"}
-                </div>
-              )}
-            </div>
+          <div className="relative w-28 h-28">
+  {/* Skeleton overlay */}
+  {imageLoading && (
+    <Skeleton className="absolute inset-0 w-full h-full rounded-full bg-gray-300 dark:bg-gray-700 z-10" />
+  )}
+
+  {avatarUrl ? (
+    <img
+      src={avatarUrl}
+      alt={subscriptionCreator?.name || subscriptionCreator?.username || ""}
+      className={`object-cover rounded-full w-full h-full transition-opacity duration-500 ${
+        imageLoading ? "opacity-0" : "opacity-100"
+      }`}
+      onLoad={() => setImageLoading(false)}
+      onError={() => setImageLoading(false)}
+    />
+  ) : (
+    <div className="w-full h-full flex items-center justify-center rounded-full bg-gray-400 text-white font-bold text-3xl">
+      {subscriptionCreator?.name?.charAt(0)?.toUpperCase() ||
+        subscriptionCreator?.username?.charAt(0)?.toUpperCase() ||
+        "U"}
+    </div>
+  )}
+</div>
   
             <h3 className="text-white text-lg font-semibold text-center">
               Unsubscribe from @{subscription.creatorUsername}
@@ -690,7 +698,8 @@ export default function ProfileContent({
                   {status === 'follower' && creator && (
                     <button
                       onClick={() => handleUnfollow(creator)}
-                      className="border border-white text-white hover:bg-white/10 px-4 py-1 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer whitespace-nowrap"
+                      disabled={loading}
+                      className="border border-white text-white disabled:cursor-not-allowed hover:bg-white/10 px-4 py-1 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer whitespace-nowrap"
                     >
                       Following
                     </button>
@@ -773,7 +782,8 @@ export default function ProfileContent({
                   Edit Profile
                 </Link>
               
-                <Link 
+                {session?.user.creator && 
+                <><Link 
                   href="/insights" 
                   className="flex-1 flex items-center justify-center bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 text-white font-semibold px-6 py-3 hover:bg-white/10 transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
@@ -786,6 +796,7 @@ export default function ProfileContent({
                 >
                   Promote
                 </Link>
+                </>}
               </div>
               
               )}
@@ -903,19 +914,19 @@ export default function ProfileContent({
                 </>
               )}
               {(status === 'follower' || status === 'subscriber') && (
-             <button
-             onClick={() => {
-              
-             
-              if (userViewed._id && session?.user?._id) {
-                handleStartChat(userViewed._id, session.user._id);
-              }
-             }}
-             className="w-full mt-4 border border-purple-500 hover:bg-purple-500/10 text-purple-400 px-4 py-2 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-pointer"
-           >
-             Send Message
-           </button>
-            )}
+  <div className="relative group w-full mt-4">
+    <button
+      onClick={(e) => e.preventDefault()} // disable click
+      className="w-full border border-purple-500 hover:bg-purple-500/10 text-purple-400 px-4 py-2 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform cursor-not-allowed opacity-70"
+    >
+      Send Message
+    </button>
+    {/* Tooltip */}
+    <span className="absolute left-1/2 -translate-x-1/2 -top-6 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity">
+      Coming Soon
+    </span>
+  </div>
+)}
           {!viewingUser && creator && (
             <div>
                         <div className="flex items-center justify-center gap-3 bg-white/5 border border-white/10 rounded-xl py-3 px-4 mb-6 w-full">
@@ -1436,7 +1447,7 @@ function PostsGrid({
   useEffect(() => {
     if (creator?.posts) {
       let filtered: Post[];
-      if (user?._id.toString() === creator.user.toString()) {
+      if (user?._id.toString() === creator._id.toString()) {
         // Viewing own profile — show all posts
         filtered = creator.posts;
       } else {

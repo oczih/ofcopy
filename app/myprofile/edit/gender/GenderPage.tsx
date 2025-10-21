@@ -1,7 +1,7 @@
 'use client';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import creatorservice from '@/app/services/creatorservice';
 import { Creator, User } from '@/app/types';
 import { Gender } from '@/app/types';
@@ -25,12 +25,15 @@ export default function App({creators, session}: AppProps) {
         router.push("/login");
       }
     }, [session, router]);
-    
     useEffect(() => {
         if (status !== 'loading') {
         }
     }, [status]);
-
+    useEffect(() => {
+      if (!session?.user.creator) {
+        notFound();
+      }
+    }, [session]);
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -68,24 +71,6 @@ export default function App({creators, session}: AppProps) {
         }
     };
 
-    if (!session) {
-        // Show a fallback or redirect or login prompt if session not passed
-        return <div>Please log in.</div>;
-      }
-
-    if (!session?.user) {
-        if (typeof window !== "undefined") {
-            router.push("/login");
-        }
-        return null;
-    }
-
-    if (!session?.user.creator) {
-        if (typeof window !== "undefined") {
-            router.push("/home");
-        }
-        return null;
-    }
 
     const genderOptions = [
         { 

@@ -45,10 +45,10 @@ export default function PaymentForm({
       // Pick correct price ID
       let priceId = "";
       if (mode === "subscription") {
-        priceId = process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_TEST!;
+        priceId = process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION!;
       } else {
         const map: Record<string, string> = {
-          "10": process.env.NEXT_PUBLIC_STRIPE_TOPUP10_TEST!,
+          "10": process.env.NEXT_PUBLIC_STRIPE_TOPUP10!,
           "25": process.env.NEXT_PUBLIC_STRIPE_TOPUP25!,
           "50": process.env.NEXT_PUBLIC_STRIPE_TOPUP50!,
           "100": process.env.NEXT_PUBLIC_STRIPE_TOPUP100!,

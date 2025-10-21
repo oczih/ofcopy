@@ -1,12 +1,7 @@
-import { Creator } from "@/app/types"
-import { Session } from "next-auth"
 
-type TrackingLinksProps = {
-  session: Session | null
-  creator: Creator | null
-}
 
-export default function TrackingLinks({ session, creator }: TrackingLinksProps) {
+
+/* export default function TrackingLinks({ session, creator }: TrackingLinksProps) {
   return (
     <div className="space-y-6">
       <h3 className="text-2xl font-bold text-white">Tracking Links</h3>
@@ -44,4 +39,4 @@ export default function TrackingLinks({ session, creator }: TrackingLinksProps) 
       </div>
     </div>
   )
-}
+} */

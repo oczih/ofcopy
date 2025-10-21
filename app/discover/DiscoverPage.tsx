@@ -276,7 +276,7 @@ export default function App({creators, session }: AppProps ) {
                     <CreatorCardSkeleton key={index} />
                   ))}
                 </div>
-              ) : filteredCreators.length > 0 ? (
+              ) : (filteredCreators.length > 0 && session) ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {filteredCreators.map((creator) => (
                     <CreatorCard key={creator._id} creator={creator} signedAvatarUrl={creator.image} session={session}/>

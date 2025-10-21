@@ -70,29 +70,16 @@ export default function App({users, session, creators}: AppProps) {
     useEffect(() => {
       if (status === "authenticated" && session?.user) {
         const rightCreator = creators.find(c => c.user === session.user._id);
-
-        if (rightCreator) {
-          const initialData = {
-            name: rightCreator.name || "",
-            handle: rightCreator.username || "",
-            bio: rightCreator.bio || "",
-            location: rightCreator.location || ""
-          };
-          setFormData(initialData);
-          setOriginalFormData(initialData);
-        } else if (session.user) {  // only fallback if no creator
-          const initialData = {
-            name: session.user.name || "",
-            handle: session.user.username || "",
-            bio: session.user.bio || "",
-            location:
-              typeof session.user.location === "string"
-                ? session.user.location
-                :  "",
-          };
-          setFormData(initialData);
-          setOriginalFormData(initialData);
-        }
+    
+        const initialData = {
+          name: rightCreator?.name || session.user.name || "",
+          handle: rightCreator?.username || session.user.username || "",
+          bio: rightCreator?.bio ?? session.user.bio ?? "", // ✅ Use creator bio if exists, else user bio
+          location: rightCreator?.location ?? (typeof session.user.location === "string" ? session.user.location : "")
+        };
+    
+        setFormData(initialData);
+        setOriginalFormData(initialData);
       }
     }, [status, session?.user, creators]);
     useEffect(() => {
@@ -180,7 +167,6 @@ const handleSave = async () => {
       return;
     }
   }
-
   try {
     // ✅ Always update the User document
     await userservice.update(session.user._id, {
@@ -197,7 +183,6 @@ const handleSave = async () => {
         payload
       );
     }
-
     router.push("/myprofile/edit");
   } catch (err) {
     console.error("Failed to update profile info:", err);

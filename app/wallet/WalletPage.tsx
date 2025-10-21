@@ -14,7 +14,7 @@ interface PayPanelProps {
   session: Session | null
   handleStripeCheckout: (type?: "payment" | "subscription", amount?: string) => void | Promise<void>;
   loading: boolean;
-  creator: Creator;
+  creator: Creator | null;
 }
 
 const amounts = [10, 25, 50, 100, 200, 500];
@@ -148,10 +148,10 @@ export default function App({session, creators}: AppProps) {
       // Pick correct price ID
       let priceId = "";
       if (type === "subscription") {
-        priceId = process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_TEST!;
+        priceId = process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION!;
       } else {
         const map: Record<string, string> = {
-          "10": process.env.NEXT_PUBLIC_STRIPE_TOPUP10_TEST!,
+          "10": process.env.NEXT_PUBLIC_STRIPE_TOPUP10!,
           "25": process.env.NEXT_PUBLIC_STRIPE_TOPUP25!,
           "50": process.env.NEXT_PUBLIC_STRIPE_TOPUP50!,
           "100": process.env.NEXT_PUBLIC_STRIPE_TOPUP100!,
@@ -199,7 +199,7 @@ export default function App({session, creators}: AppProps) {
       setLoading(false);
     }
   };
-  
+    console.log(showPayPanel)
   return (
     <div className="min-h-screen w-full flex justify-center px-4 py-10">
       <main className="max-w-3xl w-full space-y-8">
@@ -266,7 +266,7 @@ export default function App({session, creators}: AppProps) {
         </div> */}
 
         {/* PayPanel modal */}
-        {showPayPanel && topUpAmount && creator && (
+        {showPayPanel && topUpAmount && (
   <div className="fixed inset-0 bg-black/70 flex justify-center items-center p-4 z-50">
     <div className="w-full max-w-md">
       <PayPanel

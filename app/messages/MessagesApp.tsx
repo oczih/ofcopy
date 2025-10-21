@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { createPortal } from "react-dom";
 import uploadmediaservice from "../services/uploadmediaservice";
 import {MessageType }from "@/app/types"
-import { useRouter } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
 import { ChatInput } from "@/components/ChatInput";
 import { Box, Chip } from "@mui/material";
 import PaymentForm from "@/components/PaymentForm";
@@ -63,6 +63,11 @@ export default function ChatApp({ session, users, creators }: AppProps) {
   useEffect(() => {
     if (!session) {
       router.push("/login");
+    }
+  }, [session, router]);
+  useEffect(() => {
+    if (!session?.user?.creator) {
+      notFound();
     }
   }, [session, router]);
   useEffect(() => {

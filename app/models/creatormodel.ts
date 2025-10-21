@@ -94,6 +94,10 @@ export interface CreatorDocument extends mongoose.Document {
   bundles: Bundle[];
   freeTrial: boolean;
   commentingEnabled: boolean;
+  isDiscoverable: boolean;
+  followForFree: boolean;
+  allowFollowerMessages: boolean;
+  blurPreviewImages: boolean;
 }
 const promotionSchema = new Schema<Promotion>(
   {
@@ -207,7 +211,11 @@ const creatorSchema = new Schema<CreatorDocument>({
   currentBalance: { type: Number, default: 0 },
   promotions: [promotionSchema],
   freeTrial: {type: Boolean, default: false},
-  commentingEnabled: {type: Boolean, default: true}
+  commentingEnabled: {type: Boolean, default: true},
+  isDiscoverable:  {type: Boolean, default: true},
+  followForFree:  {type: Boolean, default: true},
+  allowFollowerMessages: {type: Boolean, default: false},
+  blurPreviewImages: {type: Boolean, default: true},
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

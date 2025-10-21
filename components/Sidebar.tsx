@@ -224,32 +224,48 @@ export const Sidebar = ({
 
       {/* Menu */}
       <nav className="flex-1 flex flex-col space-y-1">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
-          return (
-            <Link key={item.id} href={item.href}>
-              <button
-                className={`w-full ${
-                  isCollapsed ? "justify-center px-2" : "justify-start px-4"
-                } py-3 rounded-2xl text-center flex flex-row transition-all duration-300 ${getButtonStyles(
-                  isActive
-                )}`}
-              >
-                <Icon
-                  className={`w-5 h-5 ${
-                    isCollapsed ? "mr-0" : "mr-3"
-                  } transition-all duration-300`}
-                />
-                {!isCollapsed && (
-                  <span className="font-medium opacity-100 transition-opacity duration-300">
-                    {item.label}
-                  </span>
-                )}
-              </button>
-            </Link>
-          );
-        })}
+      {menuItems.map((item) => {
+  const Icon = item.icon;
+  const isActive = pathname === item.href;
+
+  // Only "messages" is coming soon
+  const isComingSoon = item.id === "messages";
+
+  return (
+    <div key={item.id} className="relative group">
+      <Link
+        href={isComingSoon ? "#" : item.href} // prevent navigation
+        onClick={(e) => isComingSoon && e.preventDefault()} // block click
+      >
+        <button
+          className={`w-full ${
+            isCollapsed ? "justify-center px-2" : "justify-start px-4"
+          } py-3 rounded-2xl text-center flex flex-row items-center transition-all duration-300 ${
+            getButtonStyles(isActive)
+          } ${isComingSoon ? "cursor-not-allowed opacity-70" : ""}`}
+        >
+          <Icon
+            className={`w-5 h-5 ${
+              isCollapsed ? "mr-0" : "mr-3"
+            } transition-all duration-300`}
+          />
+          {!isCollapsed && (
+            <span className="font-medium opacity-100 transition-opacity duration-300">
+              {item.label}
+            </span>
+          )}
+        </button>
+      </Link>
+      {/* Tooltip for "Coming Soon" */}
+      {isComingSoon && !isCollapsed && (
+        <span className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 text-xs rounded bg-gray-800 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+          Coming Soon
+        </span>
+      )}
+    </div>
+  );
+})}
+
         {session && (
   <Link href="/wallet">
     <button

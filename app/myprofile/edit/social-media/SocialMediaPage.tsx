@@ -1,7 +1,7 @@
 'use client';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import creatorservice from '@/app/services/creatorservice';
 import { Creator, User } from '@/app/types';
 import { ArrowLeft, Check, UserCog, AlertTriangle } from 'lucide-react';
@@ -106,15 +106,11 @@ export default function App({ creators, session }: AppProps) {
     }
   };
 
-  if (!session) return <div>Please log in.</div>;
-  if (!session?.user) {
-    if (typeof window !== 'undefined') router.push('/login');
-    return null;
-  }
-  if (!session?.user.creator) {
-    if (typeof window !== 'undefined') router.push('/home');
-    return null;
-  }
+  useEffect(() => {
+    if (!session?.user.creator) {
+      notFound();
+    }
+  }, [session]);
 
   return (
     <div className="max-w-xl mx-auto p-6">

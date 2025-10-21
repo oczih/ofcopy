@@ -10,7 +10,7 @@ import { uploadContent } from '@/app/services/uploadmediaservice';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Creator, User } from '@/app/types';
 import { Session } from 'next-auth';
-import { useRouter } from 'next/navigation';
+import {  useRouter } from 'next/navigation';
 import creatorservice from '@/app/services/creatorservice';
 interface AppProps {
     creators: Creator[];
@@ -176,45 +176,52 @@ export default function App({creators, session}: AppProps) {
 
           {/* Edit Sections */}
           <div className="w-full max-w-3xl space-y-4">
-            {links.map((link) => {
-              const IconComponent = link.icon;
-              return (
-                <button
-                  key={link.title}
-                  onClick={() => window.location.href = link.href}
-                  className="group relative overflow-hidden rounded-2xl bg-white/5 cursor-pointer backdrop-blur-sm border border-white/10 hover:border-white/20 transition-colors duration-300 w-full text-left"
-                >
-                  {/* Gradient Background Effect */}
-                  <div className={`absolute inset-0 bg-gradient-to-r ${link.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
-                  
-                  <div className="relative p-6 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      {/* Icon Container */}
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${link.color} flex items-center justify-center shadow-lg transition-transform duration-300`}>
-                        <IconComponent className="w-6 h-6 text-white" />
-                      </div>
-                      
-                      {/* Content */}
-                      <div className="flex flex-col">
-                        <h3 className="text-lg font-semibold text-white group-hover:from-blue-400 group-hover:to-purple-400 transition-all duration-300">
-                          {link.title}
-                        </h3>
-                        <p className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
-                          {link.description}
-                        </p>
-                      </div>
-                    </div>
+  {links.map((link) => {
+    const IconComponent = link.icon;
 
-                    {/* Arrow */}
-                    <ChevronRight className="w-6 h-6 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all duration-300" />
-                  </div>
+    // Only show Gender & Social Media for creators
+    if (!session?.user?.creator && (link.title === "Gender" || link.title === "Social Media")) {
+      return null; // skip rendering
+    }
 
-                  {/* Bottom Accent Line */}
-                  <div className={`h-1 bg-gradient-to-r ${link.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
-                </button>
-              );
-            })}
+    return (
+      <button
+        key={link.title}
+        onClick={() => window.location.href = link.href}
+        className="group relative overflow-hidden rounded-2xl bg-white/5 cursor-pointer backdrop-blur-sm border border-white/10 hover:border-white/20 transition-colors duration-300 w-full text-left"
+      >
+        {/* Gradient Background Effect */}
+        <div className={`absolute inset-0 bg-gradient-to-r ${link.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
+        
+        <div className="relative p-6 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {/* Icon Container */}
+            <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${link.color} flex items-center justify-center shadow-lg transition-transform duration-300`}>
+              <IconComponent className="w-6 h-6 text-white" />
+            </div>
+            
+            {/* Content */}
+            <div className="flex flex-col">
+              <h3 className="text-lg font-semibold text-white group-hover:from-blue-400 group-hover:to-purple-400 transition-all duration-300">
+                {link.title}
+              </h3>
+              <p className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
+                {link.description}
+              </p>
+            </div>
           </div>
+
+          {/* Arrow */}
+          <ChevronRight className="w-6 h-6 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all duration-300" />
+        </div>
+
+        {/* Bottom Accent Line */}
+        <div className={`h-1 bg-gradient-to-r ${link.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
+      </button>
+    );
+  })}
+</div>
+
           {cropModalOpen && selectedImage && (
       <>
         <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm" />

@@ -5,7 +5,7 @@ import OFUser from "@/app/models/usermodel";
 import CreatorModel from "@/app/models/creatormodel";
 import { Subscriber, Subscription } from "@/app/types";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_TEST!, {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY_LIVE!, {
   apiVersion: "2025-09-30.clover",
 });
 

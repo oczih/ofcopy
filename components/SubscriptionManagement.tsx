@@ -86,7 +86,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ session
       await fetch('/api/cancel-subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscriptionId: cancelSubscription.id }),
+        body: JSON.stringify({ subscriptionId: cancelSubscription._id }),
       });
 
       // Optionally update local state / refetch subscriptions
@@ -122,7 +122,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ session
             </Badge>
           </div>
           {activeSubscriptions.map((sub) => (
-            <SubscriptionCard key={sub.id} subscription={sub} onUnsubscribe={setCancelSubscription} />
+            <SubscriptionCard key={sub._id} subscription={sub} onUnsubscribe={setCancelSubscription} />
           ))}
         </div>
       )}
@@ -136,7 +136,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ session
             </Badge>
           </div>
           {nonActiveSubscriptions.map((sub) => (
-            <SubscriptionCard key={sub.id} subscription={sub} onUnsubscribe={() => {}} />
+            <SubscriptionCard key={sub._id} subscription={sub} onUnsubscribe={() => {}} />
           ))}
         </div>
       )}

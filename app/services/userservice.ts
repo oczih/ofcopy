@@ -45,6 +45,7 @@ const getOne = async (id: string, isPublic = false): Promise<{ user: User }> => 
 
 const update = async (id: string, newData: Partial<User>): Promise<{ user: User }> => {
   try {
+    console.log(newData)
     const response = await axios.put(`${privateUsersUrl}/${id}`, newData, {
       withCredentials: true,
     });
