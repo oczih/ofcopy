@@ -27,7 +27,8 @@ export function CreatorPostCard({
   signedUrl,
   handleFollow,
   handleDeletePost,
-  purchases
+  purchases,
+  avatarUrl
 }: {
   creator: Creator;
   post: Post;
@@ -40,6 +41,7 @@ export function CreatorPostCard({
   handleFollow?: (creator: Creator) => void;
   handleDeletePost: () => void;
   purchases: Purchase[];
+  avatarUrl: string;
 }) {
   // Restriction logic
   const isFollowersOnly = post.viewableFor === "followers";
@@ -82,7 +84,7 @@ function resolveImageUrl(url: string) {
   
     setCanView(canUserView);
   }, [status, session?.user?._id, creator.user, post.viewableFor, post.price]);
-  
+    
   // Like and comment modal state
   useEffect(() => {
     if (!paymentModal) return;
@@ -181,91 +183,19 @@ function resolveImageUrl(url: string) {
       alert('Failed to unlike post');
     }
   }
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchAvatarUrl = async () => {
-      if (creator.avatarKey) {
-        try {
-          setImageLoading(true);
-  
-          const key = creator.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
-          const res = await fetch("/api/media/download-url", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ s3Key: key }),
-          });
-  
-          const data = await res.json();
-  
-          if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
-            setAvatarUrl(data.downloadUrl);
-          } else {
-            console.error("Invalid download URL:", data.downloadUrl);
-          }
-        } catch (error) {
-          console.error("Error fetching avatar URL:", error);
-        } finally {
-          setSignedUrlLoading(false);
-          setImageLoading(false);
-        }
-      } else {
-        setImageLoading(false);
-      }
-
-    };
-  
-    fetchAvatarUrl();
-  }, [creator?.avatarKey]);
-  const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
-
-  const avatarKey = (session?.user as User)?.avatarKey;
-  useEffect(() => {
-    const fetchAvatarUrl = async () => {
-      if (avatarKey) {
-        try {
-          setImageLoading(true);
-          if (avatarKey.startsWith("http")) {
-            setUserAvatarUrl(avatarKey);
-            setUserAvatarUrl(avatarKey); // use the URL directly
-            setImageLoading(false);
-            return null;
-          }
-          const key = avatarKey.replace(/^\/+/, ''); // Remove leading slash
-          const res = await fetch("/api/media/download-url", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ s3Key: key }),
-          });
-  
-          const data = await res.json();
-  
-          if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
-            setUserAvatarUrl(data.downloadUrl);
-          } else {
-            console.error("Invalid download URL:", data.downloadUrl);
-          }
-        } catch (error) {
-          console.error("Error fetching avatar URL:", error);
-        } finally {
-          setImageLoading(false);
-        }
-      } else {
-        setImageLoading(false);
-      }
-    };
-  
-    fetchAvatarUrl();
-  }, [avatarKey]);
   const [userAvatars, setUserAvatars] = useState<Record<string, string>>({});
 const [avatarsLoading, setAvatarsLoading] = useState<Record<string, boolean>>({});
 const resolvedUrl = useMemo(() => resolveImageUrl(signedUrl), [signedUrl]);
 const resolvedBlurredUrl = useMemo(() => resolveImageUrl(blurredUrl), [blurredUrl]);
 const [signedUrlLoading, setSignedUrlLoading] = useState(true);
+useEffect(() => {
+  if (resolvedUrl) {
+    const img = new Image();
+    img.src = resolvedUrl;
+    img.onload = () => setSignedUrlLoading(false);
+    img.onerror = () => setSignedUrlLoading(false); // fail gracefully
+  }
+}, [resolvedUrl])
 const fetchUserAvatarUrl = async (user: User) => {
   if (!user.avatarKey) return;
 
@@ -465,7 +395,7 @@ useEffect(() => {
   <Link href={`/${creator.username}`} className="shrink-0">
     <Avatar className="w-12 h-12 ring-2 ring-gray-800 hover:ring-indigo-500 transition">
       {imageLoading ? (
-        <Skeleton className="w-full h-full rounded-full bg-gray-200 dark:bg-gray-700" />
+        <Skeleton className="w-full h-full  rounded-full bg-gray-200 dark:bg-gray-700" />
       ) : 
       (<img
         src={resolvedAvatarUrl ?? undefined}
@@ -473,7 +403,7 @@ useEffect(() => {
         onLoad={() => setImageLoading(false)}
         className="object-cover"
       />)}
-      <AvatarFallback>
+      <AvatarFallback className="z-50">
         {creator.name?.[0]?.toUpperCase() || creator.username?.[0]?.toUpperCase()}
       </AvatarFallback>
     </Avatar>

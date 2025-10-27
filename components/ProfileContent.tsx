@@ -130,7 +130,7 @@ export default function ProfileContent({
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'cancelled' | 'expired' | null>(null);
   const [StopSubscribeModalOpen, SetStopSubscribeModal] = useState(false)
   // Cache for signed URLs with timestamps
-  const [urlCache, setUrlCache] = useState<Record<string, { url: string; timestamp: number }>>({});
+  const urlCacheRef = useRef<Record<string, { url: string; timestamp: number }>>({});
   const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
   /* const router = useRouter(); */
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -140,37 +140,51 @@ export default function ProfileContent({
   const [imageLoading, setImageLoading] = useState(!!avatarKey);
   const [loading, setLoading] = useState(false)
   // Memoized function to get signed URL
-  const getSignedUrl = useCallback(async (s3Key: string): Promise<string | null> => {
-    if (!s3Key) return null;
-    
-    // Check cache first
-    const cached = urlCache[s3Key];
-    if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
-      return cached.url;
+  const getSignedUrls = useCallback(async (keys: string[]): Promise<Record<string, string>> => {
+    // Deduplicate keys to avoid redundant requests
+    const uniqueKeys = Array.from(new Set(keys));
+  
+    // Filter out keys that are already cached and not expired
+    const uncachedKeys = uniqueKeys.filter(
+      (key) => !urlCacheRef.current[key] || Date.now() - urlCacheRef.current[key].timestamp > CACHE_TTL
+    );
+  
+    // Return cached URLs if no new keys need fetching
+    if (uncachedKeys.length === 0) {
+      return uniqueKeys.reduce((acc, key) => {
+        acc[key] = urlCacheRef.current[key].url;
+        return acc;
+      }, {} as Record<string, string>);
     }
-    
+  
     try {
       const res = await fetch("/api/media/download-url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ s3Key }),
+        body: JSON.stringify({ s3Keys: uncachedKeys }),
       });
-
       const data = await res.json();
-      if (res.ok && data.downloadUrl?.startsWith("https://")) {
-        // Update cache
-        setUrlCache(prev => ({
-          ...prev,
-          [s3Key]: { url: data.downloadUrl, timestamp: Date.now() }
-        }));
-        return data.downloadUrl;
+      const urlsFromServer = data.urls || {};
+  
+      // Update cache with new URLs
+      const result: Record<string, string> = {};
+      for (const key of uniqueKeys) {
+        const signedUrl = urlsFromServer[key]?.downloadUrl || urlCacheRef.current[key]?.url;
+        if (signedUrl?.startsWith("https://")) {
+          result[key] = signedUrl;
+          urlCacheRef.current[key] = { url: signedUrl, timestamp: Date.now() };
+        } else {
+          result[key] = ""; // Fallback for missing URLs
+        }
       }
-    } catch (error) {
-      console.error("Error fetching signed URL:", error);
+  
+      return result;
+    } catch (err) {
+      console.error("Error fetching batch signed URLs:", err);
+      return uniqueKeys.reduce((acc, key) => ({ ...acc, [key]: "" }), {} as Record<string, string>);
     }
-    
-    return null;
-  }, [urlCache, CACHE_TTL]);
+  }, [CACHE_TTL]);
+  
 
   // Avatar URL fetching - only when avatarKey changes
   useEffect(() => {
@@ -186,23 +200,22 @@ export default function ProfileContent({
   
     const fetchAvatarUrl = async () => {
       setImageLoading(true);
-      if (avatarKey.startsWith("http")) {
-        setAvatarImage(avatarKey);
-        setAvatarUrl(avatarKey); // use the URL directly
+      try {
+        if (avatarKey.startsWith("http")) {
+          setAvatarUrl(avatarKey);
+        } else {
+          const urls = await getSignedUrls([avatarKey]);
+          const url = urls[avatarKey];
+          if (url) setAvatarUrl(url);
+        }
         lastFetchedAvatarKey.current = avatarKey;
+      } finally {
         setImageLoading(false);
-        return;
       }
-      const url = await getSignedUrl(avatarKey);
-      if (url) {
-        setAvatarUrl(url);
-        lastFetchedAvatarKey.current = avatarKey;
-      }
-      setImageLoading(false);
     };
   
     fetchAvatarUrl();
-  }, [avatarKey, getSignedUrl]);
+  }, [avatarKey]);
   useEffect(() => {
     if (!session?.user.subscriptions?.length) return;
   
@@ -228,96 +241,97 @@ export default function ProfileContent({
   const fetchedPostsRef = useRef<Set<string>>(new Set());
   const rightCreator = creators.find(c => c.user === session?.user._id)
 
-  type S3Key = {
-    key: string;
-    blurredKey?: string;
-    blurred_key?: string;
-  };
 
-  useEffect(() => {
-    async function fetchSignedUrls() {
-      if (!creators || creators.length === 0) return;
+  const isFetchingPostsRef = useRef(false);
+  const fetchedCreatorRef = useRef<string | null>(null);
+  const fetchSignedUrlsForCreator = useCallback(
+    async (creator: Creator) => {
+      if (!creator || isFetchingPostsRef.current) return;
+      isFetchingPostsRef.current = true;
   
-      const allPosts = creators.flatMap((creator) => creator.posts || []);
+      try {
+        const allPosts = creator.posts || [];
+        if (allPosts.length === 0) return;
   
-      const postsToFetch = allPosts.filter((post) => {
-        if (!post.s3Key) return false;
+        // collect all S3 keys for this creator
+        const allKeys = Array.from(
+          new Set(
+            allPosts.flatMap(post => {
+              if (typeof post.s3Key === "string") return [post.s3Key];
+              if (post.s3Key && typeof post.s3Key === "object") {
+                const full = post.s3Key.key;
+                const blurred = post.s3Key.blurred_key;
+                return [full, blurred].filter(Boolean);
+              }
+              return [];
+            })
+          )
+        );
   
-        const fullKey = typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.key;
-        const blurredKey = typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.blurred_key;
-        const rightCreator = creators.find(c => c.user === session?.user._id)
-        const canView =
-          rightCreator?._id.toString() === post.creator.toString() ||
-          status === "subscriber" ||
-          status === "follower";
-        const keyToFetch = canView ? fullKey : blurredKey;
-        if (!keyToFetch) return false;
+        // fetch only missing or expired keys
+        const freshKeys = allKeys.filter(
+          key => !urlCacheRef.current[key] || Date.now() - urlCacheRef.current[key].timestamp > CACHE_TTL
+        );
+        if (freshKeys.length === 0) return;
   
-        // Already fetched
-        if (fetchedPostsRef.current.has(post._id)) return false;
+        const signedMap = await getSignedUrls(freshKeys);
   
-        return true;
-      });
+        // map post IDs to URLs
+        const newUrls: Record<string, SignedUrls> = {};
+        for (const post of allPosts) {
+          let fullKey = "";
+          let blurredKey = "";
   
-      if (postsToFetch.length === 0) return;
+          if (typeof post.s3Key === "string") {
+            fullKey = post.s3Key;
+          } else if (post.s3Key && typeof post.s3Key === "object") {
+            fullKey = post.s3Key.key;
+            blurredKey = post.s3Key.blurred_key || post.s3Key.key;
+          }
   
-      // Mark posts as being fetched
-      postsToFetch.forEach((post) => fetchedPostsRef.current.add(post._id + "-" + status));
+          newUrls[post._id] = {
+            signedUrl: signedMap[fullKey] ?? "",
+            blurredUrl: signedMap[blurredKey] ?? signedMap[fullKey] ?? "",
+          };
+        }
   
-      const signedUrlMap: Record<string, SignedUrls> = {};
-  
-      await Promise.all(
-        postsToFetch.map(async (post: Post) => {
-          const s3KeyObj: S3Key | null | undefined =
-          typeof post.s3Key === "string"
-            ? { key: post.s3Key }
-            : post.s3Key;
-          const fullKey = s3KeyObj?.key ?? "";
-          const blurredKeyNorm = s3KeyObj?.blurredKey || s3KeyObj?.blurred_key;
-          const blurredKey = blurredKeyNorm ?? fullKey;
-          const rightCreator = creators.find(c => c.user === session?.user._id)
-          const canView =
-            rightCreator?._id.toString() === post.creator.toString() ||
-            session?.user?.following?.some((f) => f.creatorId === post.creator) ||
-            session?.user?.subscriptions?.some((s) => s.creatorId === post.creator);
-  
-          const keyToFetch = canView ? fullKey : blurredKey;
-          if (!keyToFetch) return;
-  
-          const signedUrl = (await getSignedUrl(keyToFetch)) ?? ""; // fallback to empty string
-          const blurredUrl =
-            blurredKey && blurredKey !== keyToFetch ? (await getSignedUrl(blurredKey)) ?? signedUrl : signedUrl;
-  
-          signedUrlMap[post._id] = { signedUrl, blurredUrl };
-        })
-      );
-  
-      if (Object.keys(signedUrlMap).length > 0) {
-        setPostSignedUrls((prev) => ({ ...prev, ...signedUrlMap }));
+        setPostSignedUrls(prev => ({ ...prev, ...newUrls }));
+        fetchedCreatorRef.current = creator._id;
+      } catch (err) {
+        console.error("❌ Error fetching signed URLs:", err);
+      } finally {
+        isFetchingPostsRef.current = false;
       }
-    }
+    },
+    [getSignedUrls, CACHE_TTL]
+  );
+  useEffect(() => {
+    if (!creator?._id) return;
+    // prevent re-run if we already fetched for this creator
+    if (fetchedCreatorRef.current === creator._id) return;
   
-    fetchSignedUrls();
-  }, [creators, session?.user, getSignedUrl, status]);
+    // ensure posts exist before fetching
+    if (!creator.posts || creator.posts.length === 0) return;
   
+    fetchSignedUrlsForCreator(creator);
+  }, [creator?._id]);
   // Clean up expired cache entries periodically
+  
   useEffect(() => {
     const cleanup = setInterval(() => {
       const now = Date.now();
-      setUrlCache(prev => {
-        const cleaned = { ...prev };
-        Object.keys(cleaned).forEach(key => {
-          if (now - cleaned[key].timestamp > CACHE_TTL) {
-            delete cleaned[key];
-          }
-        });
-        return cleaned;
+  
+      // Clean expired cache entries directly in the ref
+      Object.keys(urlCacheRef.current).forEach(key => {
+        if (now - urlCacheRef.current[key].timestamp > CACHE_TTL) {
+          delete urlCacheRef.current[key];
+        }
       });
-      
-      // Reset fetched posts tracking periodically
+  
+      // Periodically reset fetched post tracking too
       fetchedPostsRef.current.clear();
     }, CACHE_TTL);
-
+  
     return () => clearInterval(cleanup);
   }, [CACHE_TTL]);
 
@@ -996,6 +1010,7 @@ export default function ProfileContent({
             purchases={purchases}
             session={session}
             creators={creators}
+            avatarUrl={avatarUrl}
           />
         )}
       </div>
@@ -1018,6 +1033,7 @@ function ContentTabs({
   session,
   creators,
   purchases,
+  avatarUrl
 }: {
   creator: Creator;
   isOwnProfile: boolean;
@@ -1031,6 +1047,7 @@ function ContentTabs({
   users: User[],
   session: Session | null,
   creators: Creator[],
+  avatarUrl: string | null
 }) {
   const creatorContent = purchases.filter(p => p.creatorId.toString() === creator._id)
   const [activeTab, setActiveTab] = useState(creator ? 'posts' : 'purchased');
@@ -1071,16 +1088,16 @@ function ContentTabs({
       {/* Tab Content */}
       <div className="p-6">
         {activeTab === 'posts' && (
-          <PostsGrid creator={creator} status={status} postSignedUrls={postSignedUrls} user={user} handleFollow={handleFollow} purchases={purchases} users={users} session={session} />
+          <PostsGrid creator={creator} status={status} postSignedUrls={postSignedUrls} avatarUrl={avatarUrl} user={user} handleFollow={handleFollow} purchases={purchases} users={users} session={session} />
         )}
         {activeTab === 'purchased' && (
-          <PurchasedPostsGrid status={status} creator={creator} handleFollow={handleFollow} creators={creators} purchases={purchases} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user}/>
+          <PurchasedPostsGrid status={status} creator={creator} handleFollow={handleFollow} avatarUrl={avatarUrl} creators={creators} purchases={purchases} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user}/>
         )}
         {activeTab === 'media' && (
           <MediaGrid creator={creator} status={status} postSignedUrls={postSignedUrls}user={user}  />
         )}
         {activeTab === 'likes' && (
-          <LikedContent creator={creator} status={status} postSignedUrls={postSignedUrls} viewingUser={viewingUser} creators={creators} purchases={purchases}/>
+          <LikedContent creator={creator} status={status} postSignedUrls={postSignedUrls} avatarUrl={avatarUrl} viewingUser={viewingUser} creators={creators} purchases={purchases}/>
           
         )}
       </div>
@@ -1094,6 +1111,7 @@ function LikedContent({
   viewingUser,
   purchases,
   creators,
+  avatarUrl
 }: {
   creator?: Creator;
   status: "follower" | "subscriber" | "none";
@@ -1101,6 +1119,7 @@ function LikedContent({
   viewingUser: Creator | User;
   creators: Creator[];
   purchases: Purchase[],
+  avatarUrl: string | null;
 }) {
 
   const [likedPosts, setLikedPosts] = useState<Post[]>([]);
@@ -1174,6 +1193,7 @@ function LikedContent({
             session={null}
             handleDeletePost={() => handleDeletePost(creator._id, post._id)}
             purchases={purchases}
+            avatarUrl={avatarUrl ? avatarUrl : ''}
           />
         ))
       ) : (
@@ -1195,6 +1215,7 @@ function PurchasedPostsGrid ({
   user,
   purchases,
   status,
+  avatarUrl
 }: {
   creator?: Creator;
   viewingUser: Creator | User;
@@ -1204,6 +1225,7 @@ function PurchasedPostsGrid ({
   status: 'follower' | 'subscriber' | 'none',
   creators: Creator[]
   purchases: Purchase[]
+  avatarUrl: string | null;
 }) {
   const [users, setUsers] = useState<User[] | null>(null);
   const [visiblePosts, setVisiblePosts] = useState<Post[]>([]);
@@ -1290,6 +1312,7 @@ function PurchasedPostsGrid ({
           handleFollow={handleFollow}
           handleDeletePost={() => handleDeletePost(creator._id, post._id)}
           purchases={purchases}
+          avatarUrl={avatarUrl ? avatarUrl : ''}
         />
       ))}
     </div>
@@ -1307,20 +1330,22 @@ function MediaGrid({
   postSignedUrls: Record<string, SignedUrls>;
   user: Creator | User;
 }) {
-  const [visiblePosts, setVisiblePosts] = useState<Post[]>([]);
   const [loadedImages, setLoadedImages] = useState<{ [key: string]: boolean }>({});
   const [activeImage, setActiveImage] = useState<string | null>(null);
 
+  const [visiblePosts, setVisiblePosts] = useState<Post[]>([]);
   useEffect(() => {
     if (creator?.posts) {
       let filtered: Post[];
-      if (user?._id.toString() === creator.user.toString()) {
-        filtered = creator.posts; // Own profile shows all
+      if (user?._id.toString() === creator._id.toString()) {
+        // Viewing own profile — show all posts
+        filtered = creator.posts;
       } else {
+        // Viewing someone else's profile — filter by status
         filtered = creator.posts.filter((post) => {
-          if (status === "subscriber") return true; // Subscriber sees all
-          if (status === "follower") return post.viewableFor === "followers";
-          return post.viewableFor === "followers"; // Not following sees only blurred
+          if (status === 'subscriber') return true;
+          if (status === 'follower') return post.viewableFor === 'followers';
+          return post.viewableFor === 'followers'; // treat "none" as followers-only list
         });
       }
       setVisiblePosts(filtered);
@@ -1433,6 +1458,7 @@ function PostsGrid({
   users,
   session,
   purchases,
+  avatarUrl
 }: {
   creator?: Creator;
   status: 'subscriber' | 'follower' | 'none';
@@ -1442,6 +1468,7 @@ function PostsGrid({
   users: User[];
   session: Session | null;
   purchases: Purchase[]
+  avatarUrl: string | null
 }) {
   const [visiblePosts, setVisiblePosts] = useState<Post[]>([]);
   useEffect(() => {
@@ -1495,6 +1522,7 @@ function PostsGrid({
               signedUrl={urls.signedUrl}
               blurredUrl={urls.blurredUrl}
               purchases={purchases}
+              avatarUrl={avatarUrl ? avatarUrl : ''}
             />
           );
         })
