@@ -23,12 +23,10 @@ export function CreatorPostCard({
   status,
   user,
   users,
-  blurredUrl,
-  signedUrl,
+
   handleFollow,
   handleDeletePost,
   purchases,
-  avatarUrl
 }: {
   creator: Creator;
   post: Post;
@@ -36,12 +34,11 @@ export function CreatorPostCard({
   status: 'follower' | 'subscriber' | 'none',
   user: Creator | User
   users: User[]
-  signedUrl: string;
-  blurredUrl: string;
+
   handleFollow?: (creator: Creator) => void;
   handleDeletePost: () => void;
   purchases: Purchase[];
-  avatarUrl: string;
+
 }) {
   // Restriction logic
   const isFollowersOnly = post.viewableFor === "followers";
@@ -185,17 +182,8 @@ function resolveImageUrl(url: string) {
   }
   const [userAvatars, setUserAvatars] = useState<Record<string, string>>({});
 const [avatarsLoading, setAvatarsLoading] = useState<Record<string, boolean>>({});
-const resolvedUrl = useMemo(() => resolveImageUrl(signedUrl), [signedUrl]);
-const resolvedBlurredUrl = useMemo(() => resolveImageUrl(blurredUrl), [blurredUrl]);
 const [signedUrlLoading, setSignedUrlLoading] = useState(true);
-useEffect(() => {
-  if (resolvedUrl) {
-    const img = new Image();
-    img.src = resolvedUrl;
-    img.onload = () => setSignedUrlLoading(false);
-    img.onerror = () => setSignedUrlLoading(false); // fail gracefully
-  }
-}, [resolvedUrl])
+
 const fetchUserAvatarUrl = async (user: User) => {
   if (!user.avatarKey) return;
 
@@ -359,11 +347,9 @@ useEffect(() => {
     alert('Failed to delete comment');
   }
 };
-
-  const resolvedAvatarUrl = useMemo(
-    () => resolveImageUrl(avatarUrl ?? ""), // Use empty string if null
-    [avatarUrl]
-  );
+  console.log(post)
+  const mediaUrl = `/api/media/${post.s3Key?.key ?? post.s3Key}`;
+  console.log(mediaUrl)
   function timeAgo(date: string | Date) {
     const now = new Date();
     const past = new Date(date);
@@ -386,24 +372,27 @@ useEffect(() => {
   return (
   <div className="bg-white/5 rounded-2xl shadow-xl border border-white/10 p-0 overflow-hidden max-w-3xl w-full mx-auto animate-fade-in">
     {/* Header */}
-    
+    <img 
+     src={mediaUrl}
+    />
     <header className="flex flex-wrap items-center gap-3 sm:gap-4 px-5 py-4 border-b border-white/10 bg-gradient-to-r from-slate-900/80 to-purple-900/80">
     <div className="flex items-center gap-4 flex-1 min-w-0">
   {/* Avatar + link */}
   <div className="flex flex-col">
     <div className="flex flex-row gap-5">
   <Link href={`/${creator.username}`} className="shrink-0">
-    <Avatar className="w-12 h-12 ring-2 ring-gray-800 hover:ring-indigo-500 transition">
+      <Avatar className="w-12 h-12 ring-2 ring-gray-800 hover:ring-indigo-500 transition">
       {imageLoading ? (
-        <Skeleton className="w-full h-full  rounded-full bg-gray-200 dark:bg-gray-700" />
-      ) : 
-      (<img
-        src={resolvedAvatarUrl ?? undefined}
-        alt={creator.name || creator.username}
-        onLoad={() => setImageLoading(false)}
-        className="object-cover"
-      />)}
-      <AvatarFallback className="z-50">
+        <Skeleton className="w-full h-full rounded-full bg-gray-200 dark:bg-gray-700" />
+      ) : (
+        <img
+          src={`/api/media/${creator?.avatarKey}`} // direct path
+          alt={creator.name || creator.username}
+          onLoad={() => setImageLoading(false)}
+          className="object-cover w-full h-full"
+        />
+      )}
+      <AvatarFallback>
         {creator.name?.[0]?.toUpperCase() || creator.username?.[0]?.toUpperCase()}
       </AvatarFallback>
     </Avatar>
@@ -498,7 +487,6 @@ useEffect(() => {
   >
     <ReportForm
       creator={creator}
-      avatarUrl={avatarUrl || ""}
       onClose={() => setReportModalOpen(false)}
       open={true}   // keep it always true since PortalModal handles visibility
       session={session}
@@ -516,7 +504,6 @@ useEffect(() => {
     <div className="w-full max-w-xl mx-auto" onClick={(e) => e.stopPropagation()}>
       <PaymentForm
         creator={creator}
-        avatarUrl={avatarUrl || ""}
         onClose={() => setPaymentModal(false)}
         open={paymentModal}
         price={post.price}
@@ -563,8 +550,6 @@ useEffect(() => {
 
       {/* Media */}
       <MediaRenderer
-        resolvedUrl={resolvedUrl ?? ""}
-        resolvedBlurredUrl={resolvedBlurredUrl ?? ""}
         post={post}
         canView={canView}
         isSubscribersOnly={isSubscribersOnly}
@@ -701,16 +686,14 @@ useEffect(() => {
         </div>
         {/* Comment Input */}
         <div className="flex w-full items-start gap-3">
-              {userAvatarUrl && (
                 <Avatar className="w-8 h-8 mt-1">
-                  <AvatarImage src={resolveImageUrl(userAvatarUrl) || ""} alt={session?.user?.name || 'User'} />
+                  <AvatarImage src={`/api/media/${session?.user?.avatarKey}`} alt={session?.user?.name || 'User'} />
                   <AvatarFallback>
                     
                   <div className="w-15 h-15 rounded-full bg-gray-700 text-white flex items-center justify-center text-xl  shadow-lg">
                     {session?.user?.name?.[0] || 'U'}
                     </div></AvatarFallback>
                 </Avatar>
-              )}
               <textarea
                 className="flex-1 rounded-lg border border-white/20 bg-slate-900 text-white p-2 resize-none transition-all duration-200 hover:border-white focus:border-white focus:outline-none focus:ring-2 focus:ring-pink-500"
                 rows={2}

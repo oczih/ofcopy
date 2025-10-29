@@ -121,7 +121,7 @@ export const Sidebar = ({
     if (avatarUrl && !avatarError) {
       return (
         <Image
-          src={avatarUrl}
+          src={`/api/media/${creator?.avatarKey}`}
           alt={user?.name || "User"}
           width={48}
           height={48}
