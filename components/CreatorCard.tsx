@@ -9,11 +9,10 @@ import { Session } from "next-auth";
 interface CreatorCardProps {
   creator: Creator;
   avatarKey?: string;
-  signedAvatarUrl: string | undefined;
   session: Session | undefined;
 }
 
-export function CreatorCard({ creator, signedAvatarUrl, session }: CreatorCardProps) {
+export function CreatorCard({ creator, session }: CreatorCardProps) {
   const [avatarLoading, setAvatarLoading] = useState(true);
 
   return (
@@ -37,9 +36,9 @@ export function CreatorCard({ creator, signedAvatarUrl, session }: CreatorCardPr
             {avatarLoading && (
               <Skeleton className="absolute inset-0 w-full h-full rounded-full" />
             )}
-            {signedAvatarUrl && (
+            {creator.avatarKey && (
               <img
-                src={signedAvatarUrl}
+                src={`api/media/${creator.avatarKey}`}
                 alt={creator.name}
                 width={64}
                 height={64}

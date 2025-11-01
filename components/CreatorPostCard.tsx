@@ -182,7 +182,6 @@ function resolveImageUrl(url: string) {
   }
   const [userAvatars, setUserAvatars] = useState<Record<string, string>>({});
 const [avatarsLoading, setAvatarsLoading] = useState<Record<string, boolean>>({});
-const [signedUrlLoading, setSignedUrlLoading] = useState(true);
 
 const fetchUserAvatarUrl = async (user: User) => {
   if (!user.avatarKey) return;
@@ -372,9 +371,6 @@ useEffect(() => {
   return (
   <div className="bg-white/5 rounded-2xl shadow-xl border border-white/10 p-0 overflow-hidden max-w-3xl w-full mx-auto animate-fade-in">
     {/* Header */}
-    <img 
-     src={mediaUrl}
-    />
     <header className="flex flex-wrap items-center gap-3 sm:gap-4 px-5 py-4 border-b border-white/10 bg-gradient-to-r from-slate-900/80 to-purple-900/80">
     <div className="flex items-center gap-4 flex-1 min-w-0">
   {/* Avatar + link */}
@@ -382,7 +378,7 @@ useEffect(() => {
     <div className="flex flex-row gap-5">
   <Link href={`/${creator.username}`} className="shrink-0">
       <Avatar className="w-12 h-12 ring-2 ring-gray-800 hover:ring-indigo-500 transition">
-      {imageLoading ? (
+      {!creator ? (
         <Skeleton className="w-full h-full rounded-full bg-gray-200 dark:bg-gray-700" />
       ) : (
         <img
@@ -520,7 +516,7 @@ useEffect(() => {
     
     {/* Media */}
 <div className="relative bg-slate-900 overflow-hidden">
-  {signedUrlLoading ? (
+  {!post ? (
     <div className="relative w-full" style={{ minHeight: 200 }}>
       <Skeleton className="w-full rounded-none bg-gray-200 dark:bg-gray-700" />
     </div>

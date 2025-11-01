@@ -67,39 +67,6 @@ export const Sidebar = ({
   const avatarKey = creator?.avatarKey || session?.user?.avatarKey;
 
   useEffect(() => {
-    if (!avatarKey) return setLoadingAvatar(false);
-    if (avatarKey === lastFetchedAvatarKey.current) return setLoadingAvatar(false);
-
-    const fetchAvatar = async () => {
-      setLoadingAvatar(true);
-      if (avatarKey.startsWith("http")) {
-        setAvatarUrl(avatarKey);
-        lastFetchedAvatarKey.current = avatarKey;
-        setLoadingAvatar(false);
-        return;
-      }
-
-      try {
-        const key = avatarKey.replace(/^\/+/, "");
-        const res = await fetch("/api/media/download-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ s3Key: key })
-        });
-        const data = await res.json();
-        if (data.downloadUrl?.startsWith("http")) setAvatarUrl(data.downloadUrl);
-        else setAvatarError(true);
-      } catch {
-        setAvatarError(true);
-      } finally {
-        setLoadingAvatar(false);
-      }
-    };
-
-    fetchAvatar();
-  }, [avatarKey]);
-
-  useEffect(() => {
     if (status === "authenticated") setLoadingSession(false);
   }, [status]);
 
@@ -115,10 +82,10 @@ export const Sidebar = ({
   };
 
   const renderAvatar = () => {
-    if (loadingSession || loadingAvatar)
+    if (!session?.user)
       return <Skeleton className="w-12 h-12 rounded-full" />;
 
-    if (avatarUrl && !avatarError) {
+    if (avatarKey) {
       return (
         <Image
           src={`/api/media/${creator?.avatarKey}`}

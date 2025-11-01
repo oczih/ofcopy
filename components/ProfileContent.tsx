@@ -894,7 +894,7 @@ function ContentTabs({
           <PostsGrid creator={creator} status={status} user={user} handleFollow={handleFollow} purchases={purchases} users={users} session={session} />
         )}
         {activeTab === 'purchased' && (
-          <PurchasedPostsGrid status={status} creator={creator} handleFollow={handleFollow}  creators={creators} purchases={purchases} viewingUser={viewingUser} postSignedUrls={postSignedUrls} user={user}/>
+          <PurchasedPostsGrid status={status} creator={creator} handleFollow={handleFollow}  creators={creators} purchases={purchases} viewingUser={viewingUser} user={user}/>
         )}
         {activeTab === 'media' && (
           <MediaGrid creator={creator} status={status} user={user}  />
@@ -1147,7 +1147,7 @@ function MediaGrid({ creator, status, user }: { status: "subscriber" | "follower
         {visiblePosts.map((post) => {
           const isLoaded = loadedImages[post._id];
           const showFull = canView(post);
-          const imgSrc = `/api/media/${post.s3Key.key}`; // direct path, no signed URL
+          const imgSrc = `/api/media/${post.s3Key?.key}`; // direct path, no signed URL
 
           return (
             <div
