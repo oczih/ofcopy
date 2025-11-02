@@ -1,6 +1,6 @@
 'use client'
 /* eslint-disable @next/next/no-img-element */
-import { useEffect, useState } from "react";
+import {  useState } from "react";
 import { Button } from "./ui/button";
 import { Heart, UserPlus } from "lucide-react";
 import { Creator, Post } from "@/app/types";

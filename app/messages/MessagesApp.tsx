@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { MessageCircle,  Search, Image as MoreVertical, Phone, Video, Info, X, Package, ChevronLeft, Funnel, VideoIcon, Images } from "lucide-react";
@@ -38,7 +38,6 @@ export default function ChatApp({ session, users, creators }: AppProps) {
   const [messagesByChat, setMessagesByChat] = useState<Record<string, MessageType[]>>({});
   const [messageText, setMessageText] = useState("");
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
-  const [urlCache, setUrlCache] = useState<Record<string, { url: string; timestamp: number }>>({});
   const [chatAvatars, setChatAvatars] = useState<Record<string, string | null>>({});
   const [imageLoading, setImageLoading] = useState(true);
   const [files, setFiles] = useState<File[]>([]);
@@ -46,7 +45,6 @@ export default function ChatApp({ session, users, creators }: AppProps) {
   const [price, setPrice] = useState<number | null>(0);
   const [uploading, setUploading] = useState(false);
   const [activeImage, setActiveImage] = useState<string | null>(null);
-  const CACHE_TTL = 15 * 60 * 1000;
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
   const [chatsLoading, setChatsLoading] = useState(true)
@@ -182,85 +180,7 @@ export default function ChatApp({ session, users, creators }: AppProps) {
       void loadAllMessages();
     }
   }, [chats]);
-  const resolveAvatarUrl = useCallback(
-    async (avatarKey: string | null | undefined): Promise<string> => {
-      if (!avatarKey) return "";
-      if (avatarKey.startsWith("http")) {
-        return avatarKey;
-      }
-  
-      // Access the cache once directly
-      const cached = urlCache[avatarKey];
-      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        return cached.url;
-      }
 
-      try {
-        const res = await fetch("/api/media/download-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ s3Key: avatarKey }),
-        });
-  
-        const data = await res.json();
-        if (res.ok && data.downloadUrl?.startsWith("https://")) {
-          setUrlCache(prev => ({
-            ...prev,
-            [avatarKey]: { url: data.downloadUrl, timestamp: Date.now() },
-          }));
-          return data.downloadUrl;
-        }
-      } catch (error) {
-        console.error("Error fetching signed URL:", error);
-      }
-  
-      return "/default-avatar.png";
-    },
-    [CACHE_TTL] // ✅ only depends on stable TTL
-  );
-  
-  const [mediaUrlCache, setMediaUrlCache] = useState<Record<string, { url: string; timestamp: number }>>(() => {
-    if (typeof window === "undefined") return {};
-    try {
-      const stored = localStorage.getItem("mediaUrlCache");
-      return stored ? JSON.parse(stored) : {};
-    } catch {
-      return {};
-    }
-  });
-  const [messageMediaUrls, setMessageMediaUrls] = useState<Record<string, string>>({});
-  const resolveMediaUrl = useCallback(
-    async (key: string | undefined | null): Promise<string | undefined> => {
-      if (!key) return undefined;
-  
-      const cached = mediaUrlCache[key];
-      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        return cached.url;
-      }
-  
-      try {
-        const res = await fetch("/api/media/download-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ s3Key: key }),
-        });
-        const data = await res.json();
-        if (res.ok && data.downloadUrl?.startsWith("https://")) {
-          const updatedCache = {
-            ...mediaUrlCache,
-            [key]: { url: data.downloadUrl, timestamp: Date.now() },
-          };
-          setMediaUrlCache(updatedCache);
-          localStorage.setItem("mediaUrlCache", JSON.stringify(updatedCache)); // persist
-          return data.downloadUrl;
-        }
-      } catch (err) {
-        console.error("Error fetching media URL:", err);
-      }
-      return undefined;
-    },
-    [mediaUrlCache, CACHE_TTL]
-  );
   type Participant = (User & { creatorObj?: Creator }) | null;
   useEffect(() => {
     const loadAvatars = async () => {
@@ -293,7 +213,7 @@ export default function ChatApp({ session, users, creators }: AppProps) {
   
           // 🔹 Resolve S3 URL or fallback
           if (avatarKey) {
-            map[chat.id] = await resolveAvatarUrl(avatarKey);
+            map[chat.id] = avatarKey ? `/api/media/${avatarKey.replace(/^\/+/, "")}` : null;
           } else {
             map[chat.id] = null;
           }
@@ -306,39 +226,9 @@ export default function ChatApp({ session, users, creators }: AppProps) {
     };
   
     if (chats.length > 0) void loadAvatars();
-  }, [chats, users, creators, session?.user?._id, resolveAvatarUrl]);
+  }, [chats, users, creators, session?.user?._id]);
   
-  useEffect(() => {
-    if (!currentChatIdentifier) return;
-    const chatMessages = messagesByChat[currentChatIdentifier] || [];
-    if (chatMessages.length === 0) return;
-  
-    const loadMediaUrls = async () => {
-      const updatedUrls: Record<string, string> = { ...messageMediaUrls };
-  
-      for (const msg of chatMessages) {
-        const keys = [msg.blurred_key, msg.image_key, msg.video_key, msg.voice_key, msg.file_key];
-        for (const key of keys) {
-          if (!key) continue;
-  
-          // Always fetch, bypassing cache for first load
-          if (!updatedUrls[key]) {
-            try {
-              const url = await resolveMediaUrl(key);
-              if (url) updatedUrls[key] = url;
-              else console.warn("Failed to resolve key:", key);
-            } catch (err) {
-              console.error("Error resolving media key:", key, err);
-            }
-          }
-        }
-      }
-  
-      setMessageMediaUrls(prev => ({ ...prev, ...updatedUrls }));
-    };
-  
-    void loadMediaUrls();
-  }, [messages, resolveMediaUrl]);
+
   useEffect(() => {
     if (!currentChatIdentifier || !session?.user?._id) return;
   
@@ -503,12 +393,12 @@ export default function ChatApp({ session, users, creators }: AppProps) {
   useEffect(() => {
     if (otherParticipant) {
       if (otherParticipant.avatarKey) {
-        resolveAvatarUrl(otherParticipant.avatarKey).then(setOtherAvatar);
+        setOtherAvatar(`/api/media/${otherParticipant.avatarKey.replace(/^\/+/, "")}`);
       } else {
         setOtherAvatar(null); // no avatar key
       }
     }
-  }, [otherParticipant, resolveAvatarUrl]);
+  }, [otherParticipant]);
   // Helper function to format dates
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -929,8 +819,8 @@ export default function ChatApp({ session, users, creators }: AppProps) {
             src={
               // ✅ RULE: Other participant's photo with *no price* → show blurred
               (!isOwn && !message.price && message.blurred_key && !revealedMessages.includes(message.id!))
-                ? messageMediaUrls[message.blurred_key]
-                : messageMediaUrls[message.image_key]
+                ? `/api/media/${message.blurred_key}`
+                :`/api/media/${message.image_key}`
             }
             alt="Sent image"
             className={`rounded-2xl object-cover ${
@@ -939,7 +829,7 @@ export default function ChatApp({ session, users, creators }: AppProps) {
             onClick={() =>
               // ✅ Only allow full-screen if media is already revealed
               (!message.price && (isOwn || revealedMessages.includes(message.id!))) &&
-              message.image_key && setActiveImage(messageMediaUrls[message.image_key])
+              message.image_key && setActiveImage(`/api/media/${message.image_key}`)
             }
           />
         )}
@@ -948,8 +838,8 @@ export default function ChatApp({ session, users, creators }: AppProps) {
                 src={
                   // ✅ RULE: Other participant's photo with *no price* → show blurred
                   (!isOwn && message.price && message.blurred_key && !revealedMessages.includes(message.id!))
-                    ? messageMediaUrls[message.blurred_key]
-                    : messageMediaUrls[message.image_key]
+                    ? `/api/media/${message.blurred_key}`
+                    : `/api/media/${message.image_key}`
                 }
                 alt="Sent image"
                 className={`rounded-t-2xl object-cover ${
@@ -958,7 +848,7 @@ export default function ChatApp({ session, users, creators }: AppProps) {
                 onClick={() =>
                   // ✅ Only allow full-screen if media is already revealed
                   (!message.price && (isOwn || revealedMessages.includes(message.id!))) &&
-                  message.image_key && setActiveImage(messageMediaUrls[message.image_key])
+                  message.image_key && setActiveImage(`/api/media/${message.image_key}`)
                 }
               />
             )}
@@ -966,8 +856,8 @@ export default function ChatApp({ session, users, creators }: AppProps) {
           <video
             src={
               (!isOwn && !message.price && message.blurred_key && !revealedMessages.includes(message.id!))
-                ? messageMediaUrls[message.blurred_key]
-                : messageMediaUrls[message.video_key]
+                ? `/api/media/${message.blurred_key}`
+                : `/api/media/${message.video_key}`
             }
             controls={(!message.price && (isOwn || revealedMessages.includes(message.id!)))}
             className={`rounded-2xl ${
@@ -1041,7 +931,7 @@ export default function ChatApp({ session, users, creators }: AppProps) {
       <div className="w-48 relative">
         <audio
           controls={!message.price}
-          src={messageMediaUrls[message.voice_key]}
+          src={`/api/media/${message.voice_key}`}
           className="w-full"
         />
         {message.price && (
@@ -1096,9 +986,6 @@ export default function ChatApp({ session, users, creators }: AppProps) {
                       }}
                       open={payPostOpen}
                       creator={otherParticipant || null}
-                      avatarUrl={
-                        currentChatIdentifier ? chatAvatars[currentChatIdentifier] ?? null : null
-                      }
                       price={currentMessagePrice}
                       session={session}
                       message={message}

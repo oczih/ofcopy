@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { Button } from '@/components/ui/button';
 import { Creator, Subscription } from '@/app/types';
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Skeleton } from '@mui/material';
 
 interface CancelSubscriptionCardProps {
@@ -19,51 +19,8 @@ const CancelSubscriptionCard: React.FC<CancelSubscriptionCardProps> = ({
 }) => {
     const subscriptionCreator = creators?.find((c: Creator) => c._id === subscription.creatorId)
     const [imageLoading, setImageLoading] = useState(true);
-    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  useEffect(() => {
-    const fetchAvatarUrl = async () => {
-      if (subscriptionCreator?.avatarKey) {
-        try {
-          setImageLoading(true);
-  
-          const key = subscriptionCreator.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
-          const res = await fetch("/api/media/download-url", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ s3Key: key }),
-          });
-  
-          const data = await res.json();
-  
-          if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
-            setAvatarUrl(data.downloadUrl);
-          } else {
-            console.error("Invalid download URL:", data.downloadUrl);
-          }
-        } catch (error) {
-          console.error("Error fetching avatar URL:", error);
-        } finally {
-          setImageLoading(false);
-        }
-      } else {
-        setImageLoading(false);
-      }
 
-    };
-  
-    fetchAvatarUrl();
-  }, [subscriptionCreator?.avatarKey]);
-  function resolveImageUrl(url: string) {
-    if (!url) return null;
-    if (url.startsWith("http")) return url; // signed URL is absolute
-    return `https://cdn.fanslio.com/${url.replace(/^\/+/, '')}`;
-  }
-  const resolvedAvatarUrl = useMemo(
-    () => resolveImageUrl(avatarUrl ?? ""), // Use empty string if null
-    [avatarUrl]
-  );
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white/10 backdrop-blur-xl p-8 rounded-3xl border border-white/20 max-w-md w-full space-y-6">
@@ -73,13 +30,13 @@ const CancelSubscriptionCard: React.FC<CancelSubscriptionCardProps> = ({
         <Skeleton className="w-30 h-30 rounded-full bg-gray-200 dark:bg-gray-700" />
         ) : 
         (<img
-            src={resolvedAvatarUrl ?? undefined}
+            src={`/api/media/${subscriptionCreator?.avatarKey}` || undefined}
             alt={subscriptionCreator?.name || subscriptionCreator?.username || "" }
             width={30} 
             height={30}
             onLoad={() => setImageLoading(false)}
             className="object-cover"
-        />)}
+        />)}        
           <h3 className="text-white text-lg font-semibold">
             Unsubscribe from @{subscription.creatorUsername}
           </h3>

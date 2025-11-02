@@ -28,11 +28,6 @@ type Stats = {
 
 export default function App({ creators, users, session, purchases}: AppProps) {
   const [showBanner, setShowBanner] = useState(true);
-  type SignedUrls = {
-    signedUrl: string;
-    blurredUrl: string;
-  };
-  const [postSignedUrls, setPostSignedUrls] = useState<Record<string, SignedUrls>>({});
   const [page, setPage] = useState("Feed");
   const [creator, setCreator] = useState<Creator | undefined>(undefined)
   const [stats, setStats] = useState<Stats | null>(null);
@@ -70,63 +65,7 @@ export default function App({ creators, users, session, purchases}: AppProps) {
       c => followedCreatorIds.has(c._id) || session?.user._id === c.user.toString()
     ));
   }, [creators, session]);
-  useEffect(() => {
-    async function fetchSignedUrls() {
-      if (!creators || creators.length === 0) return;
-  
-      const signedUrlsMap: Record<string, { signedUrl: string; blurredUrl: string }> = {};
-      const allPosts = creators.flatMap((creator) => creator.posts || []);
-  
-      await Promise.all(
-        allPosts.map(async (post) => {
-          try {
-            // Get correct S3 key format
-            const s3KeyObj =
-              typeof post.s3Key === "string"
-                ? { key: post.s3Key, blurred_key: post.s3Key }
-                : post.s3Key;
-  
-            if (!s3KeyObj) return;
-  
-            // Determine access rights
-            const rightCreator = creators.find((c) => c.user === session?.user._id);
-            const canView =
-              rightCreator?._id.toString() === post.creator.toString() || // post owner
-              session?.user?.following?.some((f) => f.creatorId === post.creator) ||
-              session?.user?.subscriptions?.some((s) => s.creatorId === post.creator);
-  
-            const keyToFetch = canView ? s3KeyObj.key : s3KeyObj.blurred_key;
-            if (!keyToFetch) return;
-  
-            // ✅ Fetch once (server will cache if needed)
-            const res = await fetch("/api/media/download-url", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ s3Key: keyToFetch }),
-            });
-  
-            if (res.ok) {
-              const data = await res.json();
-  
-              signedUrlsMap[post._id] = {
-                signedUrl: canView ? data.downloadUrl : "",
-                blurredUrl: canView ? "" : data.downloadUrl,
-              };
-            }
-          } catch (err) {
-            console.error("Failed to fetch signed URL for post:", post._id, err);
-          }
-        })
-      );
-  
-      setPostSignedUrls((prev) => ({ ...prev, ...signedUrlsMap }));
-    }
-  
-    fetchSignedUrls();
-  }, [creators, session?.user]);
-  
-  
-  
+
   const handleResendVerification = async () => {
     try {
       const response = await fetch("/api/auth/resend-verification", {
@@ -328,8 +267,6 @@ export default function App({ creators, users, session, purchases}: AppProps) {
           session={session}
           user={session.user as User}
           status={status}
-          blurredUrl={postSignedUrls[post._id]?.blurredUrl}
-          signedUrl={postSignedUrls[post._id]?.signedUrl}
           users={users}
           handleFollow={handleFollow}
           purchases={purchases}

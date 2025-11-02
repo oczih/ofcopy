@@ -4,7 +4,7 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { MoreHorizontal, Heart, MessageCircle, LockKeyhole } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Session } from "next-auth";
 import { Comment, Creator, Post, Purchase, User} from "../app/types";
 import { Skeleton } from "@/components/ui/skeleton"
@@ -44,11 +44,7 @@ export function CreatorPostCard({
   const isFollowersOnly = post.viewableFor === "followers";
 const isSubscribersOnly = post.viewableFor === "subscribers";
 const [paymentModal, setPaymentModal] = useState(false)
-function resolveImageUrl(url: string) {
-  if (!url) return null;
-  if (url.startsWith("http")) return url; // signed URL is absolute
-  return `https://cdn.fanslio.com/${url.replace(/^\/+/, '')}`;
-}
+
   // Example: find the creator that matches the current session user
 
   const isViewingUserOwner = String(creator.user) === String(session?.user?._id);
@@ -105,7 +101,6 @@ function resolveImageUrl(url: string) {
   const [likes, setLikes] = useState(post.likes ?? []);
   const [comments, setComments] = useState(post.comments ?? []);
   const [reportModal, setReportModalOpen] = useState(false)
-  const [imageLoading, setImageLoading] = useState(true);
 
   const handleLike = async (post: Post) => {
   try {
@@ -180,42 +175,9 @@ function resolveImageUrl(url: string) {
       alert('Failed to unlike post');
     }
   }
-  const [userAvatars, setUserAvatars] = useState<Record<string, string>>({});
-const [avatarsLoading, setAvatarsLoading] = useState<Record<string, boolean>>({});
 
-const fetchUserAvatarUrl = async (user: User) => {
-  if (!user.avatarKey) return;
 
-  setAvatarsLoading(prev => ({ ...prev, [user._id]: true }));
 
-  try {
-    const key = user.avatarKey.replace(/^\/+/, '');
-    const res = await fetch("/api/media/download-url", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ s3Key: key }),
-    });
-
-    const data = await res.json();
-
-    if (res.ok && data.downloadUrl?.startsWith("https://")) {
-      setUserAvatars(prev => ({ ...prev, [user._id]: data.downloadUrl }));
-    }
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setAvatarsLoading(prev => ({ ...prev, [user._id]: false }));
-  }
-};
-useEffect(() => {
-  if (!Array.isArray(users)) return;
-
-  users.forEach(user => {
-    if (user.avatarKey && !userAvatars[user._id]) {
-      fetchUserAvatarUrl(user);
-    }
-  });
-}, [users, userAvatars]);
   const isLikedByCurrentUser = likes.some(
     (like) => like.userId.toString() === session?.user?._id?.toString()
   );
@@ -346,9 +308,6 @@ useEffect(() => {
     alert('Failed to delete comment');
   }
 };
-  console.log(post)
-  const mediaUrl = `/api/media/${post.s3Key?.key ?? post.s3Key}`;
-  console.log(mediaUrl)
   function timeAgo(date: string | Date) {
     const now = new Date();
     const past = new Date(date);
@@ -384,7 +343,6 @@ useEffect(() => {
         <img
           src={`/api/media/${creator?.avatarKey}`} // direct path
           alt={creator.name || creator.username}
-          onLoad={() => setImageLoading(false)}
           className="object-cover w-full h-full"
         />
       )}
@@ -629,12 +587,12 @@ useEffect(() => {
                 <div key={comment._id || idx} className="flex items-start gap-3 bg-slate-800/60 rounded-lg p-3">
                   <div className="flex items-center gap-2 min-w-0">
                   <Avatar className="w-8 h-8">
-                      {avatarsLoading[userObj._id] ? (
+                      {!userObj.avatarKey ? (
                         <Skeleton className="w-full h-full rounded-none bg-gray-200 dark:bg-gray-700" />
-                      ) : userAvatars[userObj._id] ? (
+                      ) : userObj.avatarKey ? (
                         <AvatarImage
                           key={userObj._id} // force re-render if src changes
-                          src={userAvatars[userObj._id]}
+                          src={`/api/media/${userObj.avatarKey}`}
                           alt={userObj?.name || userObj?.username || "User"}
                         />
                       ) : (

@@ -9,25 +9,26 @@ export default function ApplicationCard({
   tab,
   onAction,
   actionLoading,
-  photoUrls
 }: {
   app: CreatorApplicationType;
   tab: string;
   onAction: (id: string, action: "accept" | "reject", rejectionReason?: string) => void;
   actionLoading: boolean;
-  photoUrls: Record<string,string>
 }) {
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const [reasonModal, setReasonModal] = useState(false)
   const [rejectionReason, setRejectionReason] = useState("");
-  const photos = [
-    { label: "Profile Pic", key: photoUrls?.profilePic || app.profilePic },
-    { label: "ID Front", key: photoUrls?.idFrontPhoto || app.idFrontPhoto },
-    { label: "ID Back", key: photoUrls?.idBackPhoto || app.idBackPhoto },
-    { label: "Selfie with ID", key: photoUrls?.selfieWithId || app.selfieWithId },
-  ]
-    .map(p => ({ ...p, key: typeof p.key === "string" ? p.key : p.key }))
-    .filter(p => p.key);
+  interface Photo {
+    label: string;
+    key: string;
+  }
+  
+  const photos: Photo[] = [
+    { label: "Profile Pic", key: app.profilePic?.s3Key },
+    { label: "ID Front", key: app.idFrontPhoto?.s3Key },
+    { label: "ID Back", key: app.idBackPhoto?.s3Key },
+    { label: "Selfie with ID", key: app.selfieWithId?.s3Key },
+  ].filter((p): p is Photo => typeof p.key === "string" && !!p.key);
 
   return (
     <>
@@ -51,28 +52,23 @@ export default function ApplicationCard({
 
         {/* Photos */}
         {photos.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-             {photos.map(p => (
-        <div key={p.label} className="flex flex-col cursor-pointer items-center" onClick={() => {
-          if (typeof p.key === "string") {
-            setActiveImage(p.key);
-          } else if (p.key && "key" in p.key) {
-            // if p.key is FileMetaType
-            setActiveImage(p.key.s3Key);
-          } else {
-            setActiveImage(null); // fallback
-          }
-        }}>
-          <span className="text-sm text-white mb-1">{p.label}</span>
-          <img
-              src={typeof p.key === "string" ? p.key : p.key?.s3Key ?? ""}
-              alt={p.label}
-              className="rounded-lg object-cover border border-gray-300 w-32 h-32"
-            />
-            </div>
-          ))}
-          </div>
-        )}
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+    {photos.map((p) => (
+      <div
+        key={p.label}
+        className="flex flex-col cursor-pointer items-center"
+        onClick={() => setActiveImage(`/api/media/${p.key}`)}
+      >
+        <span className="text-sm text-white mb-1">{p.label}</span>
+        <img
+          src={`/api/media/${p.key}`}
+          alt={p.label}
+          className="rounded-lg object-cover border border-gray-300 w-32 h-32"
+        />
+      </div>
+    ))}
+  </div>
+)}
         {activeImage &&
         createPortal(
           <div

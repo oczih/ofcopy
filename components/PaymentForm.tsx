@@ -15,7 +15,6 @@ interface PaymentFormProps {
   open: boolean;
   onClose: () => void;
   creator: Creator | null;
-  avatarUrl?: string | null;
   price: number | null;
   session: Session | null;
   post?: Post | null;
@@ -27,7 +26,6 @@ export default function PaymentForm({
   open,
   onClose,
   creator,
-  avatarUrl,
   price,
   session
 }: PaymentFormProps) {
@@ -160,7 +158,7 @@ export default function PaymentForm({
         {/* Creator Info */}
         <div className="flex items-center gap-3">
           <img
-            src={avatarUrl || ""}
+            src={`/api/media/${creator?.avatarKey}` || ""}
             alt={creator?.name || "Creator"}
             className="w-12 h-12 rounded-full border border-white/20 object-cover"
           />

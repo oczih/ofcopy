@@ -19,118 +19,16 @@ interface AppProps {
 
 export default function AdminDashboard({ session, users,creators, applications: initialApplications, reports: initialReports }: AppProps) {
   const [mounted, setMounted] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [tab, setTab] = useState("pending");
   const [applications, setApplications] = useState<CreatorApplicationType[]>(initialApplications);
   const [reports, setReports] = useState<ReportType[]>(initialReports);
-  const [photoUrls, setPhotoUrls] = useState<Record<string, Record<string, string>>>({});
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Fetch media URLs only once on mount
-  useEffect(() => {
-    const fetchApplicationsWithMedia = async (apps: CreatorApplicationType[]) => {
-      try {
-        const appsWithMedia = await Promise.all(
-          apps.map(async (app) => {
-            const mediaKeys = [
-              { key: app.profilePic, label: "profilePic" },
-              { key: app.idFrontPhoto, label: "idFrontPhoto" },
-              { key: app.idBackPhoto, label: "idBackPhoto" },
-              { key: app.selfieWithId, label: "selfieWithId" },
-            ];
-
-            const mediaUrls: Record<string, string> = {};
-            await Promise.all(
-              mediaKeys.map(async ({ key, label }) => {
-                if (!key) return;
-                try {
-                  const res = await fetch("/api/media/download-url", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ s3Key: key }),
-                  });
-                  const data = await res.json();
-                  if (res.ok && data.downloadUrl) mediaUrls[label] = data.downloadUrl;
-                } catch (err) {
-                  console.error(`Error fetching ${label} for ${app._id}:`, err);
-                }
-              })
-            );
-
-            setPhotoUrls(prev => ({ ...prev, [app._id]: mediaUrls }));
-            return { ...app, mediaUrls };
-          })
-        );
-        setApplications(appsWithMedia);
-      } catch (err) {
-        console.error("Failed fetching media URLs:", err);
-        setError("Failed to fetch application media");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (applications.length > 0) fetchApplicationsWithMedia(applications);
-    else setLoading(false);
-  }, []); // <-- empty dependency to run only once
-  useEffect(() => {
-    const fetchApplicationsWithMedia = async (apps: CreatorApplicationType[]) => {
-      try {
-        const newPhotoUrls: Record<string, Record<string, string>> = {};
-  
-        const appsWithMedia = await Promise.all(
-          apps.map(async (app) => {
-            const mediaKeys = [
-              { key: app.profilePic, label: "profilePic" },
-              { key: app.idFrontPhoto, label: "idFrontPhoto" },
-              { key: app.idBackPhoto, label: "idBackPhoto" },
-              { key: app.selfieWithId, label: "selfieWithId" },
-            ];
-  
-            const mediaUrls: Record<string, string> = {};
-            await Promise.all(
-              mediaKeys.map(async ({ key, label }) => {
-                if (!key) return;
-                try {
-                  const res = await fetch("/api/media/download-url", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ s3Key: key }),
-                  });
-                  const data = await res.json();
-                  if (res.ok && data.downloadUrl) mediaUrls[label] = data.downloadUrl;
-                } catch (err) {
-                  console.error(`Error fetching ${label} for ${app._id}:`, err);
-                }
-              })
-            );
-  
-            // build map instead of calling setPhotoUrls in each iteration
-            newPhotoUrls[app._id] = mediaUrls;
-  
-            return { ...app, mediaUrls };
-          })
-        );
-  
-        setPhotoUrls(newPhotoUrls); // ✅ only once
-        setApplications(appsWithMedia);
-      } catch (err) {
-        console.error("Failed fetching media URLs:", err);
-        setError("Failed to fetch application media");
-      } finally {
-        setLoading(false);
-      }
-    };
-  
-    if (applications.length > 0) fetchApplicationsWithMedia(applications);
-    else setLoading(false);
-  }, []);
-  
   console.log(reports)
   // Handle accept/reject actions
   async function handleAction(
@@ -226,7 +124,6 @@ export default function AdminDashboard({ session, users,creators, applications: 
 
       <TabBar tab={tab} setTab={setTab} />
 
-      {loading && <div className="text-center mb-4">Loading...</div>}
       {error && <div className="text-red-500 mb-4">{error}</div>}
 
       <div className="space-y-6">
@@ -237,7 +134,6 @@ export default function AdminDashboard({ session, users,creators, applications: 
             <ApplicationCard
               key={app._id}
               app={app}
-              photoUrls={photoUrls[app._id] || {}}
               tab={tab}
               onAction={handleAction}
               actionLoading={!!actionLoading[app._id]}

@@ -52,40 +52,30 @@ export default function AppWrapper({
       setLoadingAvatar(false);
       return;
     }
+  
     if (avatarKey === lastFetchedAvatarKey.current) {
       setLoadingAvatar(false);
       return;
     }
-
-    const fetchAvatarUrl = async () => {
-      setLoadingAvatar(true);
+  
+    setLoadingAvatar(true);
+    setAvatarError(false);
+  
+    try {
       if (avatarKey.startsWith("http")) {
         setAvatarUrl(avatarKey);
-        lastFetchedAvatarKey.current = avatarKey;
-        setLoadingAvatar(false);
-        return;
-      }
-      try {
-        setAvatarError(false);
+      } else {
         const key = avatarKey.replace(/^\/+/, "");
-        const res = await fetch("/api/media/download-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ s3Key: key }),
-        });
-        const data = await res.json();
-        if (data.downloadUrl?.startsWith("http")) {
-          setAvatarUrl(data.downloadUrl);
-        } else setAvatarError(true);
-      } catch {
-        setAvatarError(true);
-      } finally {
-        setLoadingAvatar(false);
+        setAvatarUrl(`/api/media/${key}`);
       }
-    };
-
-    fetchAvatarUrl();
+      lastFetchedAvatarKey.current = avatarKey;
+    } catch {
+      setAvatarError(true);
+    } finally {
+      setLoadingAvatar(false);
+    }
   }, [avatarKey]);
+  
   // Detect blog subdomain
   const [isBlogSubdomain, setIsBlogSubdomain] = useState<boolean | null>(null);
   useEffect(() => {

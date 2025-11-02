@@ -1,23 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSignedUrl } from "@aws-sdk/cloudfront-signer";
 
-const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+const CACHE_TTL = 60 * 60 * 1000;
 const urlCache: Record<string, { url: string; expiresAt: number }> = {};
 
-export async function GET(req: NextRequest, { params }: { params: { key: string[] } }) {
+export async function GET(
+  req: NextRequest,
+  context: { params: Promise<{ key: string[] }> } // ✅ only params is Promise
+) {
+  const { key } = await context.params; // ✅ correct await location
   try {
-    // 1️⃣ Get the requested S3/CloudFront key
-    const key = await params.key.join("/");
-    const cleanedKey = key.replace(/^\/+/, "");
+    const cleanedKey = key.join("/").replace(/^\/+/, "");
     const now = Date.now();
 
-    // 2️⃣ Check cache first
     const cached = urlCache[cleanedKey];
     if (cached && cached.expiresAt > now) {
       return NextResponse.redirect(cached.url, 302);
     }
 
-    // 3️⃣ Load CloudFront config
     const cfDomain = process.env.CF_DOMAIN?.replace(/\/$/, "");
     const privateKey = process.env.CF_PRIVATE_KEY?.replace(/\\n/g, "\n");
     const keyPairId = process.env.CF_KEY_PAIR_ID;
@@ -27,7 +27,6 @@ export async function GET(req: NextRequest, { params }: { params: { key: string[
       return NextResponse.json({ error: "CloudFront not configured" }, { status: 500 });
     }
 
-    // 4️⃣ Sign the URL
     const expiresAt = new Date(now + CACHE_TTL);
     const fullUrl = `${cfDomain}/${cleanedKey}`;
     const signedUrl = getSignedUrl({
@@ -37,7 +36,6 @@ export async function GET(req: NextRequest, { params }: { params: { key: string[
       dateLessThan: expiresAt,
     });
 
-    // 5️⃣ Cache and redirect
     urlCache[cleanedKey] = { url: signedUrl, expiresAt: expiresAt.getTime() };
     return NextResponse.redirect(signedUrl, 302);
   } catch (err) {

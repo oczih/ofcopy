@@ -25,8 +25,6 @@ export default function App({ creators, users, session, posts, postId, purchases
   const [currentUser, setCurrentUser] = useState<User>(session?.user as User);
   const [creator, setCreator] = useState<Creator | null>(null);
   const [post, setPost] = useState<Post | null>(null);
-  const [postUrl, setPostUrl] = useState<string>("");
-  const [blurredUrl, setBlurredUrl] = useState<string>("")
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   //const [imageLoading, setImageLoading] = useState(true);
   // Find the creator & post
@@ -44,91 +42,7 @@ export default function App({ creators, users, session, posts, postId, purchases
   if (!loading && (!creator || !post)) {
     notFound(); // only call after we finished loading
   }
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  //const [signedUrlLoading, setSignedUrlLoading] = useState(true);
-  useEffect(() => {
-    const fetchAvatarUrl = async () => {
-      if (creator?.avatarKey) {
-        try {
-          //setImageLoading(true);
-  
-          const key = creator.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
-          const res = await fetch("/api/media/download-url", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ s3Key: key }),
-          });
-  
-          const data = await res.json();
-  
-          if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
-            setAvatarUrl(data.downloadUrl);
-          } else {
-            console.error("Invalid download URL:", data.downloadUrl);
-          }
-        } catch (error) {
-          console.error("Error fetching avatar URL:", error);
-        } finally {
-          //setSignedUrlLoading(false);
-          //setImageLoading(false);
-        }
-      } else {
-        //setImageLoading(false);
-      }
 
-    };
-  
-    fetchAvatarUrl();
-  }, [creator?.avatarKey]);
-  useEffect(() => {
-    const fetchPostUrls = async () => {
-      if (!post?.s3Key) return;
-  
-      try {
-        if (typeof post.s3Key === "object") {
-          const { key, blurred_key } = post.s3Key;
-  
-          // Fetch signed URL for main file
-          const resMain = await fetch("/api/media/download-url", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ s3Key: key }),
-          });
-          const dataMain = await resMain.json();
-  
-          if (resMain.ok && dataMain.downloadUrl?.startsWith("https://")) {
-            setPostUrl(dataMain.downloadUrl);
-          } else {
-            console.error("Invalid main download URL:", dataMain.downloadUrl);
-          }
-  
-          // Fetch signed URL for blurred file (if available)
-          if (blurred_key) {
-            const resBlurred = await fetch("/api/media/download-url", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ s3Key: blurred_key }),
-            });
-            const dataBlurred = await resBlurred.json();
-  
-            if (resBlurred.ok && dataBlurred.downloadUrl?.startsWith("https://")) {
-              setBlurredUrl(dataBlurred.downloadUrl);
-            } else {
-              console.error("Invalid blurred download URL:", dataBlurred.downloadUrl);
-            }
-          }
-        } else {
-          console.warn("Unexpected s3Key type (string):", post.s3Key);
-        }
-      } catch (error) {
-        console.error("Error fetching post URLs:", error);
-      }
-    };
-  
-    fetchPostUrls();
-  }, [post?.s3Key]);
   // Follow handler
   const notifiedCreators = useRef<Set<string>>(new Set());
 
@@ -223,7 +137,6 @@ export default function App({ creators, users, session, posts, postId, purchases
               open={joinModalOpen}
               onClose={() => setJoinModalOpen(false)}
               creator={creator}
-              avatarUrl={avatarUrl || ""} // FIXED: replaced undefined avatarUrl
             />
           )}
 
@@ -234,9 +147,7 @@ export default function App({ creators, users, session, posts, postId, purchases
             status={status}
             user={viewingUser as User}
             users={users}
-            signedUrl={postUrl}
             purchases={purchases}
-            blurredUrl={blurredUrl}
             handleFollow={handleFollow}
             handleDeletePost={() => handleDeletePost(creator._id, post._id)}
           />

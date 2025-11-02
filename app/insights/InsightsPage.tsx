@@ -100,7 +100,6 @@ function groupByTime(transactions: Transaction[]): { time: string; avg: number }
 export default function CreatorInsights({ session, users, creators }: AppProps) {
   const [mounted, setMounted] = useState(false);
   const correctCreator = creators.find((c: Creator) => c.user === session?.user._id);
-  const [userAvatars, setUserAvatars] = useState<Record<string, string>>({});
   const [selectedGraphs, setSelectedGraphs] = useState<Record<string, GraphType>>({});
   const [mediaType, setMediaType] = useState<"solo" | "bundle">("solo")
   const router = useRouter();
@@ -114,41 +113,7 @@ export default function CreatorInsights({ session, users, creators }: AppProps) 
       notFound();
     }
   }, [session, router]);
-  const fetchUserAvatarUrl = async (user: User) => {
-    if (!user.avatarKey) return;
-  
-  
-    try {
-      const key = user.avatarKey.replace(/^\/+/, '');
-      if(key.startsWith("http")){
-        setUserAvatars(prev => ({ ...prev, [user._id]: key }));
-        return null
-      }
-      const res = await fetch("/api/media/download-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ s3Key: key }),
-      });
-  
-      const data = await res.json();
-  
-      if (res.ok && data.downloadUrl?.startsWith("https://")) {
-        setUserAvatars(prev => ({ ...prev, [user._id]: data.downloadUrl }));
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-    }
-  };
-  useEffect(() => {
-    if (!Array.isArray(users)) return;
-  
-    users.forEach(user => {
-      if (user.avatarKey && !userAvatars[user._id]) {
-        fetchUserAvatarUrl(user);
-      }
-    });
-  }, [users, userAvatars]);
+
   useEffect(() => setMounted(true), []);
   if (!mounted) {
     return (

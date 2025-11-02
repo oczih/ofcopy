@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MoreHorizontal, Eye, EyeOff, AlertCircle, X, Heart, MessageCircle } from 'lucide-react';
@@ -363,80 +363,7 @@ export function PostCard({
 
   const shouldBlur = status === 'none';
   const isOwner = viewingUser._id === creator._id; // Fixed owner check
-   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchAvatarUrl = async () => {
-      if (creator.avatarKey) {
-        try {
-          setImageLoading(true);
-  
-          const key = creator.avatarKey?.replace(/^\/+/, ''); // Remove leading slash
-          const res = await fetch("/api/media/download-url", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ s3Key: key }),
-          });
-  
-          const data = await res.json();
-  
-          if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
-            setAvatarUrl(data.downloadUrl);
-          } else {
-            console.error("Invalid download URL:", data.downloadUrl);
-          }
-        } catch (error) {
-          console.error("Error fetching avatar URL:", error);
-        } finally {
-          setImageLoading(false);
-        }
-      } else {
-        setImageLoading(false);
-      }
-
-    };
-  
-    fetchAvatarUrl();
-  }, [creator?.avatarKey]);
-  const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
-
-  const avatarKey = viewingUser.avatarKey;
-  useEffect(() => {
-    const fetchAvatarUrl = async () => {
-      if (avatarKey) {
-        try {
-          setImageLoading(true);
-  
-          const key = avatarKey.replace(/^\/+/, ''); // Remove leading slash
-          const res = await fetch("/api/media/download-url", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ s3Key: key }),
-          });
-  
-          const data = await res.json();
-  
-          if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
-            setUserAvatarUrl(data.downloadUrl);
-          } else {
-            console.error("Invalid download URL:", data.downloadUrl);
-          }
-        } catch (error) {
-          console.error("Error fetching avatar URL:", error);
-        } finally {
-          setImageLoading(false);
-        }
-      } else {
-        setImageLoading(false);
-      }
-    };
-  
-    fetchAvatarUrl();
-  }, [avatarKey]);
   const handleModalOpen = () => setModalOpen((open) => !open);
 
   const handleDeletePost = async (id: string) => {
@@ -637,7 +564,7 @@ export function PostCard({
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <Link href={`/${creator.username}`}>
               <Avatar className="w-12 h-12">
-                <AvatarImage src={resolveImageUrl(avatarUrl) || ""} alt={creator.name || creator.username} />
+                <AvatarImage src={`/api/media/${creator.avatarKey}`} alt={creator.name || creator.username} />
                 <AvatarFallback>{creator.name?.[0] || creator.username?.[0]}</AvatarFallback>
               </Avatar>
             </Link>
@@ -838,7 +765,7 @@ export function PostCard({
               <div className="flex w-full items-start gap-3">
                 {viewingUser?.avatarKey && (
                   <Avatar className="w-8 h-8 mt-1">
-                    <AvatarImage src={resolveImageUrl(userAvatarUrl) || ""} alt={viewingUser.name || 'User'} />
+                    <AvatarImage src={`/api/media/${viewingUser.avatarKey}` || ""} alt={viewingUser.name || 'User'} />
                     <AvatarFallback>{viewingUser.name?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
                 )}

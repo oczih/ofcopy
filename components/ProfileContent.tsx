@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Creator, Post, Purchase, Subscription, User } from '@/app/types';
 import creatorservice from '@/app/services/creatorservice';
@@ -130,7 +130,6 @@ export default function ProfileContent({
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'cancelled' | 'expired' | null>(null);
   const [StopSubscribeModalOpen, SetStopSubscribeModal] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarImage, setAvatarImage] = useState<string | null>(null);
   const avatarKey = creator?.avatarKey ?? userViewed?.avatarKey?.replace(/^\/+/, '');
   const [imageLoading, setImageLoading] = useState(!!avatarKey);
   const [loading, setLoading] = useState(false)
@@ -665,7 +664,7 @@ export default function ProfileContent({
         <Skeleton className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700" />
       ) : avatarUrl ? (
         <img
-          src={resolvedSrc || avatarImage || ""}
+          src={resolvedSrc  || ""}
           alt={userViewed.username || "User profile image"}
           className="w-10 h-10 rounded-full shadow-lg object-cover"
           onLoad={() => setImageLoading(false)}
@@ -779,7 +778,6 @@ export default function ProfileContent({
             open={joinModalOpen}
             onClose={() => setJoinModalOpen(false)}
             creator={creator}
-            avatarUrl={avatarUrl || ""}
           />
         )}
         
@@ -789,7 +787,6 @@ export default function ProfileContent({
         onClose={() => setModalOpen(false)}
         open={modalOpen}
         creator={creator}
-        avatarUrl={avatarUrl || ""}
         // ✅ Apply promotion if active
         price={
           activePromotion
@@ -1147,7 +1144,9 @@ function MediaGrid({ creator, status, user }: { status: "subscriber" | "follower
         {visiblePosts.map((post) => {
           const isLoaded = loadedImages[post._id];
           const showFull = canView(post);
-          const imgSrc = `/api/media/${post.s3Key?.key}`; // direct path, no signed URL
+          const rawKey =
+            typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.key;
+          const imgSrc = `/api/media/${rawKey}`; // direct path, no signed URL
 
           return (
             <div

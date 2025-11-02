@@ -8,7 +8,7 @@ import { Creator } from '@/app/types';
 import { signIn } from "next-auth/react";
 import Link from 'next/link';
 
-export default function SignUpModal({ open, onClose, creator, avatarUrl }: { open: boolean, onClose: () => void, creator: Creator, avatarUrl: string }) {
+export default function SignUpModal({ open, onClose, creator }: { open: boolean, onClose: () => void, creator: Creator}) {
   const [isLoading, setIsLoading] = useState(false);
   const [passwordField, setPasswordField] = useState(false)
   const [formData, setFormData] = useState({
@@ -178,7 +178,7 @@ export default function SignUpModal({ open, onClose, creator, avatarUrl }: { ope
                 <div className="absolute inset-0 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 p-[2px]">
                   <div className="w-full h-full rounded-full overflow-hidden bg-slate-800">
                     <Image
-                      src={avatarUrl || '/api/placeholder/128/128'}
+                      src={`/api/media/${creator.avatarKey}` || '/api/placeholder/128/128'}
                       alt={creator.name || creator.username}
                       className="w-full h-full object-cover"
                       height={80}

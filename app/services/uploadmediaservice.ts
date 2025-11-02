@@ -21,10 +21,6 @@ interface CreatePostParams {
   viewableFor?: 'followers' | 'subscribers';
 }
 
-export async function getDownloadUrl(s3Key: string): Promise<string> {
-  const response = await axios.post<{ downloadUrl: string }>("/api/media/download-url", { s3Key });
-  return response.data.downloadUrl;
-}
 
 async function getSignedUrl(fileName: string, contentType: string): Promise<SignedUrlResponse> {
   const response = await axios.post<SignedUrlResponse>("/api/media/upload-url", {
@@ -162,7 +158,6 @@ const uploadmediaservice = {
   createPostWithUpload,
   uploadContent,
   updatePost,
-  getDownloadUrl,
 };
 
 export default uploadmediaservice;

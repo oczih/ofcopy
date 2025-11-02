@@ -6,7 +6,6 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useParams, useRouter } from 'next/navigation';
 import postservice from '@/app/services/postservice';
-import { resolveImageUrl } from '@/components/resolveImageUrl';
 import { Creator, Post, User} from '@/app/types';
 import { Session } from 'next-auth';
 interface AppProps {
@@ -28,7 +27,6 @@ export default function App({creators, users}: AppProps) {
   const [viewable, setViewable] = useState('followers');
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
-  const [postUrl, setPostUrl] = useState<string | null>(null);
   useEffect(() => {
     async function fetchPost() {
       setLoading(true);
@@ -36,15 +34,6 @@ export default function App({creators, users}: AppProps) {
       try {
         const fetchedPostResponse = await postservice.getPrivatePostById(postId);
         const fetchedPost = fetchedPostResponse.post;
-        if (fetchedPost.s3Key) {
-          const res = await fetch('/api/media/download-url', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ s3Key: fetchedPost.s3Key }),
-          });
-          const { downloadUrl } = await res.json();
-          setPostUrl(downloadUrl);
-        }
         setPost(fetchedPost);
         setCaption(fetchedPost.caption || '');
         setViewable(fetchedPost.viewableFor || 'followers');
@@ -116,9 +105,9 @@ export default function App({creators, users}: AppProps) {
               </div>
             <div className="w-full flex justify-center mb-6">
               <div className="relative w-72 h-72 bg-slate-900 rounded-xl flex items-center justify-center overflow-hidden">
-                {postUrl ? (
+                {post.s3Key ? (
                   <Image
-                    src={resolveImageUrl(postUrl) || ""}
+                    src={post.s3Key?.key || ""}
                     alt={caption || 'Post image'}
                     fill
                     style={{ objectFit: 'contain' }}

@@ -19,7 +19,7 @@ import {
   X
 } from "lucide-react";
 import { signOut } from "next-auth/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname} from "next/navigation";
 import Image from "next/image";
@@ -44,17 +44,10 @@ export const Sidebar = ({
   setIsSidebarOpen
 }: SidebarProps) => {
   const pathname = usePathname();
-  const status = session ? "authenticated" : "unauthenticated";
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [loadingSession, setLoadingSession] = useState(true);
-  const [loadingAvatar, setLoadingAvatar] = useState(true);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarError, setAvatarError] = useState(false);
   const user = session?.user as User | undefined;
   const isCreator = !!user?.creator;
-
   const [creator, setCreator] = useState<Creator | null>(null);
-  const lastFetchedAvatarKey = useRef<string | null>(null);
 
   // Fetch creator
   useEffect(() => {
@@ -65,10 +58,6 @@ export const Sidebar = ({
   }, [session?.user?._id, creators]);
 
   const avatarKey = creator?.avatarKey || session?.user?.avatarKey;
-
-  useEffect(() => {
-    if (status === "authenticated") setLoadingSession(false);
-  }, [status]);
 
   const toggleCollapse = () => {
     const newState = !isCollapsed;
@@ -93,7 +82,6 @@ export const Sidebar = ({
           width={48}
           height={48}
           className="w-12 h-12 rounded-full border-2 border-pink-500/40 shadow-lg"
-          onError={() => setAvatarError(true)}
           unoptimized
         />
       );

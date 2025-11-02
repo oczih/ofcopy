@@ -51,7 +51,6 @@ interface AppProps {
 export default function App({ session, notifications, users, creators }: AppProps) {
   const user = session?.user as User | undefined;
   const isCreator = user?.creator;
-  const [avatarSignedUrls, setAvatarSignedUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -64,52 +63,7 @@ export default function App({ session, notifications, users, creators }: AppProp
       router.push("/login");
     }
   }, [session, router]);
-  useEffect(() => {
-    async function fetchSignedUrls() {
-      if ((!users || users.length === 0) && (!creators || creators.length === 0)) return;
-  
-      const avatarsWithKeys: { id: string; avatarKey: string }[] = [];
-  
-      // Add user avatars
-      Object.values(users).forEach(u => {
-        if (u.avatarKey) avatarsWithKeys.push({ id: u._id, avatarKey: u.avatarKey });
-      });
-      
-      Object.values(creators).forEach(c => {
-        if (c.avatarKey) avatarsWithKeys.push({ id: c._id, avatarKey: c.avatarKey });
-      });
 
-      const signedUrlsMap: Record<string, string> = {};
-  
-      await Promise.all(
-        avatarsWithKeys.map(async ({ id, avatarKey }) => {
-          if (!id) return; // guard
-      
-          try {
-            if (avatarKey.startsWith("http")) {
-              signedUrlsMap[id.toString()] = avatarKey;
-            } else {
-              const res = await fetch("/api/media/download-url", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ s3Key: avatarKey }),
-              });
-              if (res.ok) {
-                const data = await res.json();
-                signedUrlsMap[id.toString()] = data.downloadUrl;
-              }
-            }
-          } catch (error) {
-            console.error("Failed to fetch signed URL for id:", id, error);
-          }
-        })
-      );
-  
-      setAvatarSignedUrls(prev => ({ ...prev, ...signedUrlsMap }));
-    }
-  
-    fetchSignedUrls();
-  }, [users, creators]);
   
   const categories = isCreator
     ? [
@@ -275,9 +229,9 @@ const byUser = resolveByUser(noti.by);
 >
   <div className="flex items-center gap-4">
     <div className="relative w-12 h-12">
-      {byUser && avatarSignedUrls[byUser?._id] ? (
+      {byUser && byUser.avatarKey ? (
         <img
-          src={avatarSignedUrls[byUser?._id]}
+          src={`/api/media/${byUser.avatarKey}`}
           alt={`${byUser?.username || "User"} avatar`}
           className="w-12 h-12 rounded-full object-cover"
         />

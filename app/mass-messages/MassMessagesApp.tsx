@@ -1,7 +1,7 @@
 
 "use client";
 
-import { SetStateAction, Dispatch, useCallback, useEffect, useState } from "react";
+import { SetStateAction, Dispatch, useEffect, useState } from "react";
 import { Session } from "next-auth";
 import { Globe, Star, Users, X } from "lucide-react";
 import { Creator, MessageType, User } from "../types";
@@ -186,9 +186,6 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
   const [price, setPrice] = useState<number | null>(0);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [massMessages, setMassMessages] = useState<MessageType[]>([]);
-  const [massMediaUrlCache, setMassMediaUrlCache] = useState<Record<string, { url: string; timestamp: number }>>({});
-  const [massMessageMediaUrls, setMassMessageMediaUrls] = useState<Record<string, string>>({});
-  const CACHE_TTL = 15 * 60 * 1000;
   const router = useRouter();
   useEffect(() => {
     if (!session) {
@@ -200,36 +197,7 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
       notFound();
     }
   }, [session, router]);
-  const resolveMassMediaUrl = useCallback(
-    async (key: string | undefined | null): Promise<string | undefined> => {
-      if (!key) return undefined;
-  
-      const cached = massMediaUrlCache[key];
-      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        return cached.url;
-      }
-  
-      try {
-        const res = await fetch("/api/media/download-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ s3Key: key }),
-        });
-        const data = await res.json();
-        if (res.ok && data.downloadUrl?.startsWith("https://")) {
-          setMassMediaUrlCache(prev => ({
-            ...prev,
-            [key]: { url: data.downloadUrl, timestamp: Date.now() },
-          }));
-          return data.downloadUrl;
-        }
-      } catch (err) {
-        console.error("Error fetching mass message media URL:", err);
-      }
-      return undefined;
-    },
-    [massMediaUrlCache, CACHE_TTL]
-  );
+
   useEffect(() => {
     const fetchMassMessages = async () => {
       const { data, error } = await supabase
@@ -252,44 +220,6 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
     setMassMessages(massMessages); // sync if props change
   }, [massMessages]);
 
-  useEffect(() => {
-    if (massMessages.length === 0) return;
-  
-    const loadMassMediaUrls = async () => {
-      const updates: Record<string, string> = {};
-  
-      for (const msg of massMessages) {
-        const keys = [
-          msg.image_key,
-          msg.video_key,
-          msg.voice_key,
-          msg.file_key,
-          msg.blurred_key,
-        ];
-  
-        for (const key of keys) {
-          if (!key) continue;
-  
-          // ✅ check against prev cache, not current state
-          if (!massMessageMediaUrls[key] && !updates[key]) {
-            try {
-              const url = await resolveMassMediaUrl(key);
-              if (url) updates[key] = url;
-            } catch (err) {
-              console.error("Error resolving media key:", key, err);
-            }
-          }
-        }
-      }
-  
-      // ✅ only update state if we got something new
-      if (Object.keys(updates).length > 0) {
-        setMassMessageMediaUrls(prev => ({ ...prev, ...updates }));
-      }
-    };
-  
-    void loadMassMediaUrls();
-  }, [massMessages, resolveMassMediaUrl]);
   
   async function getChats({
     selectedCategories,
@@ -510,7 +440,6 @@ export default function MassMessageApp({ session, users, creators }: AppProps) {
       <div className="mass-messages-container space-y-4 p-4">
       <MassMessagesTable 
         massMessages={massMessages}
-        massMessageMediaUrls={massMessageMediaUrls}
         setMassMessages={setMassMessages}
       />
 </div>

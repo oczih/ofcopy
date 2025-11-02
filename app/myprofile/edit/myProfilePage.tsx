@@ -43,49 +43,33 @@ export default function App({creators, session}: AppProps) {
   useEffect(() => {
     const fetchCreator = async () => {
       if (!session?.user) return;
-      const creator = creators.find((c: Creator) => c.user === session.user._id)
-      if(creator) setCreator(creator)
-      if(!creator) setCreator(null)
-      const avatarKey =
-        session.user.creator
-          ? creators.find((c: Creator) => c.user === session.user._id)?.avatarKey
-          : session.user.avatarKey;
-      
+  
+      const creator = creators.find((c: Creator) => c.user === session.user._id);
+      if (creator) setCreator(creator);
+      else setCreator(null);
+  
+      const avatarKey = session.user.creator
+        ? creator?.avatarKey
+        : session.user.avatarKey;
+  
       if (!avatarKey) {
         setAvatarUrl(null);
         return;
       }
   
-      try {
-        setImageLoading(true);
-        const key = avatarKey.replace(/^\/+/, ''); // Remove leading slash
-        const res = await fetch("/api/media/download-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ s3Key: key }),
-        });
-  
-        const data = await res.json();
-  
-        
-          if (res.ok && data.downloadUrl && data.downloadUrl.startsWith("https://")) {
-            setAvatarUrl(data.downloadUrl); // ✅ Update UI with new image
-          } else {
-            console.error("Invalid download URL:", data.downloadUrl);
-          }
-      } catch (error) {
-        console.error("Error fetching avatar URL:", error);
-      } finally {
-        setImageLoading(false);
-      }
+      // Directly use API path instead of signed download URL
+      setImageLoading(true);
+      setAvatarUrl(`/api/media/${avatarKey}`);
+      setImageLoading(false);
     };
   
     fetchCreator();
-  }, [creators, session?.user,
+  }, [
+    creators,
+    session?.user,
     session?.user?._id,
     session?.user?.creator,
     session?.user?.avatarKey,
-    // only changes if a creator's key changes
   ]);
   
   const handleFileChange = (key: string, file: File | null) => {
@@ -148,20 +132,19 @@ export default function App({creators, session}: AppProps) {
               className="hidden"
             />
             <div className="relative w-full h-full">
-              {avatarUrl && !imageLoading && (
+              {creator?.avatarKey && (
                 <Image
-                  src={avatarUrl}
+                  src={`/api/media/${creator?.avatarKey}`}
                   alt="Profile Picture"
                   fill
-                  className="object-cover rounded-full z-10"
-                  onLoad={() => setImageLoading(false)}
+
                   onError={() => setImageLoading(false)}
                 />
               )}
               {imageLoading && (
                 <Skeleton className="w-full h-full rounded-none bg-gray-200 dark:bg-gray-700"></Skeleton>
               )}
-              {!imageLoading && !avatarUrl && (
+              {!imageLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-700 text-white text-3xl rounded-full z-10">
                   {session?.user?.name?.charAt(0).toUpperCase() || "U"}
                 </div>
@@ -336,20 +319,7 @@ export default function App({creators, session}: AppProps) {
               
                   // 5. Immediately fetch new signed URL for THIS key
                   setImageLoading(true);
-                  const res = await fetch("/api/media/download-url", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ s3Key: result.key }), // ✅ use new key
-                  });
-              
-                  const data = await res.json();
-              
-                  if (res.ok && data.downloadUrl?.startsWith("https://")) {
-                    setAvatarUrl(data.downloadUrl); // ✅ show new image
-                  } else {
-                    console.error("Invalid download URL:", data.downloadUrl);
-                  }
-              
+                  setAvatarUrl(`/api/media/${result.key}`);
                   setCropModalOpen(false);
                   setImageLoading(false);
                 } catch (err) {
