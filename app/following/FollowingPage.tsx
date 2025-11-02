@@ -84,7 +84,6 @@ export default function FollowingList({ session, creators }: AppProps) {
         {paymentForm &&
           createPortal(
             <PaymentForm
-            avatarUrl={`/api/media/${selectedCreator?.avatarKey}`}
               type="subscription"
               open={paymentForm}
               onClose={() => setPaymentForm(false)}

@@ -27,7 +27,10 @@ export default function MediaRenderer({
   const [imageLoading, setImageLoading] = useState(true);
 
   // Compute media URL from S3 key
-  const mediaUrl = `/api/media/${post.s3Key?.key ?? post.s3Key}`;
+  const rawKey =
+  typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.key;
+  const imgSrc = `/api/media/${rawKey}`;
+
   // Helper to check if media is an image
   const isImage = (url: string) => {
     if (!url) return false;
@@ -38,9 +41,9 @@ export default function MediaRenderer({
   return (
     <div className="relative w-full" style={{ minHeight: 200 }}>
       {/* Media */}
-      {isImage(mediaUrl) ? (
+      {isImage(imgSrc) ? (
         <img
-          src={mediaUrl}
+          src={imgSrc}
           alt={post.caption || ""}
           width={post.width}
           height={post.height}
@@ -56,7 +59,7 @@ export default function MediaRenderer({
           controls
           preload="metadata"
         >
-          <source src={mediaUrl} type="video/mp4" />
+          <source src={imgSrc} type="video/mp4" />
           Your browser does not support the video tag.
         </video>
       )}

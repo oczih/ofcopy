@@ -144,7 +144,6 @@ export default function SubscribeModal({ open, onClose, creator, session, avatar
                 open={step === 'pay'}
                 onClose={() => setStep('select')}
                 creator={creator!}
-                avatarUrl={avatarUrl ?? ""}
                 price={creator?.price ?? 0}
                 session={session}
               />

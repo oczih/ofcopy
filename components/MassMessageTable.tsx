@@ -9,11 +9,10 @@ import { deleteMessage } from "@/lib/messages";
 
 interface MassMessagesTableProps {
   massMessages: MessageType[];
-  massMessageMediaUrls: Record<string, string>;
   setMassMessages: React.Dispatch<React.SetStateAction<MessageType[]>>;
 }
 
-export function MassMessagesTable({ massMessages, massMessageMediaUrls, setMassMessages }: MassMessagesTableProps) {
+export function MassMessagesTable({ massMessages, setMassMessages }: MassMessagesTableProps) {
   // Format date nicely
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const formatDate = (iso: string) => {
@@ -58,7 +57,7 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls, setMassM
           id: msg.id!,
           date: msg.created_at,
           senderId: msg.sender_id.toString(),
-          text: msg.content!,
+          text: msg.content || "",
           attachments: {} as Record<'image' | 'video' | 'voice' | 'file', { key: string; url: string }>,
           price: msg.price ?? 0,
           sent: 1,
@@ -70,18 +69,17 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls, setMassM
         groups[key].sent += 1;
       }
   
-      // Only store the first of each type, and ensure URL exists
-      if (msg.image_key && massMessageMediaUrls[msg.image_key] && !groups[key].attachments.image) {
-        groups[key].attachments.image = { key: msg.image_key, url: massMessageMediaUrls[msg.image_key]! };
+      if (msg.image_key && !groups[key].attachments.image) {
+        groups[key].attachments.image = { key: msg.image_key, url: `/api/media/${msg.image_key}` };
       }
-      if (msg.video_key && massMessageMediaUrls[msg.video_key] && !groups[key].attachments.video) {
-        groups[key].attachments.video = { key: msg.video_key, url: massMessageMediaUrls[msg.video_key]! };
+      if (msg.video_key && !groups[key].attachments.video) {
+        groups[key].attachments.video = { key: msg.video_key, url: `/api/media/${msg.video_key}` };
       }
-      if (msg.voice_key && massMessageMediaUrls[msg.voice_key] && !groups[key].attachments.voice) {
-        groups[key].attachments.voice = { key: msg.voice_key, url: massMessageMediaUrls[msg.voice_key]! };
+      if (msg.voice_key && !groups[key].attachments.voice) {
+        groups[key].attachments.voice = { key: msg.voice_key, url: `/api/media/${msg.voice_key}` };
       }
-      if (msg.file_key && massMessageMediaUrls[msg.file_key] && !groups[key].attachments.file) {
-        groups[key].attachments.file = { key: msg.file_key, url: massMessageMediaUrls[msg.file_key]! };
+      if (msg.file_key && !groups[key].attachments.file) {
+        groups[key].attachments.file = { key: msg.file_key, url: `/api/media/${msg.file_key}` };
       }
     });
   
@@ -89,7 +87,7 @@ export function MassMessagesTable({ massMessages, massMessageMediaUrls, setMassM
       ...g,
       attachmentsArray: Object.values(g.attachments),
     }));
-  }, [massMessages, massMessageMediaUrls]);
+  }, [massMessages]);
   const [isDeleting, setIsDeleting] = useState<string | null>(null); 
   const handleUnsend = async (messageIds: string[]) => {
     try {

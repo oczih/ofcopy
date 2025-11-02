@@ -84,7 +84,9 @@ export default function App({creators, users}: AppProps) {
       setSaving(false);
     }
   };
-
+  const rawKey =
+      typeof post.s3Key === "string" ? post.s3Key : post.s3Key?.key;
+      const imgSrc = `/api/media/${rawKey}`;    
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
       <div className="flex max-w-5xl mx-auto px-4 py-12 gap-8">
@@ -107,7 +109,7 @@ export default function App({creators, users}: AppProps) {
               <div className="relative w-72 h-72 bg-slate-900 rounded-xl flex items-center justify-center overflow-hidden">
                 {post.s3Key ? (
                   <Image
-                    src={post.s3Key?.key || ""}
+                    src={`/api/media/${imgSrc}` || ""}
                     alt={caption || 'Post image'}
                     fill
                     style={{ objectFit: 'contain' }}
