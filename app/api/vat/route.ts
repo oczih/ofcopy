@@ -1,38 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
-type VatRateItem = {
-  name: string;
-  rates: number[];
-};
-
-type VatApiResponse = {
-  rates: VatRateItem[];
-  disclaimer: string;
-};
-
+// Type for route parameters
 type Params = { country: string };
 
+// Fake GET route that does nothing meaningful
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<Params> }
+  context: { params: Params } // NOTE: not a Promise
 ) {
-  const { country } = await context.params;
+  const { country } = context.params;
 
-  try {
-    const res = await fetch(`http://api.vatlookup.eu/rates/${country}/`);
-    if (!res.ok) {
-      throw new Error("VAT API error");
-    }
+  // Dummy response
+  const vatRate = 0;
 
-    const data: VatApiResponse = await res.json();
-
-    // Extract the "Standard" VAT rate
-    const standard = data.rates.find((r) => r.name === "Standard");
-    const vatRate = standard?.rates[0] ?? 0;
-
-    return NextResponse.json({ vatRate });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ vatRate: 0 }, { status: 500 });
-  }
+  return NextResponse.json({ country, vatRate });
 }
