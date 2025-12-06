@@ -6,7 +6,7 @@ import { authOptions } from '@/lib/auth-client';
 import { connectDB } from '../../../../lib/mongoose';
 import mongoose from 'mongoose';
 import { verifySystemAccess } from "@/lib/auth";
-
+//kod
 export async function GET(request: NextRequest, context: unknown) {
   // Cast context as unknown then extract params carefully
   // OR just treat as any but keep the cast local and limited
